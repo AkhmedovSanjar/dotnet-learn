@@ -83,6 +83,10 @@ export interface ModuleSummary {
   slug: string;
   title: string;
   description: string;
+  summary: string;
+  category: string;
+  pace: string;
+  focusAreas: string[];
   order: number;
   expectedOutcomes: string[];
   lessonCount: number;

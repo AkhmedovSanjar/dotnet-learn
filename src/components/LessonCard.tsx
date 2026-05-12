@@ -31,7 +31,7 @@ export function LessonCard({
     <Link
       href={target}
       className={cn(
-        "group relative flex flex-col rounded-[28px] border border-[color:var(--border-color)] bg-white/95 p-5 shadow-[var(--shadow-soft)] transition duration-200 hover:-translate-y-1 hover:border-[color:var(--accent)] dark:bg-slate-950/70",
+        "group relative flex flex-col rounded-[24px] border border-[color:var(--border-color)] bg-white/95 p-4 shadow-[var(--shadow-card)] transition duration-200 hover:-translate-y-1 hover:border-[color:var(--accent)] dark:bg-slate-950/70",
         compact ? "gap-3" : "gap-4",
       )}
     >
@@ -40,14 +40,14 @@ export function LessonCard({
           <p className="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
             {lesson.moduleTitle}
           </p>
-          <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950 dark:text-white">
+          <h3 className="mt-2 text-lg font-semibold tracking-tight text-slate-950 dark:text-white sm:text-xl">
             {lesson.title}
           </h3>
         </div>
         <ArrowUpRight className="h-5 w-5 text-slate-400 transition group-hover:text-[color:var(--accent-strong)]" />
       </div>
 
-      <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">
+      <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
         {lesson.description}
       </p>
 

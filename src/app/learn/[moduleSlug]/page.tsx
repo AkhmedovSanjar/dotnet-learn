@@ -29,7 +29,7 @@ export default async function ModulePage({
   const dashboard = buildDashboardState(buildCurriculum(), progress);
 
   return (
-    <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[320px_1fr] lg:px-8">
+    <div className="mx-auto grid w-full max-w-[120rem] gap-6 px-4 py-8 sm:px-6 xl:grid-cols-[300px_minmax(0,1fr)] lg:px-8">
       <Sidebar
         modules={buildCurriculum().modules}
         activeModuleSlug={moduleSlug}
@@ -37,23 +37,53 @@ export default async function ModulePage({
         overallProgress={dashboard.overallProgress}
       />
 
-      <div className="space-y-8">
-        <section className="rounded-[36px] border border-[color:var(--border-color)] bg-white/95 p-8 shadow-[var(--shadow-soft)] dark:bg-slate-950/80">
+      <div className="space-y-6">
+        <section className="rounded-[30px] border border-[color:var(--border-color)] bg-white/95 p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/80">
           <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
             Module overview
           </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 dark:text-white">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <h1 className="text-4xl font-semibold tracking-tight text-slate-950 dark:text-white">
             {moduleData.title}
-          </h1>
-          <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300">
+            </h1>
+            <span className="rounded-full bg-[#eef5ff] px-3 py-1 text-xs font-semibold text-[#245da6] ring-1 ring-inset ring-[#cfe1ff]">
+              {moduleData.category}
+            </span>
+            <span className="rounded-full border border-[color:var(--border-color)] bg-white px-3 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-950">
+              {moduleData.pace}
+            </span>
+          </div>
+          <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
             {moduleData.description}
           </p>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-300">
+            {moduleData.summary}
+          </p>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <div className="mt-5 flex flex-wrap gap-2">
+            {moduleData.focusAreas.map((area) => (
+              <span
+                key={area}
+                className="rounded-full bg-[var(--surface-muted)] px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-200"
+              >
+                {area}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[22px] bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+              <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
+                Lesson count
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+                {moduleData.lessonCount}
+              </p>
+            </div>
             {moduleData.expectedOutcomes.map((outcome) => (
               <div
                 key={outcome}
-                className="rounded-[24px] bg-slate-50 p-4 text-sm leading-7 text-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                className="rounded-[22px] bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-slate-900 dark:text-slate-300"
               >
                 {outcome}
               </div>

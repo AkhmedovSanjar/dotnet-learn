@@ -22,12 +22,12 @@ import { cn } from "@/shared/utils/cn";
 const quickLinks = [
   { href: "/", label: "Home", icon: House },
   { href: "/dashboard", label: "Dashboard", icon: GraduationCap },
-  { href: "/roadmap", label: "Lessons", icon: BookOpenText },
-  { href: "/api-learning", label: "Practice", icon: PencilRuler },
-  { href: "/debugging", label: "Quizzes", icon: ListChecks },
-  { href: "/playground", label: "Code Playground", icon: Code },
+  { href: "/roadmap", label: "Roadmap", icon: BookOpenText },
+  { href: "/api-learning", label: "API Lab", icon: PencilRuler },
+  { href: "/debugging", label: "Debug Lab", icon: ListChecks },
+  { href: "/playground", label: "Code Lab", icon: Code },
   { href: "/achievements", label: "Achievements", icon: Award },
-  { href: "/git-playground", label: "Notes", icon: NotebookPen },
+  { href: "/git-playground", label: "Git Lab", icon: NotebookPen },
   { href: "/bookmarks", label: "Bookmarks", icon: Bookmark },
 ];
 
@@ -52,7 +52,7 @@ export function Sidebar({
   }
 
   return (
-    <aside className="top-24 h-fit rounded-[32px] border border-[color:var(--border-color)] bg-white p-4 shadow-[var(--shadow-soft)] dark:bg-slate-950/80 lg:sticky">
+    <aside className="top-22 h-fit rounded-[28px] border border-[color:var(--border-color)] bg-white/95 p-4 shadow-[var(--shadow-soft)] dark:bg-slate-950/80 lg:sticky">
       <div className="space-y-1">
         {quickLinks.map((link) => {
           const Icon = link.icon;
@@ -79,8 +79,8 @@ export function Sidebar({
         <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
           Modules
         </p>
-        <h2 className="mt-3 max-w-[12rem] text-[1.6rem] leading-tight font-semibold tracking-tight text-slate-900 dark:text-white">
-          15 modules, one clear path
+          <h2 className="mt-3 max-w-[13rem] text-[1.45rem] leading-tight font-semibold tracking-tight text-slate-900 dark:text-white">
+          Structured path, less guesswork
         </h2>
       </div>
 
@@ -100,7 +100,7 @@ export function Sidebar({
           return (
             <div
               key={module.id}
-              className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-3 dark:bg-slate-900/70"
+              className="rounded-[22px] border border-[color:var(--border-color)] bg-white p-3 dark:bg-slate-900/70"
             >
               <Link
                 href={`/learn/${module.slug}`}
@@ -111,7 +111,12 @@ export function Sidebar({
                     : "text-slate-700 hover:bg-[var(--surface-muted)] dark:text-slate-100 dark:hover:bg-slate-950",
                 )}
               >
-                <span>{module.title}</span>
+                <span>
+                  <span className="block">{module.title}</span>
+                  <span className="mt-1 block text-xs font-medium text-slate-400">
+                    {module.lessonCount} lessons • {module.pace}
+                  </span>
+                </span>
                 <ChevronRight className="h-4 w-4" />
               </Link>
 

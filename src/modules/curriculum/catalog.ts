@@ -17,6 +17,34 @@ import {
 type TopicSeed = (typeof moduleSeeds)[number]["lessons"][number];
 type ModuleSeed = (typeof moduleSeeds)[number];
 
+function buildModuleSummary(moduleSeed: ModuleSeed) {
+  return (
+    moduleSeed.summary ??
+    `${moduleSeed.title} gives you a guided path through ${moduleSeed.lessons
+      .slice(0, 3)
+      .map((lesson) => lesson.title.toLowerCase())
+      .join(", ")} so the topic feels practical early.`
+  );
+}
+
+function buildModuleCategory(moduleSeed: ModuleSeed) {
+  return moduleSeed.category ?? "Backend foundations";
+}
+
+function buildModulePace(moduleSeed: ModuleSeed) {
+  return moduleSeed.pace ?? `${Math.max(3, Math.ceil(moduleSeed.lessons.length / 3))} days`;
+}
+
+function buildModuleFocusAreas(moduleSeed: ModuleSeed) {
+  return moduleSeed.focusAreas ?? moduleSeed.lessons.slice(0, 3).map((lesson) => lesson.title);
+}
+
+function buildLessonDescription(moduleSeed: ModuleSeed, topic: TopicSeed) {
+  const focusLabel = buildModuleFocusAreas(moduleSeed).slice(0, 2).join(" and ");
+
+  return `${topic.title} in ${moduleSeed.title}: clear intuition, realistic ${focusLabel.toLowerCase()} context, runnable examples, output, common mistakes, and guided practice.`;
+}
+
 function toId(moduleId: string, topicSlug: string) {
   return `${moduleId}-${topicSlug}`;
 }
@@ -394,7 +422,7 @@ function buildLesson(
     moduleSlug: moduleSeed.slug,
     moduleTitle: moduleSeed.title,
     title: topic.title,
-    description: `${topic.title} explained for junior backend developers: plain-English intuition, runnable code, expected output, common mistakes, interview framing, and guided practice.`,
+    description: buildLessonDescription(moduleSeed, topic),
     duration: `${12 + ((order + moduleOrder) % 5) * 4} min`,
     difficulty: chooseDifficulty(moduleOrder, topic),
     order,
@@ -459,6 +487,10 @@ export function buildCurriculum(): Curriculum {
         slug: moduleSeed.slug,
         title: moduleSeed.title,
         description: moduleSeed.description,
+        summary: buildModuleSummary(moduleSeed),
+        category: buildModuleCategory(moduleSeed),
+        pace: buildModulePace(moduleSeed),
+        focusAreas: buildModuleFocusAreas(moduleSeed),
         order: moduleOrder,
         expectedOutcomes: moduleSeed.expectedOutcomes,
         lessonCount: moduleLessons.length,

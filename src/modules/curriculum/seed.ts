@@ -14,6 +14,10 @@ interface ModuleSeed {
   slug: string;
   title: string;
   description: string;
+  summary?: string;
+  category?: string;
+  pace?: string;
+  focusAreas?: string[];
   expectedOutcomes: string[];
   defaultLanguage: CodeLanguage;
   lessons: TopicSeed[];
@@ -26,6 +30,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "Object-Oriented Programming",
     description:
       "Build the thinking model behind classes, objects, clean object state, and reusable backend design.",
+    summary:
+      "Start with the mental model every .NET backend relies on: safe state, clear behavior, and readable objects.",
+    category: "Core foundations",
+    pace: "1 week",
+    focusAreas: ["Classes", "Encapsulation", "Interfaces"],
     expectedOutcomes: [
       "Understand the four core OOP principles in practical backend code.",
       "Model simple domain objects in C# with safe state changes.",
@@ -52,6 +61,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "Git Basics",
     description:
       "Learn the daily Git workflow junior backend developers need for branches, reviews, fixes, and safe collaboration.",
+    summary:
+      "Cover the Git workflow you use every day: commit cleanly, recover mistakes, and collaborate without panic.",
+    category: "Team workflow",
+    pace: "1 week",
+    focusAreas: ["Branches", "Pull requests", "Recovery"],
     expectedOutcomes: [
       "Use common Git commands with confidence from the terminal.",
       "Understand how local work, remote branches, and pull requests connect.",
@@ -87,6 +101,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "Reading Technical Documentation",
     description:
       "Turn confusing framework docs into clear actions, notes, examples, and working experiments.",
+    summary:
+      "Learn how to scan docs, pull out only what matters, and convert pages of theory into useful notes and experiments.",
+    category: "Learning workflow",
+    pace: "3-4 days",
+    focusAreas: ["Install steps", "Examples", "Notes"],
     expectedOutcomes: [
       "Navigate docs with a repeatable reading strategy.",
       "Extract install steps and working examples quickly.",
@@ -108,6 +127,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "API Requests",
     description:
       "Understand HTTP communication so you can call, inspect, and debug backend APIs with confidence.",
+    summary:
+      "Build strong HTTP intuition with requests, responses, parameters, status codes, and real testing tools.",
+    category: "Backend communication",
+    pace: "1 week",
+    focusAreas: ["HTTP", "JSON", "Postman"],
     expectedOutcomes: [
       "Explain client-server communication using real HTTP examples.",
       "Read and build request/response messages.",
@@ -134,6 +158,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "DTOs and API Implementation",
     description:
       "Learn how clean request and response shapes protect your API and keep your backend maintainable.",
+    summary:
+      "Understand how DTOs keep contracts safe, validation clear, and controller code easier to evolve.",
+    category: "API design",
+    pace: "4-5 days",
+    focusAreas: ["DTOs", "Validation", "Mapping"],
     expectedOutcomes: [
       "Explain what a DTO is and why it matters.",
       "Separate entities from API contracts.",
@@ -157,6 +186,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "API Simulation and Mocking",
     description:
       "Practice backend workflows even when the real service is missing, unstable, or not ready yet.",
+    summary:
+      "Keep moving when the real service is unavailable by creating mock endpoints, fake payloads, and stable test data.",
+    category: "Testing workflow",
+    pace: "3-4 days",
+    focusAreas: ["Mocks", "Fake payloads", "Client testing"],
     expectedOutcomes: [
       "Explain why mocking helps backend development.",
       "Create simple fake endpoints and response payloads.",
@@ -178,6 +212,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "Local Backend Service Setup and Debugging",
     description:
       "Run .NET services locally, wire config safely, and debug step by step without panic.",
+    summary:
+      "Make local .NET debugging calmer with environment setup, breakpoints, stack traces, and a repeatable flow.",
+    category: "Debugging",
+    pace: "1 week",
+    focusAreas: ["Local setup", "Breakpoints", "Stack traces"],
     expectedOutcomes: [
       "Run a local backend with the right environment settings.",
       "Use breakpoints and stack traces effectively.",
@@ -202,6 +241,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "Framework Basics",
     description:
       "See how a .NET backend is assembled from controllers, services, DI, config, and middleware.",
+    summary:
+      "Understand the moving parts of a .NET API so controllers, services, DI, and middleware feel connected instead of random.",
+    category: ".NET architecture",
+    pace: "1 week",
+    focusAreas: ["Controllers", "Services", "Dependency injection"],
     expectedOutcomes: [
       "Understand the structure of a small .NET Web API.",
       "Describe how controllers, services, and DI work together.",
@@ -225,6 +269,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "Database Basics",
     description:
       "Connect the language of relational databases to the code you write in services, repositories, and EF Core.",
+    summary:
+      "Bridge SQL concepts and application code so tables, keys, queries, and EF Core start to feel practical.",
+    category: "Data layer",
+    pace: "1 week",
+    focusAreas: ["SQL", "Keys", "EF Core"],
     expectedOutcomes: [
       "Understand core relational database concepts.",
       "Read and write beginner SQL queries.",
@@ -253,6 +302,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "Design Patterns and Principles",
     description:
       "Use simple patterns and maintainability rules to keep backend code readable as it grows.",
+    summary:
+      "Learn a few high-value design rules that reduce tangles and make service code easier to read, test, and change.",
+    category: "Code quality",
+    pace: "4-5 days",
+    focusAreas: ["Repository", "Separation of concerns", "Clean code"],
     expectedOutcomes: [
       "Recognize common patterns used in backend services.",
       "Apply separation of concerns to avoid tangled code.",
@@ -275,6 +329,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "RESTful Services",
     description:
       "Learn the conventions that make APIs predictable for frontend developers, testers, and other services.",
+    summary:
+      "Design endpoints that feel predictable to consumers, with sensible naming, validation, and error responses.",
+    category: "API design",
+    pace: "4-5 days",
+    focusAreas: ["REST", "Endpoints", "Validation"],
     expectedOutcomes: [
       "Describe what makes an API RESTful.",
       "Design cleaner endpoints and validation flows.",
@@ -298,6 +357,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "Unit Testing",
     description:
       "Learn how to prove business logic works before bugs reach code review, QA, or production.",
+    summary:
+      "Build confidence with simple unit tests, AAA structure, and focused mocks that protect business logic.",
+    category: "Quality assurance",
+    pace: "1 week",
+    focusAreas: ["AAA", "xUnit", "Mocks"],
     expectedOutcomes: [
       "Explain the goal of unit testing in simple terms.",
       "Write basic Arrange-Act-Assert tests in .NET tools.",
@@ -322,6 +386,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "Deployment Basics",
     description:
       "Understand how code moves from your machine to a shared environment in a safe, repeatable way.",
+    summary:
+      "See how builds, staging, configuration, and release checklists work together before code reaches users.",
+    category: "Delivery workflow",
+    pace: "3-4 days",
+    focusAreas: ["Builds", "Staging", "Configuration"],
     expectedOutcomes: [
       "Explain staging, builds, and deployment checklists.",
       "Understand environment-specific configuration.",
@@ -344,6 +413,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "Backend Best Practices",
     description:
       "Adopt habits that keep your backend easier to debug, extend, and explain to teammates.",
+    summary:
+      "Tie together naming, logging, validation, and structure so your backend code stays calm under pressure.",
+    category: "Professional habits",
+    pace: "4-5 days",
+    focusAreas: ["Naming", "Logging", "Validation"],
     expectedOutcomes: [
       "Apply naming, validation, logging, and organization patterns consistently.",
       "Write service methods that are easier to read and test.",
@@ -367,6 +441,11 @@ export const moduleSeeds: ModuleSeed[] = [
     title: "Troubleshooting",
     description:
       "Build the mindset to investigate problems calmly, read signals correctly, and fix one thing at a time.",
+    summary:
+      "Practice a repeatable debugging mindset so logs, errors, and stack traces become useful signals instead of noise.",
+    category: "Problem solving",
+    pace: "4-5 days",
+    focusAreas: ["Logs", "Errors", "Search strategy"],
     expectedOutcomes: [
       "Read error output and stack traces with more confidence.",
       "Search effectively and isolate the real cause of problems.",

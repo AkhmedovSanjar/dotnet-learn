@@ -24,10 +24,16 @@ export const metadata = {
   title: "Learning Dashboard",
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ query?: string }>;
+}) {
   const curriculum = buildCurriculum();
   const progress = await listProgressForDefaultUser();
   const dashboard = buildDashboardState(curriculum, progress);
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const query = resolvedSearchParams.query ?? "";
 
   const streak = computeStreakDays(progress);
   const practiceScore = computePracticeScore(progress);
@@ -48,7 +54,7 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-[120rem] flex-col gap-7 px-4 py-8 sm:px-6 lg:px-8">
       <section className="surface-banner relative overflow-hidden rounded-[36px] border border-[color:var(--border-color)] p-8 shadow-[var(--shadow-soft)] sm:p-10">
         <div className="relative z-10 grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div>
@@ -197,6 +203,9 @@ export default async function DashboardPage() {
       <SearchLessons
         lessons={searchItems}
         modules={curriculum.modules.map((module) => module.title)}
+        initialQuery={query}
+        title="Jump back into the right lesson"
+        description="Use the global search or filter by module and difficulty to find the exact topic you want."
       />
 
       <section className="rounded-[32px] border border-[color:var(--border-color)] bg-white/95 p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
@@ -209,12 +218,30 @@ export default async function DashboardPage() {
               key={module.id}
               className="rounded-[26px] bg-slate-50 p-5 dark:bg-slate-900"
             >
-              <h2 className="text-lg font-semibold tracking-tight text-slate-950 dark:text-white">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-semibold tracking-tight text-slate-950 dark:text-white">
                 {module.title}
-              </h2>
-              <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                {module.description}
+                </h2>
+                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-inset ring-[color:var(--border-color)] dark:bg-slate-950">
+                  {module.category}
+                </span>
+                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-inset ring-[color:var(--border-color)] dark:bg-slate-950">
+                  {module.pace}
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {module.summary}
               </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {module.focusAreas.map((area) => (
+                  <span
+                    key={area}
+                    className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-inset ring-[color:var(--border-color)] dark:bg-slate-950"
+                  >
+                    {area}
+                  </span>
+                ))}
+              </div>
               <div className="mt-4 flex items-center justify-between text-sm font-semibold text-slate-700 dark:text-slate-200">
                 <span>
                   {module.completedLessons}/{module.lessonCount} lessons

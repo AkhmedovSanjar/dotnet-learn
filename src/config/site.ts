@@ -7,9 +7,9 @@ export const siteConfig = {
     { href: "/", label: "Home" },
     { href: "/dashboard", label: "Dashboard" },
     { href: "/roadmap", label: "Roadmap" },
-    { href: "/git-playground", label: "Git" },
-    { href: "/api-learning", label: "API" },
-    { href: "/database-learning", label: "Database" },
-    { href: "/debugging", label: "Debugging" },
+    { href: "/git-playground", label: "Git Lab" },
+    { href: "/api-learning", label: "API Lab" },
+    { href: "/database-learning", label: "Data" },
+    { href: "/debugging", label: "Debug Lab" },
   ],
 };

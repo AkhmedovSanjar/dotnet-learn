@@ -50,7 +50,7 @@ export default async function LessonPage({
   ];
 
   return (
-    <div className="mx-auto grid w-full max-w-[128rem] gap-8 px-4 py-10 sm:px-6 xl:grid-cols-[280px_minmax(0,1fr)_300px] xl:px-8">
+    <div className="mx-auto grid w-full max-w-[120rem] gap-6 px-4 py-8 sm:px-6 xl:grid-cols-[260px_minmax(0,1fr)] 2xl:grid-cols-[260px_minmax(0,1fr)_280px] xl:px-8">
       <Sidebar
         modules={buildCurriculum().modules}
         activeModuleSlug={moduleSlug}
@@ -59,8 +59,8 @@ export default async function LessonPage({
         overallProgress={dashboard.overallProgress}
       />
 
-      <div className="space-y-7">
-        <section className="lesson-shell rounded-[34px] border border-[color:var(--border-color)] bg-white px-7 py-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/80">
+      <div className="space-y-5">
+        <section className="lesson-shell rounded-[28px] border border-[color:var(--border-color)] bg-white px-5 py-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/80 sm:px-6">
           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
             <Link href="/dashboard">Dashboard</Link>
             <span>/</span>
@@ -74,10 +74,10 @@ export default async function LessonPage({
               <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
                 Lesson
               </p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 dark:text-white">
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
                 {lesson.title}
               </h1>
-              <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300">
+              <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
                 {lesson.description}
               </p>
             </div>
@@ -107,13 +107,39 @@ export default async function LessonPage({
             </div>
           </div>
 
-          <div className="mt-7 grid gap-4 md:grid-cols-3">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {lesson.outcomes.map((outcome) => (
               <div
                 key={outcome}
-                className="rounded-[22px] border border-[#d9e6fb] bg-white/90 p-4 text-sm leading-7 text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:bg-slate-900 dark:text-slate-300"
+                className="rounded-[20px] border border-[#d9e6fb] bg-white/90 p-4 text-sm leading-6 text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:bg-slate-900 dark:text-slate-300"
               >
                 {outcome}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-[24px] border border-[color:var(--border-color)] bg-white/95 p-5 shadow-[var(--shadow-soft)] 2xl:hidden dark:bg-slate-950/70">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
+                Learning guide
+              </p>
+              <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-950 dark:text-white">
+                Keep the lesson structure visible on smaller screens
+              </h2>
+            </div>
+            <span className="text-sm font-medium text-slate-400">
+              {Math.min(Math.round((lessonContents.length * (dashboard.overallProgress / 100)) + 1), lessonContents.length)}/{lessonContents.length}
+            </span>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {lessonContents.map((item, index) => (
+              <div
+                key={item}
+                className="rounded-[18px] bg-[var(--surface-muted)] px-3 py-3 text-sm text-slate-600 dark:text-slate-200"
+              >
+                <span className="font-semibold text-slate-950 dark:text-white">{index + 1}.</span> {item}
               </div>
             ))}
           </div>
@@ -125,8 +151,8 @@ export default async function LessonPage({
               id: "explanation",
               label: "Explanation",
               content: (
-                <div className="space-y-6">
-                  <section id="why-this-matters" className="rounded-[30px] border border-[color:var(--border-color)] bg-white p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
+                <div className="space-y-5">
+                  <section id="why-this-matters" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
                     <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
                       Why this matters
                     </p>
@@ -135,13 +161,13 @@ export default async function LessonPage({
                     </p>
                   </section>
 
-                  <section className="overflow-hidden rounded-[30px] border border-[color:var(--border-color)] bg-white shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
+                  <section className="overflow-hidden rounded-[24px] border border-[color:var(--border-color)] bg-white shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
                     <div className="grid gap-0 xl:grid-cols-[1.08fr_0.92fr]">
-                      <div className="p-6">
+                      <div className="p-5">
                         <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
                           Explanation
                         </p>
-                        <h2 className="mt-4 font-[family:var(--font-serif)] text-4xl leading-tight text-slate-950 dark:text-white">
+                        <h2 className="mt-4 font-[family:var(--font-serif)] text-3xl leading-tight text-slate-950 dark:text-white sm:text-4xl">
                           What is {lesson.title}?
                         </h2>
                         <p className="mt-5 text-base leading-8 text-slate-700 dark:text-slate-200">
@@ -152,7 +178,7 @@ export default async function LessonPage({
                           <h3 className="text-2xl font-[family:var(--font-serif)] text-slate-950 dark:text-white">
                             Key benefits
                           </h3>
-                          <ul className="mt-4 space-y-3 text-base leading-8 text-slate-700 dark:text-slate-200">
+                          <ul className="mt-4 space-y-3 text-base leading-7 text-slate-700 dark:text-slate-200">
                             {lesson.bestPractices.slice(0, 3).map((item) => (
                               <li key={item}>• {item}</li>
                             ))}
@@ -165,8 +191,8 @@ export default async function LessonPage({
                     </div>
                   </section>
 
-                  <div className="grid gap-6 xl:grid-cols-2">
-                    <section id="explain-simply" className="rounded-[30px] border border-[color:var(--border-color)] bg-white p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
+                  <div className="grid gap-5 xl:grid-cols-2">
+                    <section id="explain-simply" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
                       <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
                         Explain simply
                       </p>
@@ -175,7 +201,7 @@ export default async function LessonPage({
                       </p>
                     </section>
 
-                    <section id="interview-answer" className="rounded-[30px] border border-[color:var(--border-color)] bg-white p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
+                    <section id="interview-answer" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
@@ -190,7 +216,7 @@ export default async function LessonPage({
                     </section>
                   </div>
 
-                  <section id="deep-explanation" className="rounded-[30px] border border-[color:var(--border-color)] bg-white p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
+                  <section id="deep-explanation" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
                     <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
                       Deep explanation
                     </p>
@@ -202,7 +228,7 @@ export default async function LessonPage({
                     </div>
                   </section>
 
-                  <section id="real-project-usage" className="rounded-[30px] border border-[color:var(--border-color)] bg-white p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
+                  <section id="real-project-usage" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
                     <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
                       Real project usage
                     </p>
@@ -211,8 +237,8 @@ export default async function LessonPage({
                     </p>
                   </section>
 
-                  <div className="grid gap-6 xl:grid-cols-2">
-                    <section id="common-mistakes" className="rounded-[30px] border border-[color:var(--border-color)] bg-white p-6 shadow-[var(--shadow-soft)] dark:border-rose-500/20 dark:bg-rose-500/10">
+                  <div className="grid gap-5 xl:grid-cols-2">
+                    <section id="common-mistakes" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:border-rose-500/20 dark:bg-rose-500/10">
                       <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-rose-200">
                         Common mistakes
                       </p>
@@ -223,7 +249,7 @@ export default async function LessonPage({
                       </ul>
                     </section>
 
-                    <section id="best-practices" className="rounded-[30px] border border-[color:var(--border-color)] bg-white p-6 shadow-[var(--shadow-soft)] dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                    <section id="best-practices" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:border-emerald-500/20 dark:bg-emerald-500/10">
                       <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-emerald-200">
                         Best practices
                       </p>
@@ -241,12 +267,12 @@ export default async function LessonPage({
               id: "code",
               label: "Code",
               content: (
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <CodeBlock
                     example={lesson.codeExamples[0]}
                     caption="Realistic example with a clear backend-friendly explanation."
                   />
-                  <section id="code-example" className="rounded-[30px] border border-[color:var(--border-color)] bg-white p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
+                  <section id="code-example" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
                     <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
                       Step by step
                     </p>
@@ -263,9 +289,9 @@ export default async function LessonPage({
               id: "output",
               label: "Output",
               content: (
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <OutputBlock output={lesson.codeExamples[0].output} />
-                  <section id="summary" className="rounded-[30px] border border-[color:var(--border-color)] bg-white p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
+                  <section id="summary" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
                     <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
                       Summary
                     </p>
@@ -282,7 +308,7 @@ export default async function LessonPage({
               id: "practice",
               label: "Practice",
               content: (
-                <div className="space-y-6">
+                <div className="space-y-5">
                   {lesson.practiceTasks.map((task) => (
                     <PracticeTaskCard key={task.id} task={task} />
                   ))}
@@ -300,8 +326,8 @@ export default async function LessonPage({
               id: "quiz",
               label: "Quiz",
               content: (
-                <div className="space-y-6">
-                  <section className="rounded-[30px] border border-[color:var(--border-color)] bg-white p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
+                <div className="space-y-5">
+                  <section className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
                     <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
                       Quiz preview
                     </p>
@@ -309,7 +335,7 @@ export default async function LessonPage({
                       {lesson.quiz.map((question) => (
                         <div
                           key={question.id}
-                          className="rounded-[24px] bg-[var(--surface-muted)] p-4 text-sm leading-7 text-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                          className="rounded-[20px] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-slate-700 dark:bg-slate-900 dark:text-slate-200"
                         >
                           <p className="font-semibold text-slate-950 dark:text-white">
                             {question.question}
@@ -332,7 +358,7 @@ export default async function LessonPage({
           ]}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[30px] border border-[color:var(--border-color)] bg-white p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
           {neighbors.previous ? (
             <Link
               href={`/learn/${neighbors.previous.moduleSlug}/${neighbors.previous.slug}`}
@@ -357,7 +383,7 @@ export default async function LessonPage({
         </div>
       </div>
 
-      <aside className="hidden xl:block">
+      <aside className="hidden 2xl:block">
         <div className="sticky top-24 space-y-5">
           <section className="rounded-[28px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)]">
             <div className="flex items-center justify-between">
