@@ -21,7 +21,7 @@ export async function CodeBlock({
   });
 
   return (
-    <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-slate-950 shadow-[var(--shadow-soft)] dark:border-slate-800">
+    <section className="overflow-hidden rounded-[28px] border border-[color:var(--border-color)] bg-[#0f203d] shadow-[var(--shadow-soft)]">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div>
           <p className="text-sm font-semibold text-white">{example.title}</p>

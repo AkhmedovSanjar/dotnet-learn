@@ -24,7 +24,7 @@ export function LessonTabs({ tabs }: { tabs: TabDefinition[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2 rounded-[28px] border border-[color:var(--border-color)] bg-white p-2 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
         {tabs.map((tab) => {
           const Icon = tabIcons[tab.id];
           return (
@@ -34,8 +34,8 @@ export function LessonTabs({ tabs }: { tabs: TabDefinition[] }) {
               className={cn(
                 "inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition",
                 activeTab === tab.id
-                  ? "bg-slate-950 text-white shadow-[var(--shadow-soft)] dark:bg-white dark:text-slate-950"
-                  : "border border-[color:var(--border-color)] bg-white/90 text-slate-600 hover:border-[color:var(--accent)] hover:text-slate-950 dark:bg-slate-950/80 dark:text-slate-300",
+                  ? "bg-[#eef5ff] text-[#245da6] shadow-sm ring-1 ring-inset ring-[#cfe1ff] dark:bg-white dark:text-slate-950"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-900",
               )}
               onClick={() => setActiveTab(tab.id)}
             >

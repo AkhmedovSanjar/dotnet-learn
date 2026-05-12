@@ -24,14 +24,22 @@ function sortLessons(lessons: Lesson[]) {
   });
 }
 
-export function recommendNextLesson(lessons: Lesson[], progress: ProgressRecord[]) {
+export function recommendNextLesson(
+  lessons: Lesson[],
+  progress: ProgressRecord[],
+) {
   const progressMap = new Map(progress.map((entry) => [entry.lessonId, entry]));
   return (
-    sortLessons(lessons).find((lesson) => !progressMap.get(lesson.id)?.completed) ?? null
+    sortLessons(lessons).find(
+      (lesson) => !progressMap.get(lesson.id)?.completed,
+    ) ?? null
   );
 }
 
-function findCurrentLesson(lessons: Lesson[], progress: ProgressRecord[]) {
+function findCurrentLesson(
+  lessons: Lesson[],
+  progress: ProgressRecord[],
+) {
   const progressMap = new Map(progress.map((entry) => [entry.lessonId, entry]));
   return (
     sortLessons(lessons).find((lesson) => {
@@ -75,5 +83,72 @@ export function buildDashboardState(
     currentLesson: findCurrentLesson(curriculum.lessons, progress),
     recommendedLesson: recommendNextLesson(curriculum.lessons, progress),
     modules,
+  };
+}
+
+function isoDateOnly(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) return null;
+  const d = new Date(parsed);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+function previousIsoDay(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+export function computeStreakDays(
+  progress: ProgressRecord[],
+  now: Date = new Date(),
+): number {
+  const days = new Set<string>();
+  for (const entry of progress) {
+    const day = isoDateOnly(entry.lastOpenedAt ?? null);
+    if (day) days.add(day);
+  }
+  if (days.size === 0) return 0;
+
+  const todayIso = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+  const yesterdayIso = previousIsoDay(todayIso);
+
+  let cursor = days.has(todayIso)
+    ? todayIso
+    : days.has(yesterdayIso)
+      ? yesterdayIso
+      : null;
+
+  if (!cursor) return 0;
+
+  let streak = 0;
+  while (days.has(cursor)) {
+    streak += 1;
+    cursor = previousIsoDay(cursor);
+  }
+  return streak;
+}
+
+export function computePracticeScore(progress: ProgressRecord[]): number {
+  const scores = progress
+    .map((entry) => entry.quizScore)
+    .filter((value): value is number => typeof value === "number");
+  if (scores.length === 0) return 0;
+  const avg = scores.reduce((sum, value) => sum + value, 0) / scores.length;
+  return Math.round(avg);
+}
+
+export function countQuizzesPassed(
+  progress: ProgressRecord[],
+  passingScore = 70,
+): { passed: number; attempted: number } {
+  const scored = progress.filter(
+    (entry): entry is ProgressRecord & { quizScore: number } =>
+      typeof entry.quizScore === "number",
+  );
+  return {
+    attempted: scored.length,
+    passed: scored.filter((entry) => entry.quizScore >= passingScore).length,
   };
 }

@@ -7,6 +7,7 @@ describe("quiz scoring", () => {
         {
           id: "q1",
           lessonId: "oop-encapsulation",
+          kind: "concept",
           question: "Why do we use private fields?",
           options: ["A", "B", "C", "D"],
           correctAnswer: "B",
@@ -15,6 +16,7 @@ describe("quiz scoring", () => {
         {
           id: "q2",
           lessonId: "oop-encapsulation",
+          kind: "code-reading",
           question: "What should Deposit validate first?",
           options: ["A", "B", "C", "D"],
           correctAnswer: "A",

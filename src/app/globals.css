@@ -2,12 +2,14 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #0f172a;
-  --page-background: #f8fbff;
-  --border-color: rgba(148, 163, 184, 0.22);
-  --accent: #38bdf8;
-  --accent-strong: #0f766e;
-  --shadow-soft: 0 24px 60px rgba(15, 23, 42, 0.08);
+  --foreground: #132238;
+  --page-background: #f7fafc;
+  --surface: #ffffff;
+  --surface-muted: #f4f8fc;
+  --border-color: rgba(15, 23, 42, 0.08);
+  --accent: #2f80ed;
+  --accent-strong: #0ea5b7;
+  --shadow-soft: 0 20px 50px rgba(15, 23, 42, 0.06);
 }
 
 @theme inline {
@@ -22,6 +24,8 @@
   --background: #020617;
   --foreground: #f8fafc;
   --page-background: #020617;
+  --surface: #0f172a;
+  --surface-muted: #111b30;
   --border-color: rgba(148, 163, 184, 0.18);
   --accent: #38bdf8;
   --accent-strong: #14b8a6;
@@ -40,6 +44,13 @@ body {
   background: var(--page-background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
+}
+
+main {
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 22%),
+    radial-gradient(circle at top left, rgba(47, 128, 237, 0.08), transparent 18%),
+    linear-gradient(180deg, rgba(230, 245, 255, 0.9) 0, rgba(247, 250, 252, 0.72) 220px, rgba(255, 255, 255, 0.88) 520px);
 }
 
 a,
@@ -68,4 +79,25 @@ p {
     linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
     linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
   background-size: 28px 28px;
+}
+
+.surface-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-soft);
+}
+
+.lesson-shell {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.95)),
+    linear-gradient(90deg, rgba(47, 128, 237, 0.05) 1px, transparent 1px),
+    linear-gradient(rgba(47, 128, 237, 0.05) 1px, transparent 1px);
+  background-size: auto, 28px 28px, 28px 28px;
+}
+
+.surface-banner {
+  background:
+    radial-gradient(circle at 85% 0%, rgba(47, 128, 237, 0.18), transparent 55%),
+    radial-gradient(circle at 5% 100%, rgba(14, 165, 183, 0.12), transparent 50%),
+    linear-gradient(120deg, #eaf3ff 0%, #ffffff 60%, #f7faff 100%);
 }

@@ -47,7 +47,6 @@ export default function RootLayout({
       <body className="min-h-full bg-[var(--page-background)] text-[var(--foreground)]">
         <Providers>
           <div className="relative min-h-screen">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_42%),radial-gradient(circle_at_top_right,_rgba(20,184,166,0.16),_transparent_30%)]" />
             <Header />
             <main className="relative z-10 pb-16">{children}</main>
           </div>

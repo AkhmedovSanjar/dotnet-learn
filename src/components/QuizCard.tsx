@@ -3,7 +3,16 @@
 import { CheckCircle2, CircleHelp, XCircle } from "lucide-react";
 
 import type { QuizQuestion } from "@/lessons/contracts";
+import { QuizKindBadge } from "@/components/QuizKindBadge";
 import { cn } from "@/shared/utils/cn";
+
+function splitQuestionAndCode(text: string): { prose: string; code?: string } {
+  const match = text.match(/```(?:\w+)?\n([\s\S]+?)```/);
+  if (!match) return { prose: text };
+  const code = match[1].trimEnd();
+  const prose = text.replace(match[0], "").trim();
+  return { prose, code };
+}
 
 export function QuizCard({
   question,
@@ -21,25 +30,37 @@ export function QuizCard({
     explanation: string;
   };
 }) {
+  const { prose, code } = splitQuestionAndCode(question.question);
+
   return (
     <article className="rounded-[30px] border border-[color:var(--border-color)] bg-white/95 p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
-      <div className="flex items-start gap-3">
-        <CircleHelp className="mt-1 h-5 w-5 text-[color:var(--accent-strong)]" />
-        <div>
-          <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
-            Quiz
-          </p>
-          <h3 className="mt-2 text-lg font-semibold tracking-tight text-slate-950 dark:text-white">
-            {question.question}
-          </h3>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <CircleHelp className="mt-1 h-5 w-5 text-[color:var(--accent-strong)]" />
+          <div>
+            <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
+              Question
+            </p>
+            <h3 className="mt-2 text-lg font-semibold tracking-tight text-slate-950 dark:text-white">
+              {prose}
+            </h3>
+          </div>
         </div>
+        <QuizKindBadge kind={question.kind} />
       </div>
+
+      {code ? (
+        <pre className="mt-4 overflow-x-auto rounded-2xl bg-[#08162e] p-4 font-[family:var(--font-geist-mono)] text-sm leading-6 text-slate-100">
+          <code>{code}</code>
+        </pre>
+      ) : null}
 
       <div className="mt-5 grid gap-3">
         {question.options.map((option) => {
           const isSelected = selectedAnswer === option;
           const isCorrect = reveal?.correctAnswer === option;
-          const isWrongSelected = reveal?.selectedAnswer === option && !reveal.isCorrect;
+          const isWrongSelected =
+            reveal?.selectedAnswer === option && !reveal.isCorrect;
 
           return (
             <button

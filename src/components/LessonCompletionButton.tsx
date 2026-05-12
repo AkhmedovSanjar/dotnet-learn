@@ -20,8 +20,8 @@ export function LessonCompletionButton({
       type="button"
       className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
         completed
-          ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-500/10 dark:text-emerald-100"
-          : "bg-slate-950 text-white hover:-translate-y-0.5 dark:bg-white dark:text-slate-950"
+          ? "border border-emerald-200 bg-emerald-50 text-emerald-900 dark:bg-emerald-500/10 dark:text-emerald-100"
+          : "border border-[color:var(--border-color)] bg-white text-slate-700 hover:-translate-y-0.5 hover:border-[color:var(--accent)] hover:text-slate-950 dark:bg-white dark:text-slate-950"
       }`}
       disabled={saving}
       onClick={async () => {

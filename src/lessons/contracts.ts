@@ -27,9 +27,12 @@ export interface PracticeTask {
   solution: string;
 }
 
+export type QuizKind = "concept" | "code-reading" | "spot-the-bug" | "interview";
+
 export interface QuizQuestion {
   id: string;
   lessonId: string;
+  kind: QuizKind;
   question: string;
   options: string[];
   correctAnswer: string;

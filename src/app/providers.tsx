@@ -18,14 +18,14 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<ThemeMode>("light");
-
-  useEffect(() => {
-    const storedTheme = window.localStorage.getItem("dotnetlearn-theme");
-    if (storedTheme === "light" || storedTheme === "dark") {
-      setTheme(storedTheme);
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    if (typeof window === "undefined") {
+      return "light";
     }
-  }, []);
+
+    const storedTheme = window.localStorage.getItem("dotnetlearn-theme");
+    return storedTheme === "dark" ? "dark" : "light";
+  });
 
   useEffect(() => {
     const root = document.documentElement;

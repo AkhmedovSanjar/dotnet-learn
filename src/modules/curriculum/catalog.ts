@@ -5,30 +5,17 @@ import type {
   Lesson,
   ModuleSummary,
   PracticeTask,
+  QuizKind,
   QuizQuestion,
 } from "@/lessons/contracts";
 import { moduleSeeds } from "@/modules/curriculum/seed";
+import {
+  getAuthoredLessonContent,
+  type LessonContent,
+} from "@/modules/curriculum/content";
 
 type TopicSeed = (typeof moduleSeeds)[number]["lessons"][number];
 type ModuleSeed = (typeof moduleSeeds)[number];
-
-const specialLessonIntros: Record<string, Partial<Lesson>> = {
-  encapsulation: {
-    simpleExplanation:
-      "Encapsulation means an object protects its own data. Outside code should ask the object to do something instead of changing its internal fields directly.",
-    deepExplanation:
-      "In backend code, encapsulation is what stops business objects from drifting into invalid states. A `BankAccount`, `Customer`, or `Order` should not let any other class change important values whenever it wants. Instead, the object exposes clear methods such as `Deposit`, `Activate`, or `Cancel`. Those methods validate input, protect invariants, and make the code easier to reason about during debugging. When junior developers skip encapsulation, they often end up with entities that can be changed from everywhere, which makes bugs feel random and makes domain rules hard to trust.",
-    interviewAnswer:
-      "Encapsulation is the OOP principle of hiding internal state and exposing controlled operations. In backend systems it protects data integrity, makes business rules explicit, and reduces accidental misuse from other parts of the codebase.",
-  },
-  "what-is-dto": {
-    interviewAnswer:
-      "A DTO, or Data Transfer Object, is a shape used to move data between layers or across HTTP boundaries. We use DTOs to control what the API accepts and returns instead of exposing database entities directly.",
-  },
-  "swagger-examples": {
-    tags: ["swagger", "openapi", "api testing", "documentation"],
-  },
-};
 
 function toId(moduleId: string, topicSlug: string) {
   return `${moduleId}-${topicSlug}`;
@@ -45,58 +32,51 @@ function chooseDifficulty(moduleOrder: number, topic: TopicSeed) {
   if (topic.difficulty) {
     return topic.difficulty;
   }
-
-  if (moduleOrder <= 5) {
-    return "Beginner";
-  }
-
-  if (moduleOrder <= 10) {
-    return "Junior";
-  }
-
+  if (moduleOrder <= 5) return "Beginner";
+  if (moduleOrder <= 10) return "Junior";
   return "Intermediate";
 }
 
 function chooseLanguage(moduleSeed: ModuleSeed, topic: TopicSeed): CodeLanguage {
-  if (topic.language) {
-    return topic.language;
-  }
-
-  return moduleSeed.defaultLanguage;
+  return topic.language ?? moduleSeed.defaultLanguage;
 }
 
-function buildCodeExample(
+const QUIZ_KINDS_FALLBACK: QuizKind[] = [
+  "concept",
+  "code-reading",
+  "spot-the-bug",
+  "interview",
+];
+
+function buildFallbackCodeExample(
   moduleSeed: ModuleSeed,
   topic: TopicSeed,
   lessonId: string,
 ): CodeExample {
   const language = chooseLanguage(moduleSeed, topic);
+  const className = humanizeSlug(topic.slug).replaceAll(" ", "");
 
   const examples: Record<CodeLanguage, CodeExample> = {
     csharp: {
       title: `${topic.title} in a small .NET service`,
       language,
-      code: `public sealed class ${humanizeSlug(topic.slug).replaceAll(" ", "")}Service
+      code: `public sealed class ${className}Service
 {
-    private readonly ILogger<${humanizeSlug(topic.slug).replaceAll(" ", "")}Service> _logger;
+    private readonly ILogger<${className}Service> _logger;
 
-    public ${humanizeSlug(topic.slug).replaceAll(" ", "")}Service(
-        ILogger<${humanizeSlug(topic.slug).replaceAll(" ", "")}Service> logger)
-    {
-        _logger = logger;
-    }
+    public ${className}Service(ILogger<${className}Service> logger) => _logger = logger;
 
     public string Explain()
     {
-        _logger.LogInformation("Teaching ${topic.title} for lesson ${lessonId}");
-        return "${topic.title} becomes easier when the rule is explicit in code.";
+        _logger.LogInformation("Demonstrating ${topic.title} for ${lessonId}");
+        return "${topic.title} keeps backend code predictable and reviewable.";
     }
 }`,
-      output: `${topic.title} becomes easier when the rule is explicit in code.`,
+      output: `${topic.title} keeps backend code predictable and reviewable.`,
       walkthrough: [
-        "The service keeps one focused responsibility so the example stays easy to read.",
-        "The logger shows how backend code often records important actions for debugging.",
-        "The returned string represents the business message or response you would surface to the caller.",
+        `The service has one focused responsibility so the example for ${topic.title} stays easy to read.`,
+        "The logger shows how backend code records important actions for later debugging.",
+        "The return value represents the message you would surface to the caller.",
       ],
     },
     bash: {
@@ -109,9 +89,9 @@ git status`,
       output: `On branch feature/${topic.slug}
 nothing to commit, working tree clean`,
       walkthrough: [
-        "The branch name makes the task easy to understand in code review.",
-        "The commit message explains the change in plain English.",
-        "The final status check confirms the local repository is clean before pushing.",
+        `Branch name encodes the task (${topic.title}) so reviewers can find it.`,
+        "Commit message is plain English and complete on its own.",
+        "Status confirms a clean tree before pushing.",
       ],
     },
     json: {
@@ -121,21 +101,19 @@ nothing to commit, working tree clean`,
   "request": {
     "method": "GET",
     "path": "/api/${topic.slug}",
-    "headers": {
-      "Accept": "application/json"
-    }
+    "headers": { "Accept": "application/json" }
   },
   "response": {
     "status": 200,
-    "message": "${topic.title} works when the contract is clear."
+    "body": { "message": "${topic.title} works when the contract is clear." }
   }
 }`,
       output: `200 OK
-${topic.title} works when the contract is clear.`,
+{"message":"${topic.title} works when the contract is clear."}`,
       walkthrough: [
-        "The request block shows what the client sends.",
-        "The response block highlights the status and payload a backend usually returns.",
-        "A simple contract is easier to debug than a vague or inconsistent one.",
+        "Request shows what the client sends.",
+        "Response highlights status and a small JSON payload.",
+        "A clear contract is far easier to debug than an ambiguous one.",
       ],
     },
     sql: {
@@ -145,13 +123,13 @@ ${topic.title} works when the contract is clear.`,
 FROM Customers
 WHERE IsActive = 1
 ORDER BY CreatedAt DESC;`,
-      output: `Id | Name        | Status
-1  | Ada Lovelace | Active
-2  | Grace Hopper | Active`,
+      output: `Id   Name           Status
+1    Ada Lovelace   Active
+2    Grace Hopper   Active`,
       walkthrough: [
-        "The query selects only the columns the application needs.",
-        "The filter narrows the dataset so the result matches a real business rule.",
-        "The ordering makes the newest records easier to inspect during testing.",
+        "Selects only the columns the caller needs.",
+        "Filters to active rows so results match a business rule.",
+        "Orders by recency to make new records easy to spot.",
       ],
     },
     yaml: {
@@ -160,7 +138,7 @@ ORDER BY CreatedAt DESC;`,
       code: `steps:
   - name: Restore dependencies
     run: dotnet restore
-  - name: Build service
+  - name: Build
     run: dotnet build --configuration Release
   - name: Deploy
     run: echo "Deploying ${topic.title}"`,
@@ -168,24 +146,24 @@ ORDER BY CreatedAt DESC;`,
 Build succeeded
 Deploying ${topic.title}`,
       walkthrough: [
-        "The pipeline restores packages before compiling to avoid missing dependency errors.",
-        "The build step validates that the code compiles in the deployment environment.",
-        "The deploy step is kept simple here so the release flow stays easy to understand.",
+        "Restore runs first to fail fast on missing dependencies.",
+        "Build validates the project before any deploy step.",
+        "Deploy is intentionally minimal here for readability.",
       ],
     },
     plaintext: {
       title: `${topic.title} debugging note`,
       language,
-      code: `Error: ${topic.title} failed in CustomerApplicationService
-Cause: input value was missing
-Next step: reproduce the issue locally and inspect the stack trace`,
-      output: `1. Reproduce
+      code: `Symptom: ${topic.title} fails for some inputs but not others.
+Hypothesis: input validation is missing on one path.
+Next step: reproduce locally with the failing input, attach a debugger, inspect the call site.`,
+      output: `1. Reproduce locally
 2. Confirm the failing line
 3. Fix the cause, not only the symptom`,
       walkthrough: [
-        "A good troubleshooting note records what failed in clear words.",
-        "Naming the likely cause keeps the investigation focused.",
-        "A repeatable next step prevents random guessing during debugging.",
+        "A good debugging note names the symptom and a hypothesis.",
+        "Reproduction is the first step before any speculation.",
+        "Fix the cause; otherwise the symptom returns under a new name.",
       ],
     },
     typescript: {
@@ -199,22 +177,153 @@ app.get("/api/${topic.slug}", (_req, res) => {
   res.json({
     lesson: "${topic.title}",
     status: "mocked",
-    reason: "Use fake data while the real backend is still in progress.",
+    note: "Use predictable fakes while the real backend is in progress.",
   });
 });
 
 app.listen(4000);`,
       output: `GET /api/${topic.slug}
-200 {"lesson":"${topic.title}","status":"mocked","reason":"Use fake data while the real backend is still in progress."}`,
+200 {"lesson":"${topic.title}","status":"mocked","note":"Use predictable fakes while the real backend is in progress."}`,
       walkthrough: [
-        "The route returns predictable JSON, which makes frontend and testing work easier.",
-        "Mock responses help teams move forward before every dependency is ready.",
-        "A tiny server is enough to simulate many API behaviors for learning.",
+        "Predictable JSON makes downstream code easier to test.",
+        "A small server is enough to unblock teams waiting on the real one.",
+        "Mocks should mirror the eventual contract closely.",
       ],
     },
   };
 
   return examples[language];
+}
+
+function buildFallbackQuiz(
+  lessonId: string,
+  topic: TopicSeed,
+  moduleSeed: ModuleSeed,
+): QuizQuestion[] {
+  const lowerTitle = topic.title.toLowerCase();
+  const lowerModule = moduleSeed.title.toLowerCase();
+
+  return [
+    {
+      id: `${lessonId}-quiz-1`,
+      lessonId,
+      kind: "concept",
+      question: `Which statement best describes ${lowerTitle}?`,
+      options: [
+        "It is a stylistic preference with no real impact on the backend.",
+        `It gives ${lowerModule} a clearer, safer way to express intent and behaviour.`,
+        "It replaces unit tests, integration tests, and code review.",
+        "It only applies to client-side code.",
+      ],
+      correctAnswer: `It gives ${lowerModule} a clearer, safer way to express intent and behaviour.`,
+      explanation: `${topic.title} matters because it makes code easier to read, change, and trust in production backends.`,
+    },
+    {
+      id: `${lessonId}-quiz-2`,
+      lessonId,
+      kind: "code-reading",
+      question: `When you see ${lowerTitle} applied in a code review for a ${lowerModule} project, what is the first thing to verify?`,
+      options: [
+        "That the file count went up.",
+        "That the change actually reflects the rule on the production path, not just the example.",
+        "That comments were added even if they restate the code.",
+        "That every public class was renamed.",
+      ],
+      correctAnswer:
+        "That the change actually reflects the rule on the production path, not just the example.",
+      explanation:
+        "Surface-level edits often fake the intent. Confirm the rule applies where it has to.",
+    },
+    {
+      id: `${lessonId}-quiz-3`,
+      lessonId,
+      kind: "spot-the-bug",
+      question: `A teammate applies ${lowerTitle} but the test still fails. The most common cause is...`,
+      options: [
+        "The compiler is wrong.",
+        "An older code path bypasses the change and keeps the old behaviour.",
+        "The unit test framework is out of date.",
+        "${lowerTitle} is incompatible with the language.",
+      ],
+      correctAnswer:
+        "An older code path bypasses the change and keeps the old behaviour.",
+      explanation:
+        "Half-applied refactors are a frequent source of confusion. Run a search across the codebase to confirm the rule is consistent.",
+    },
+    {
+      id: `${lessonId}-quiz-4`,
+      lessonId,
+      kind: "interview",
+      question: `In an interview, what is the strongest one-sentence answer about ${lowerTitle}?`,
+      options: [
+        "Memorise the textbook definition word-for-word.",
+        "Connect the concept to a concrete backend outcome — fewer bugs, clearer reviews, safer changes — and reference where you applied it.",
+        "Recite all the alternatives without naming a preference.",
+        "Say it does not matter in modern .NET.",
+      ],
+      correctAnswer:
+        "Connect the concept to a concrete backend outcome — fewer bugs, clearer reviews, safer changes — and reference where you applied it.",
+      explanation:
+        "Interviewers grade on whether you can translate theory into the daily impact on a real codebase.",
+    },
+  ];
+}
+
+function buildFallbackContent(
+  moduleSeed: ModuleSeed,
+  topic: TopicSeed,
+  lessonId: string,
+): LessonContent {
+  const lower = topic.title.toLowerCase();
+  const moduleTitle = moduleSeed.title;
+  const scenario =
+    topic.scenario ??
+    "a small backend service where clear contracts, predictable behaviour, and readable logs all matter";
+
+  const fallback: LessonContent = {
+    whyItMatters: `${topic.title} matters because real backend work depends on small habits that compound. Get ${lower} right and code review, debugging, and onboarding all become noticeably easier.`,
+    simpleExplanation: `${topic.title} is a practical rule inside ${moduleTitle.toLowerCase()}: aim for clear intent, predictable behaviour, and a contract that a junior teammate could read out loud.`,
+    deepExplanation: `${topic.title} earns its place once a project has real users and real teammates. In a small demo you can get away with vague naming or skipping structure; in a real backend that habit produces hidden bugs and code only the original author understands. The deeper goal is to connect ${lower} to request flow, state changes, validation, and maintainability so the rule changes how you design and review code.`,
+    realWorldUsage: `In a real project, ${lower} shows up when you are working on ${scenario}. Teams rarely ask for theory; they ask for code another developer can debug next week, test next month, and extend next quarter.`,
+    explainLikeBeginner: `If you are explaining ${lower} for the first time, keep it concrete: name the rule, point at where it appears in code, and describe one problem it prevents. If the answer feels abstract, ground it in a single request, class, or query.`,
+    interviewAnswer: `${topic.title} is important because it helps backend teams keep behaviour predictable, maintainable, and easy to reason about. A strong answer ties the concept to validation, request flow, data safety, and teamwork — not just the textbook definition.`,
+    commonMistakes: [
+      `Using ${lower} by name without understanding how it changes the code flow.`,
+      "Skipping validation, naming, or structure because a tutorial example skipped them.",
+      "Copying patterns from another project without checking they fit the current requirement.",
+    ],
+    bestPractices: [
+      `State the goal of ${lower} in plain English before writing code.`,
+      "Keep the example small enough that every line has a clear reason to exist.",
+      "Show the expected output so the next reader can confirm the rule worked.",
+    ],
+    summary: [
+      `${topic.title} is easier to remember when connected to a real backend problem.`,
+      "Strong solutions make the rule visible in code and easy to explain out loud.",
+      "If you can describe the output and the common mistakes, you probably understand the topic.",
+    ],
+    codeExample: buildFallbackCodeExample(moduleSeed, topic, lessonId),
+    practice: {
+      prompt: `Build a small backend-focused example that demonstrates ${lower} inside a ${moduleTitle.toLowerCase()} scenario. Keep it tight enough to walk through line by line.`,
+      expectedResult:
+        "Another developer can read your example aloud, identify the rule, and confirm the output matches the intent.",
+      hints: [
+        "Pick a realistic noun (customers, orders, payments) so the example feels like production.",
+        "Limit the example to what proves the rule; resist adding 'nice to have' features.",
+        `Surface the output that makes ${lower} visible.`,
+      ],
+      solution: `A good answer is a focused example around ${lower} accompanied by the rule in plain English. The strongest solutions show the business rule, the code, and the output together so any reviewer can see why the design works.`,
+    },
+    quiz: buildFallbackQuiz(lessonId, topic, moduleSeed).map((q) => ({
+      kind: q.kind,
+      question: q.question,
+      options: [...q.options],
+      correctAnswer: q.correctAnswer,
+      explanation: q.explanation,
+    })),
+  };
+
+  return fallback;
 }
 
 function buildDiagram(moduleSeed: ModuleSeed, topic: TopicSeed) {
@@ -226,110 +335,57 @@ function buildDiagram(moduleSeed: ModuleSeed, topic: TopicSeed) {
     B --> F["Interview answer"]`;
 }
 
-function buildPracticeTask(lessonId: string, moduleSeed: ModuleSeed, topic: TopicSeed): PracticeTask {
+function buildPracticeTask(
+  lessonId: string,
+  content: LessonContent,
+): PracticeTask {
   return {
     id: `${lessonId}-practice`,
     lessonId,
-    title: `${topic.title} practice`,
-    prompt: `Build a tiny backend-focused example that demonstrates ${topic.title.toLowerCase()} inside a ${moduleSeed.title.toLowerCase()} scenario.`,
-    expectedResult:
-      "Your solution should be understandable by another junior developer, include validation or a clear workflow step, and produce a visible output.",
-    hints: [
-      `Start with one realistic business scenario such as customers, orders, authentication, or configuration.`,
-      "Keep the example small enough that you can explain every line.",
-      `Make sure the final result shows why ${topic.title.toLowerCase()} matters in real backend work.`,
-    ],
-    solution:
-      `One good answer is to create a focused example around ${topic.title.toLowerCase()} and then explain the rule in plain English. The strongest solutions show the business rule, the code, and the output together so another developer can immediately see why the design works.`,
+    title: "Practice",
+    prompt: content.practice.prompt,
+    expectedResult: content.practice.expectedResult,
+    hints: [...content.practice.hints],
+    solution: content.practice.solution,
   };
 }
 
-function buildQuiz(lessonId: string, topic: TopicSeed, moduleSeed: ModuleSeed): QuizQuestion[] {
-  return [
-    {
-      id: `${lessonId}-quiz-1`,
-      lessonId,
-      question: `Which statement best describes ${topic.title.toLowerCase()}?`,
-      options: [
-        "It is mostly about writing more code than necessary.",
-        "It gives backend code a clearer and safer way to express intent.",
-        "It replaces testing and debugging.",
-        "It only matters in frontend projects.",
-      ],
-      correctAnswer:
-        "It gives backend code a clearer and safer way to express intent.",
-      explanation:
-        `${topic.title} matters because it makes code easier to understand, change, and trust in real backend work.`,
-    },
-    {
-      id: `${lessonId}-quiz-2`,
-      lessonId,
-      question: `When applying ${topic.title.toLowerCase()} in ${moduleSeed.title.toLowerCase()}, what should you optimize for first?`,
-      options: [
-        "Clarity of the contract and correctness of the behavior",
-        "Making the file as long as possible",
-        "Using advanced syntax even when it hides the intent",
-        "Skipping validation to save time",
-      ],
-      correctAnswer: "Clarity of the contract and correctness of the behavior",
-      explanation:
-        "Junior-friendly backend code is easier to review and debug when the contract is obvious and the behavior is correct.",
-    },
-  ];
+function buildQuiz(lessonId: string, content: LessonContent): QuizQuestion[] {
+  return content.quiz.map((spec, index) => ({
+    id: `${lessonId}-quiz-${index + 1}`,
+    lessonId,
+    kind: spec.kind ?? QUIZ_KINDS_FALLBACK[index] ?? "concept",
+    question: spec.question,
+    options: [...spec.options],
+    correctAnswer: spec.correctAnswer,
+    explanation: spec.explanation,
+  }));
 }
 
-function buildWhyItMatters(moduleSeed: ModuleSeed, topic: TopicSeed) {
-  return `${topic.title} matters because backend developers work with moving parts: input, rules, data, logs, and other services. When you understand ${topic.title.toLowerCase()}, you stop memorizing magic steps and start seeing why a system behaves the way it does. That helps you debug faster, explain your code in code review, and make safer changes.`;
+function buildCodeExample(
+  content: LessonContent,
+  moduleSeed: ModuleSeed,
+  topic: TopicSeed,
+): CodeExample {
+  return {
+    title: content.codeExample.title,
+    language: content.codeExample.language ?? chooseLanguage(moduleSeed, topic),
+    code: content.codeExample.code,
+    output: content.codeExample.output,
+    walkthrough: [...content.codeExample.walkthrough],
+  };
 }
 
-function buildSimpleExplanation(moduleSeed: ModuleSeed, topic: TopicSeed) {
-  return `${topic.title} is a practical rule inside ${moduleSeed.title.toLowerCase()}. Think of it as a way to keep your code honest: the backend should do the right thing, expose the right information, and make the next step obvious for the developer reading it.`;
-}
-
-function buildDeepExplanation(moduleSeed: ModuleSeed, topic: TopicSeed) {
-  return `${topic.title} becomes important once a project has real users, real data, and real teammates. In a tiny demo, you can often get away with vague naming or skipping structure. In a real backend, that usually creates hidden bugs, inconsistent responses, or code that only the original author understands. A strong junior developer learns to connect the topic to request flow, state changes, validation, and maintainability. That is the deeper goal here: not only knowing the definition, but understanding how ${topic.title.toLowerCase()} changes the way you design and review code in ${moduleSeed.title.toLowerCase()}.`;
-}
-
-function buildRealWorldUsage(moduleSeed: ModuleSeed, topic: TopicSeed) {
-  const scenario =
-    topic.scenario ??
-    `a customer-facing service where the team needs predictable behavior, readable logs, and clear API contracts`;
-
-  return `In a real project, ${topic.title.toLowerCase()} shows up when you are working on ${scenario}. The team is rarely asking for theory alone. They need code that another developer can debug next week, test next month, and extend next quarter. That is why good backend developers connect ${topic.title.toLowerCase()} to concrete workflows instead of treating it like vocabulary practice.`;
-}
-
-function buildBeginnerExplanation(topic: TopicSeed) {
-  return `If you explain ${topic.title.toLowerCase()} to a beginner, keep it simple: what is the rule, where do you see it in code, and what problem does it prevent? If the answer feels abstract, bring it back to one request, one class, one query, or one command.`;
-}
-
-function buildMistakes(topic: TopicSeed) {
-  return [
-    `Using ${topic.title.toLowerCase()} by name without understanding how it changes the code flow.`,
-    "Skipping validation, naming, or structure because the example looked simple in a tutorial.",
-    "Copying patterns from another project without checking whether they fit the current requirement.",
-  ];
-}
-
-function buildBestPractices(topic: TopicSeed) {
-  return [
-    `State the goal of ${topic.title.toLowerCase()} in plain English before you write code.`,
-    "Keep the example small enough that every line has a reason to exist.",
-    "Show the expected output so the learner can confirm the idea worked.",
-  ];
-}
-
-function buildSummary(topic: TopicSeed) {
-  return [
-    `${topic.title} is easier to remember when you connect it to a real backend problem.`,
-    "The strongest solutions make the rule visible in code and easy to explain out loud.",
-    "If you can explain the output and the common mistakes, you probably understand the topic well.",
-  ];
-}
-
-function buildLesson(moduleSeed: ModuleSeed, topic: TopicSeed, moduleOrder: number, order: number): Lesson {
+function buildLesson(
+  moduleSeed: ModuleSeed,
+  topic: TopicSeed,
+  moduleOrder: number,
+  order: number,
+): Lesson {
   const id = toId(moduleSeed.id, topic.slug);
-  const codeExample = buildCodeExample(moduleSeed, topic, id);
-  const overrides = specialLessonIntros[topic.slug] ?? {};
+  const authored = getAuthoredLessonContent(moduleSeed.id, topic.slug);
+  const content: LessonContent =
+    authored ?? buildFallbackContent(moduleSeed, topic, id);
 
   return {
     id,
@@ -338,8 +394,7 @@ function buildLesson(moduleSeed: ModuleSeed, topic: TopicSeed, moduleOrder: numb
     moduleSlug: moduleSeed.slug,
     moduleTitle: moduleSeed.title,
     title: topic.title,
-    description:
-      `${topic.title} explained in simple English with backend examples, expected outputs, common mistakes, interview framing, and guided practice.`,
+    description: `${topic.title} explained for junior backend developers: plain-English intuition, runnable code, expected output, common mistakes, interview framing, and guided practice.`,
     duration: `${12 + ((order + moduleOrder) % 5) * 4} min`,
     difficulty: chooseDifficulty(moduleOrder, topic),
     order,
@@ -350,31 +405,26 @@ function buildLesson(moduleSeed: ModuleSeed, topic: TopicSeed, moduleOrder: numb
         topic.slug,
         topic.title.toLowerCase(),
         ...topic.keywords,
-        ...(overrides.tags ?? []),
       ]),
     ),
     outcomes: [
-      `Explain ${topic.title.toLowerCase()} in simple words.`,
-      `Recognize ${topic.title.toLowerCase()} in a backend codebase.`,
-      `Apply ${topic.title.toLowerCase()} in a small practical task.`,
+      `Explain ${topic.title.toLowerCase()} in simple words a junior teammate would understand.`,
+      `Recognise ${topic.title.toLowerCase()} in real backend code.`,
+      `Apply ${topic.title.toLowerCase()} in a small, focused practice task.`,
     ],
-    whyItMatters: buildWhyItMatters(moduleSeed, topic),
-    simpleExplanation:
-      overrides.simpleExplanation ?? buildSimpleExplanation(moduleSeed, topic),
-    deepExplanation:
-      overrides.deepExplanation ?? buildDeepExplanation(moduleSeed, topic),
-    realWorldUsage: buildRealWorldUsage(moduleSeed, topic),
-    explainLikeBeginner: buildBeginnerExplanation(topic),
-    interviewAnswer:
-      overrides.interviewAnswer ??
-      `${topic.title} is important because it helps backend teams keep behavior predictable, maintainable, and easier to reason about. A good answer ties the concept to validation, request flow, data safety, and teamwork instead of only repeating the textbook definition.`,
-    commonMistakes: buildMistakes(topic),
-    bestPractices: buildBestPractices(topic),
-    summary: buildSummary(topic),
+    whyItMatters: content.whyItMatters,
+    simpleExplanation: content.simpleExplanation,
+    deepExplanation: content.deepExplanation,
+    realWorldUsage: content.realWorldUsage,
+    explainLikeBeginner: content.explainLikeBeginner,
+    interviewAnswer: content.interviewAnswer,
+    commonMistakes: [...content.commonMistakes],
+    bestPractices: [...content.bestPractices],
+    summary: [...content.summary],
     diagram: buildDiagram(moduleSeed, topic),
-    codeExamples: [codeExample],
-    practiceTasks: [buildPracticeTask(id, moduleSeed, topic)],
-    quiz: buildQuiz(id, topic, moduleSeed),
+    codeExamples: [buildCodeExample(content, moduleSeed, topic)],
+    practiceTasks: [buildPracticeTask(id, content)],
+    quiz: buildQuiz(id, content),
   };
 }
 
@@ -386,58 +436,70 @@ export function buildCurriculum(): Curriculum {
   }
 
   const lessons: Lesson[] = [];
-  const modules: ModuleSummary[] = moduleSeeds.map((moduleSeed, moduleIndex) => {
-    const moduleOrder = moduleIndex + 1;
-    const moduleLessons = moduleSeed.lessons.map((topic, lessonIndex) => {
-      const lesson = buildLesson(moduleSeed, topic, moduleOrder, lessonIndex + 1);
-      lessons.push(lesson);
+  const modules: ModuleSummary[] = moduleSeeds.map(
+    (moduleSeed, moduleIndex) => {
+      const moduleOrder = moduleIndex + 1;
+      const moduleLessons = moduleSeed.lessons.map((topic, lessonIndex) => {
+        const lesson = buildLesson(moduleSeed, topic, moduleOrder, lessonIndex + 1);
+        lessons.push(lesson);
+
+        return {
+          id: lesson.id,
+          slug: lesson.slug,
+          title: lesson.title,
+          description: lesson.description,
+          duration: lesson.duration,
+          difficulty: lesson.difficulty,
+          order: lesson.order,
+        };
+      });
 
       return {
-        id: lesson.id,
-        slug: lesson.slug,
-        title: lesson.title,
-        description: lesson.description,
-        duration: lesson.duration,
-        difficulty: lesson.difficulty,
-        order: lesson.order,
+        id: moduleSeed.id,
+        slug: moduleSeed.slug,
+        title: moduleSeed.title,
+        description: moduleSeed.description,
+        order: moduleOrder,
+        expectedOutcomes: moduleSeed.expectedOutcomes,
+        lessonCount: moduleLessons.length,
+        lessons: moduleLessons,
       };
-    });
-
-    return {
-      id: moduleSeed.id,
-      slug: moduleSeed.slug,
-      title: moduleSeed.title,
-      description: moduleSeed.description,
-      order: moduleOrder,
-      expectedOutcomes: moduleSeed.expectedOutcomes,
-      lessonCount: moduleLessons.length,
-      lessons: moduleLessons,
-    };
-  });
+    },
+  );
 
   cachedCurriculum = { modules, lessons };
   return cachedCurriculum;
 }
 
 export function getModuleBySlug(moduleSlug: string) {
-  return buildCurriculum().modules.find((module) => module.slug === moduleSlug) ?? null;
+  return (
+    buildCurriculum().modules.find((module) => module.slug === moduleSlug) ??
+    null
+  );
 }
 
 export function getLessonsForModule(moduleSlug: string) {
-  return buildCurriculum().lessons.filter((lesson) => lesson.moduleSlug === moduleSlug);
+  return buildCurriculum().lessons.filter(
+    (lesson) => lesson.moduleSlug === moduleSlug,
+  );
 }
 
 export function getLessonBySlugs(moduleSlug: string, lessonSlug: string) {
   return (
     buildCurriculum().lessons.find(
-      (lesson) => lesson.moduleSlug === moduleSlug && lesson.slug === lessonSlug,
+      (lesson) =>
+        lesson.moduleSlug === moduleSlug && lesson.slug === lessonSlug,
     ) ?? null
   );
 }
 
 export function getNeighborLessons(moduleSlug: string, lessonSlug: string) {
-  const moduleLessons = getLessonsForModule(moduleSlug).sort((a, b) => a.order - b.order);
-  const currentIndex = moduleLessons.findIndex((lesson) => lesson.slug === lessonSlug);
+  const moduleLessons = getLessonsForModule(moduleSlug).sort(
+    (a, b) => a.order - b.order,
+  );
+  const currentIndex = moduleLessons.findIndex(
+    (lesson) => lesson.slug === lessonSlug,
+  );
 
   if (currentIndex === -1) {
     return { previous: null, next: null };
@@ -473,7 +535,6 @@ export function searchLessons(query: string) {
         if (haystack.includes(token)) {
           return total + 1;
         }
-
         return total;
       }, 0);
 
@@ -484,11 +545,9 @@ export function searchLessons(query: string) {
       if (b.score !== a.score) {
         return b.score - a.score;
       }
-
       if (a.lesson.moduleOrder !== b.lesson.moduleOrder) {
         return a.lesson.moduleOrder - b.lesson.moduleOrder;
       }
-
       return a.lesson.order - b.lesson.order;
     })
     .map((entry) => entry.lesson);

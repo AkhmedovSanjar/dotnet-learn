@@ -73,40 +73,40 @@ export default async function HomePage() {
         </div>
 
         <div className="grid-surface rounded-[40px] border border-[color:var(--border-color)] bg-white/95 p-6 shadow-[var(--shadow-soft)] dark:bg-slate-950/80">
-          <div className="rounded-[32px] bg-slate-950 p-6 text-white shadow-2xl">
+          <div className="rounded-[32px] border border-[#d7e6fb] bg-[linear-gradient(135deg,#ffffff_0%,#f4f9ff_65%,#ebf5ff_100%)] p-6 shadow-[0_24px_60px_rgba(47,128,237,0.12)]">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold tracking-[0.2em] text-sky-200 uppercase">
+                <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
                   Learning dashboard
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
                   Track real growth, not random reading
                 </h2>
               </div>
-              <div className="rounded-2xl bg-white/10 px-4 py-2 text-sm font-semibold">
+              <div className="rounded-2xl border border-[#d7e6fb] bg-white px-4 py-2 text-sm font-semibold text-slate-700">
                 {dashboard.completedLessons}/{dashboard.totalLessons}
               </div>
             </div>
 
-            <div className="mt-6 rounded-[28px] bg-white/8 p-5">
-              <div className="flex items-center justify-between text-sm text-slate-200">
+            <div className="mt-6 rounded-[28px] border border-[#d7e6fb] bg-white p-5">
+              <div className="flex items-center justify-between text-sm text-slate-700">
                 <span>Overall progress</span>
                 <span>{dashboard.overallProgress}%</span>
               </div>
-              <ProgressBar value={dashboard.overallProgress} className="mt-3 bg-white/10" />
+              <ProgressBar value={dashboard.overallProgress} className="mt-3" />
             </div>
 
             <div className="mt-6 grid gap-4">
               {curriculum.modules.slice(0, 3).map((module, index) => (
                 <div
                   key={module.id}
-                  className="rounded-[24px] border border-white/10 bg-white/6 p-4"
+                  className="rounded-[24px] border border-[#d7e6fb] bg-white/90 p-4"
                 >
-                  <p className="text-xs font-semibold tracking-[0.18em] text-slate-300 uppercase">
+                  <p className="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
                     Module {index + 1}
                   </p>
-                  <h3 className="mt-2 text-lg font-semibold">{module.title}</h3>
-                  <p className="mt-2 text-sm leading-7 text-slate-300">
+                  <h3 className="mt-2 text-lg font-semibold text-slate-950">{module.title}</h3>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">
                     {module.description}
                   </p>
                 </div>
