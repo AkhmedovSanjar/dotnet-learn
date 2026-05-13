@@ -86,6 +86,26 @@ export function buildDashboardState(
   };
 }
 
+export function buildLearningStats(
+  curriculum: Curriculum,
+  progress: ProgressRecord[],
+  now: Date = new Date(),
+) {
+  const dashboard = buildDashboardState(curriculum, progress);
+  const quizCounts = countQuizzesPassed(progress);
+
+  return {
+    lessonsCompleted: dashboard.completedLessons,
+    totalLessons: dashboard.totalLessons,
+    overallProgress: dashboard.overallProgress,
+    streakDays: computeStreakDays(progress, now),
+    practiceScore: computePracticeScore(progress),
+    quizzesPassed: quizCounts.passed,
+    quizzesAttempted: quizCounts.attempted,
+    totalQuizzes: curriculum.lessons.length,
+  };
+}
+
 function isoDateOnly(value: string | null | undefined): string | null {
   if (!value) return null;
   const parsed = Date.parse(value);

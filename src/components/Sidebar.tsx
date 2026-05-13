@@ -2,49 +2,73 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import {
   Award,
   Bookmark,
-  BookOpenText,
+  BookOpen,
   ChevronRight,
-  Code,
+  Code2,
+  FileText,
   GraduationCap,
-  House,
-  ListChecks,
+  Home,
+  Network,
   NotebookPen,
-  PencilRuler,
+  Shapes,
 } from "lucide-react";
 
 import type { Lesson, ModuleSummary } from "@/lessons/contracts";
 import { ProgressBar } from "@/components/ProgressBar";
 import { cn } from "@/shared/utils/cn";
 
-const quickLinks = [
-  { href: "/", label: "Home", icon: House },
+const navItems = [
+  { href: "/", label: "Home", icon: Home },
   { href: "/dashboard", label: "Dashboard", icon: GraduationCap },
-  { href: "/roadmap", label: "Roadmap", icon: BookOpenText },
-  { href: "/api-learning", label: "API Lab", icon: PencilRuler },
-  { href: "/debugging", label: "Debug Lab", icon: ListChecks },
-  { href: "/playground", label: "Code Lab", icon: Code },
+  { href: "/playground", label: "Code Playground", icon: Code2 },
   { href: "/achievements", label: "Achievements", icon: Award },
-  { href: "/git-playground", label: "Git Lab", icon: NotebookPen },
+  { href: "/notes", label: "Notes", icon: FileText },
   { href: "/bookmarks", label: "Bookmarks", icon: Bookmark },
 ];
+
+const moduleIcons = [BookOpen, Code2, Shapes, Network, NotebookPen];
+const sidebarScrollKey = "dotnetlearn-sidebar-scroll";
 
 export function Sidebar({
   modules,
   activeModuleSlug,
   activeLessonSlug,
   overallProgress,
+  completedLessons,
+  totalLessons,
   lessons,
 }: {
   modules: ModuleSummary[];
   activeModuleSlug?: string;
   activeLessonSlug?: string;
   overallProgress?: number;
+  completedLessons?: number;
+  totalLessons?: number;
   lessons?: Lesson[];
 }) {
   const pathname = usePathname();
+  const sidebarRef = useRef<HTMLElement | null>(null);
+  const visibleModules = modules;
+
+  useEffect(() => {
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+
+    const savedScrollTop = Number(window.localStorage.getItem(sidebarScrollKey) ?? "0");
+    if (Number.isFinite(savedScrollTop) && savedScrollTop > 0) {
+      sidebar.scrollTop = savedScrollTop;
+    }
+  }, []);
+
+  function saveSidebarScroll() {
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+    window.localStorage.setItem(sidebarScrollKey, String(sidebar.scrollTop));
+  }
 
   function isActiveLink(href: string) {
     if (href === "/") return pathname === "/";
@@ -52,95 +76,99 @@ export function Sidebar({
   }
 
   return (
-    <aside className="top-22 h-fit rounded-[28px] border border-[color:var(--border-color)] bg-white/95 p-4 shadow-[var(--shadow-soft)] dark:bg-slate-950/80 lg:sticky">
-      <div className="space-y-1">
-        {quickLinks.map((link) => {
-          const Icon = link.icon;
-          const active = isActiveLink(link.href);
+    <aside
+      ref={sidebarRef}
+      onScroll={saveSidebarScroll}
+      className="no-scrollbar sticky top-0 hidden h-screen w-[260px] shrink-0 overflow-y-auto border-r border-[color:var(--border-color)] bg-white px-3 py-4 lg:block"
+    >
+      <Link href="/" className="mb-5 flex items-center gap-3 px-1">
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#0f6bff,#2bb8df)] text-white shadow-[0_10px_20px_rgba(15,107,255,0.18)]">
+          <Shapes className="h-5 w-5" />
+        </span>
+        <span className="text-xl font-bold tracking-tight text-slate-950">
+          Dotnet<span className="text-[color:var(--accent)]">Learn</span>
+        </span>
+      </Link>
+
+      <nav className="space-y-1">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const active = isActiveLink(item.href);
           return (
             <Link
-              key={link.href}
-              href={link.href}
+              key={item.href}
+              href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-[18px] px-4 py-3 text-sm font-medium transition",
+                "flex h-9 items-center gap-3 rounded-lg px-3 text-sm font-semibold transition",
                 active
-                  ? "bg-[linear-gradient(135deg,var(--accent),#3d9eff)] text-white shadow-[0_12px_24px_rgba(47,128,237,0.22)]"
-                  : "text-slate-600 hover:bg-[var(--surface-muted)] hover:text-slate-900 dark:text-slate-200",
+                  ? "bg-[color:var(--accent)] text-white shadow-[0_10px_22px_rgba(15,107,255,0.22)]"
+                  : "text-slate-600 hover:bg-[#eef5ff] hover:text-[color:var(--accent)]",
               )}
             >
               <Icon className="h-4 w-4" />
-              <span>{link.label}</span>
+              <span>{item.label}</span>
             </Link>
           );
         })}
-      </div>
+      </nav>
 
-      <div className="mt-6 border-t border-[color:var(--border-color)] pt-6">
-        <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
+      <div className="mt-6">
+        <p className="px-3 text-xs font-bold tracking-[0.14em] text-slate-400 uppercase">
           Modules
         </p>
-          <h2 className="mt-3 max-w-[13rem] text-[1.45rem] leading-tight font-semibold tracking-tight text-slate-900 dark:text-white">
-          Structured path, less guesswork
-        </h2>
+        <div className="mt-3 space-y-1">
+          {visibleModules.map((module, index) => {
+            const isActive = module.slug === activeModuleSlug;
+            const Icon = moduleIcons[index % moduleIcons.length];
+            return (
+              <div key={module.id}>
+                <Link
+                  href={`/learn/${module.slug}`}
+                  className={cn(
+                    "flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition",
+                    isActive
+                      ? "bg-[#eaf3ff] text-[color:var(--accent)] ring-1 ring-inset ring-[#cfe1ff]"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-950",
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="min-w-0 flex-1 leading-5">{module.title}</span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                </Link>
+
+                {isActive && lessons?.length ? (
+                  <div className="mt-1 space-y-0.5 border-l border-[#d8e7fb] pl-4">
+                    {lessons.slice(0, 11).map((lesson) => (
+                      <Link
+                        key={lesson.id}
+                        href={`/learn/${lesson.moduleSlug}/${lesson.slug}`}
+                        className={cn(
+                          "block rounded-md px-3 py-1.5 text-sm leading-5 transition",
+                          lesson.slug === activeLessonSlug
+                            ? "bg-[color:var(--accent)] font-semibold text-white"
+                            : "text-slate-500 hover:bg-[#f5f9ff] hover:text-slate-950",
+                        )}
+                      >
+                        {lesson.title}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {typeof overallProgress === "number" ? (
-        <div className="mt-5 rounded-[24px] border border-[color:var(--border-color)] bg-[var(--surface-muted)] p-4 dark:bg-slate-900">
-          <div className="flex items-center justify-between text-sm font-semibold text-slate-700 dark:text-slate-200">
-            <span>Overall progress</span>
-            <span>{overallProgress}%</span>
-          </div>
-          <ProgressBar value={overallProgress} className="mt-3 h-2.5" />
+      <div className="mt-6 rounded-lg border border-[color:var(--border-color)] bg-white p-3 shadow-[var(--shadow-card)]">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-semibold text-slate-600">Overall Progress</span>
+          <span className="font-bold text-slate-900">{overallProgress ?? 0}%</span>
         </div>
-      ) : null}
-
-      <div className="mt-5 space-y-3">
-        {modules.map((module) => {
-          const isActive = module.slug === activeModuleSlug;
-          return (
-            <div
-              key={module.id}
-              className="rounded-[22px] border border-[color:var(--border-color)] bg-white p-3 dark:bg-slate-900/70"
-            >
-              <Link
-                href={`/learn/${module.slug}`}
-                className={cn(
-                  "flex items-center justify-between gap-3 rounded-[18px] px-3 py-3 text-sm font-semibold transition",
-                  isActive
-                    ? "bg-[var(--surface-muted)] text-slate-950 ring-1 ring-inset ring-[color:var(--border-color)] dark:bg-white dark:text-slate-950"
-                    : "text-slate-700 hover:bg-[var(--surface-muted)] dark:text-slate-100 dark:hover:bg-slate-950",
-                )}
-              >
-                <span>
-                  <span className="block">{module.title}</span>
-                  <span className="mt-1 block text-xs font-medium text-slate-400">
-                    {module.lessonCount} lessons • {module.pace}
-                  </span>
-                </span>
-                <ChevronRight className="h-4 w-4" />
-              </Link>
-
-              {isActive && lessons?.length ? (
-                <div className="mt-3 space-y-2">
-                  {lessons.map((lesson) => (
-                    <Link
-                      key={lesson.id}
-                      href={`/learn/${lesson.moduleSlug}/${lesson.slug}`}
-                      className={cn(
-                        "block rounded-2xl px-3 py-2.5 text-sm transition",
-                        lesson.slug === activeLessonSlug
-                          ? "bg-[#eaf3ff] font-semibold text-[#245da6] ring-1 ring-inset ring-[#cfe1ff] dark:bg-sky-500/10 dark:text-sky-100"
-                          : "text-slate-600 hover:bg-[var(--surface-muted)] dark:text-slate-300 dark:hover:bg-slate-950",
-                      )}
-                    >
-                      {lesson.title}
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
+        <ProgressBar value={overallProgress ?? 0} className="mt-4 h-2" />
+        <p className="mt-3 text-xs leading-5 text-slate-500">
+          {completedLessons ?? 0} / {totalLessons ?? modules.reduce((total, module) => total + module.lessonCount, 0)} lessons completed
+        </p>
       </div>
     </aside>
   );

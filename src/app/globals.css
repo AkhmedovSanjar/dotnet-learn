@@ -1,15 +1,17 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #132238;
-  --page-background: #f4f8fc;
+  --page-background: #f8fafc;
   --surface: #ffffff;
-  --surface-muted: #eef4fb;
+  --surface-muted: #f5f8fc;
   --border-color: rgba(15, 23, 42, 0.08);
-  --accent: #2f80ed;
+  --accent: #0f6bff;
   --accent-strong: #0ea5b7;
-  --shadow-soft: 0 20px 45px rgba(15, 23, 42, 0.07);
+  --shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.06);
   --shadow-card: 0 12px 28px rgba(15, 23, 42, 0.06);
 }
 
@@ -49,10 +51,7 @@ body {
 }
 
 main {
-  background:
-    radial-gradient(circle at top right, rgba(56, 189, 248, 0.14), transparent 22%),
-    radial-gradient(circle at top left, rgba(47, 128, 237, 0.1), transparent 18%),
-    linear-gradient(180deg, rgba(232, 245, 255, 0.9) 0, rgba(244, 248, 252, 0.72) 220px, rgba(255, 255, 255, 0.9) 520px);
+  background: var(--page-background);
 }
 
 a,
@@ -78,9 +77,9 @@ p {
 
 .grid-surface {
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
-  background-size: 28px 28px;
+    linear-gradient(rgba(15, 107, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 107, 255, 0.055) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 .surface-card {
@@ -112,7 +111,31 @@ p {
 
 .hero-grid {
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
-  background-size: 34px 34px;
+    linear-gradient(rgba(15, 107, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 107, 255, 0.055) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+.code-editor code {
+  counter-reset: line;
+}
+
+.code-editor .line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 2rem;
+  margin-right: 1rem;
+  color: rgba(148, 163, 184, 0.72);
+  text-align: right;
+  user-select: none;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

@@ -2,17 +2,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Rocket } from "lucide-react";
 
+import { BookmarkButton } from "@/components/BookmarkButton";
 import { CodeBlock } from "@/components/CodeBlock";
 import { CopyButton } from "@/components/CopyButton";
+import { Header } from "@/components/Header";
 import { LessonCompletionButton } from "@/components/LessonCompletionButton";
 import { LessonTabs } from "@/components/LessonTabs";
-import { MermaidDiagram } from "@/components/MermaidDiagram";
 import { OutputBlock } from "@/components/OutputBlock";
 import { PracticeTaskCard } from "@/components/PracticeTaskCard";
 import { Sidebar } from "@/components/Sidebar";
 import { buildCurriculum, getLessonBySlugs, getLessonsForModule, getNeighborLessons } from "@/modules/curriculum/catalog";
-import { buildDashboardState } from "@/progress/logic";
+import { buildLearningStats } from "@/progress/logic";
 import { listProgressForDefaultUser } from "@/progress/service";
+
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   return buildCurriculum().lessons.map((lesson) => ({
@@ -34,32 +37,36 @@ export default async function LessonPage({
   }
 
   const progress = await listProgressForDefaultUser();
-  const dashboard = buildDashboardState(buildCurriculum(), progress);
+  const stats = buildLearningStats(buildCurriculum(), progress);
   const moduleLessons = getLessonsForModule(moduleSlug);
   const neighbors = getNeighborLessons(moduleSlug, lessonSlug);
   const progressRecord = progress.find((entry) => entry.lessonId === lesson.id);
+  const lessonSectionProgress = progressRecord?.completed ? 6 : 3;
   const lessonContents = [
     "Why this matters",
     "Explain simply",
     "Deep explanation",
     "Real project usage",
     "Code example",
-    "Common mistakes",
-    "Best practices",
     "Summary",
   ];
 
   return (
-    <div className="mx-auto grid w-full max-w-[120rem] gap-6 px-4 py-8 sm:px-6 xl:grid-cols-[260px_minmax(0,1fr)] 2xl:grid-cols-[260px_minmax(0,1fr)_280px] xl:px-8">
+    <div className="flex min-h-screen bg-[var(--page-background)]">
       <Sidebar
         modules={buildCurriculum().modules}
         activeModuleSlug={moduleSlug}
         activeLessonSlug={lessonSlug}
         lessons={moduleLessons}
-        overallProgress={dashboard.overallProgress}
+        overallProgress={stats.overallProgress}
+        completedLessons={stats.lessonsCompleted}
+        totalLessons={stats.totalLessons}
       />
 
-      <div className="space-y-5">
+      <div className="min-w-0 flex-1">
+        <Header streakDays={stats.streakDays} />
+        <div className="grid gap-5 p-5 2xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="min-w-0 space-y-5">
         <section className="lesson-shell rounded-[28px] border border-[color:var(--border-color)] bg-white px-5 py-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/80 sm:px-6">
           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
             <Link href="/dashboard">Dashboard</Link>
@@ -77,9 +84,6 @@ export default async function LessonPage({
               <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
                 {lesson.title}
               </h1>
-              <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
-                {lesson.description}
-              </p>
             </div>
             <div className="flex flex-wrap items-start justify-end gap-3">
               <a
@@ -94,29 +98,14 @@ export default async function LessonPage({
               >
                 Interview answer
               </a>
-              <span className="rounded-full border border-[#d9e6fb] bg-[#eef5ff] px-4 py-2 text-sm font-semibold text-[#245da6]">
-                {lesson.difficulty}
-              </span>
-              <span className="rounded-full border border-[color:var(--border-color)] bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                {lesson.duration}
-              </span>
               <LessonCompletionButton
                 lessonId={lesson.id}
                 initialCompleted={Boolean(progressRecord?.completed)}
               />
+              <BookmarkButton lessonId={lesson.id} />
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {lesson.outcomes.map((outcome) => (
-              <div
-                key={outcome}
-                className="rounded-[20px] border border-[#d9e6fb] bg-white/90 p-4 text-sm leading-6 text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:bg-slate-900 dark:text-slate-300"
-              >
-                {outcome}
-              </div>
-            ))}
-          </div>
         </section>
 
         <section className="rounded-[24px] border border-[color:var(--border-color)] bg-white/95 p-5 shadow-[var(--shadow-soft)] 2xl:hidden dark:bg-slate-950/70">
@@ -130,7 +119,7 @@ export default async function LessonPage({
               </h2>
             </div>
             <span className="text-sm font-medium text-slate-400">
-              {Math.min(Math.round((lessonContents.length * (dashboard.overallProgress / 100)) + 1), lessonContents.length)}/{lessonContents.length}
+              {lessonSectionProgress}/{lessonContents.length}
             </span>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -168,7 +157,7 @@ export default async function LessonPage({
                           Explanation
                         </p>
                         <h2 className="mt-4 font-[family:var(--font-serif)] text-3xl leading-tight text-slate-950 dark:text-white sm:text-4xl">
-                          What is {lesson.title}?
+                          {lesson.title.toLowerCase().startsWith("what is") ? lesson.title : `What is ${lesson.title}?`}
                         </h2>
                         <p className="mt-5 text-base leading-8 text-slate-700 dark:text-slate-200">
                           {lesson.simpleExplanation}
@@ -223,9 +212,6 @@ export default async function LessonPage({
                     <p className="mt-4 text-base leading-8 text-slate-700 dark:text-slate-200">
                       {lesson.deepExplanation}
                     </p>
-                    <div className="mt-6">
-                      <MermaidDiagram chart={lesson.diagram ?? ""} />
-                    </div>
                   </section>
 
                   <section id="real-project-usage" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
@@ -237,29 +223,6 @@ export default async function LessonPage({
                     </p>
                   </section>
 
-                  <div className="grid gap-5 xl:grid-cols-2">
-                    <section id="common-mistakes" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:border-rose-500/20 dark:bg-rose-500/10">
-                      <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-rose-200">
-                        Common mistakes
-                      </p>
-                      <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-700 dark:text-rose-100">
-                        {lesson.commonMistakes.map((item) => (
-                          <li key={item}>• {item}</li>
-                        ))}
-                      </ul>
-                    </section>
-
-                    <section id="best-practices" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:border-emerald-500/20 dark:bg-emerald-500/10">
-                      <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-emerald-200">
-                        Best practices
-                      </p>
-                      <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-700 dark:text-emerald-100">
-                        {lesson.bestPractices.map((item) => (
-                          <li key={item}>• {item}</li>
-                        ))}
-                      </ul>
-                    </section>
-                  </div>
                 </div>
               ),
             },
@@ -391,7 +354,7 @@ export default async function LessonPage({
                 Lesson Contents
               </h2>
               <span className="text-sm font-medium text-slate-400">
-                {Math.min(Math.round((lessonContents.length * (dashboard.overallProgress / 100)) + 1), lessonContents.length)}/{lessonContents.length}
+                {lessonSectionProgress}/{lessonContents.length}
               </span>
             </div>
             <div className="mt-5 space-y-3">
@@ -443,16 +406,18 @@ export default async function LessonPage({
               <div className="h-2 rounded-full bg-white">
                 <div
                   className="h-full rounded-full bg-[linear-gradient(90deg,var(--accent),var(--accent-strong))]"
-                  style={{ width: `${dashboard.overallProgress}%` }}
+                  style={{ width: `${stats.overallProgress}%` }}
                 />
               </div>
               <p className="mt-2 text-right text-sm font-semibold text-slate-700">
-                {dashboard.overallProgress}%
+                {stats.overallProgress}%
               </p>
             </div>
           </section>
         </div>
       </aside>
+        </div>
+      </div>
     </div>
   );
 }

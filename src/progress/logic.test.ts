@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildDashboardState,
+  buildLearningStats,
   calculateCompletionPercentage,
   computePracticeScore,
   computeStreakDays,
@@ -83,5 +84,48 @@ describe("streak / practice / passed helpers", () => {
       { lessonId: "d", completed: false, quizScore: null },
     ]);
     expect(result).toEqual({ passed: 2, attempted: 3 });
+  });
+
+  it("builds display stats from real progress records", () => {
+    const curriculum = buildCurriculum();
+    const now = new Date(Date.UTC(2025, 4, 12, 10, 0, 0));
+    const yesterday = new Date(Date.UTC(2025, 4, 11, 10, 0, 0)).toISOString();
+    const today = now.toISOString();
+
+    const stats = buildLearningStats(
+      curriculum,
+      [
+        {
+          lessonId: "oop-what-is-oop",
+          completed: true,
+          quizScore: 100,
+          lastOpenedAt: yesterday,
+        },
+        {
+          lessonId: "oop-class-vs-object",
+          completed: true,
+          quizScore: 60,
+          lastOpenedAt: today,
+        },
+        {
+          lessonId: "oop-encapsulation",
+          completed: false,
+          quizScore: 80,
+          lastOpenedAt: today,
+        },
+      ],
+      now,
+    );
+
+    expect(stats.lessonsCompleted).toBe(2);
+    expect(stats.totalLessons).toBe(curriculum.lessons.length);
+    expect(stats.overallProgress).toBe(
+      calculateCompletionPercentage(2, curriculum.lessons.length),
+    );
+    expect(stats.streakDays).toBe(2);
+    expect(stats.practiceScore).toBe(80);
+    expect(stats.quizzesPassed).toBe(2);
+    expect(stats.quizzesAttempted).toBe(3);
+    expect(stats.totalQuizzes).toBe(curriculum.lessons.length);
   });
 });

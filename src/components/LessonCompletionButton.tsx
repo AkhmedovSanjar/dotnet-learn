@@ -7,9 +7,11 @@ import { useState } from "react";
 export function LessonCompletionButton({
   lessonId,
   initialCompleted,
+  compact = false,
 }: {
   lessonId: string;
   initialCompleted: boolean;
+  compact?: boolean;
 }) {
   const [completed, setCompleted] = useState(initialCompleted);
   const [saving, setSaving] = useState(false);
@@ -40,7 +42,15 @@ export function LessonCompletionButton({
       }}
     >
       <CheckCircle2 className="h-4 w-4" />
-      {saving ? "Saving..." : completed ? "Completed" : "Mark as completed"}
+      {saving
+        ? "Saving..."
+        : completed
+          ? compact
+            ? "Done"
+            : "Completed"
+          : compact
+            ? "Complete"
+            : "Mark as completed"}
     </button>
   );
 }

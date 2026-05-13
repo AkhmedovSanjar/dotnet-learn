@@ -5,7 +5,6 @@ import {
   Source_Serif_4,
 } from "next/font/google";
 
-import { Header } from "@/components/Header";
 import { Providers } from "@/app/providers";
 import { siteConfig } from "@/config/site";
 import "./globals.css";
@@ -46,10 +45,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-[var(--page-background)] text-[var(--foreground)]">
         <Providers>
-          <div className="relative min-h-screen">
-            <Header />
-            <main className="relative z-10 pb-16">{children}</main>
-          </div>
+          <main className="min-h-screen">{children}</main>
         </Providers>
       </body>
     </html>

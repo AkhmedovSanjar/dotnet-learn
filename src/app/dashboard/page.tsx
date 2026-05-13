@@ -24,6 +24,8 @@ export const metadata = {
   title: "Learning Dashboard",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -222,26 +224,10 @@ export default async function DashboardPage({
                 <h2 className="text-lg font-semibold tracking-tight text-slate-950 dark:text-white">
                 {module.title}
                 </h2>
-                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-inset ring-[color:var(--border-color)] dark:bg-slate-950">
-                  {module.category}
-                </span>
-                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-inset ring-[color:var(--border-color)] dark:bg-slate-950">
-                  {module.pace}
-                </span>
               </div>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {module.summary}
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {module.focusAreas.map((area) => (
-                  <span
-                    key={area}
-                    className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-inset ring-[color:var(--border-color)] dark:bg-slate-950"
-                  >
-                    {area}
-                  </span>
-                ))}
-              </div>
               <div className="mt-4 flex items-center justify-between text-sm font-semibold text-slate-700 dark:text-slate-200">
                 <span>
                   {module.completedLessons}/{module.lessonCount} lessons
