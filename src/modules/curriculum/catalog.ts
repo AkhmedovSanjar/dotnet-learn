@@ -28,7 +28,7 @@ function buildModuleSummary(moduleSeed: ModuleSeed) {
 }
 
 function buildModuleCategory(moduleSeed: ModuleSeed) {
-  return moduleSeed.category ?? "Backend foundations";
+  return moduleSeed.category ?? ".NET foundations";
 }
 
 function buildModulePace(moduleSeed: ModuleSeed) {
@@ -42,7 +42,7 @@ function buildModuleFocusAreas(moduleSeed: ModuleSeed) {
 function buildLessonDescription(moduleSeed: ModuleSeed, topic: TopicSeed) {
   const focusLabel = buildModuleFocusAreas(moduleSeed).slice(0, 2).join(" and ");
 
-  return `${topic.title} in ${moduleSeed.title}: clear intuition, realistic ${focusLabel.toLowerCase()} context, runnable examples, output, common mistakes, and guided practice.`;
+  return `${topic.title} in ${moduleSeed.title}: clear explanation, practical ${focusLabel.toLowerCase()} context, runnable examples, output, common mistakes, and guided practice.`;
 }
 
 function toId(moduleId: string, topicSlug: string) {
@@ -60,8 +60,8 @@ function chooseDifficulty(moduleOrder: number, topic: TopicSeed) {
   if (topic.difficulty) {
     return topic.difficulty;
   }
-  if (moduleOrder <= 5) return "Beginner";
-  if (moduleOrder <= 10) return "Junior";
+  if (moduleOrder <= 5) return "Foundational";
+  if (moduleOrder <= 10) return "Practical";
   return "Intermediate";
 }
 
@@ -97,13 +97,13 @@ function buildFallbackCodeExample(
     public string Explain()
     {
         _logger.LogInformation("Demonstrating ${topic.title} for ${lessonId}");
-        return "${topic.title} keeps backend code predictable and reviewable.";
+        return "${topic.title} keeps .NET code predictable and easy to read.";
     }
 }`,
-      output: `${topic.title} keeps backend code predictable and reviewable.`,
+      output: `${topic.title} keeps .NET code predictable and easy to read.`,
       walkthrough: [
-        `The service has one focused responsibility so the example for ${topic.title} stays easy to read.`,
-        "The logger shows how backend code records important actions for later debugging.",
+        `The service has one clear job so the example for ${topic.title} stays easy to read.`,
+        "The logger shows how a .NET service records important actions for later debugging.",
         "The return value represents the message you would surface to the caller.",
       ],
     },
@@ -205,13 +205,13 @@ app.get("/api/${topic.slug}", (_req, res) => {
   res.json({
     lesson: "${topic.title}",
     status: "mocked",
-    note: "Use predictable fakes while the real backend is in progress.",
+    note: "Use predictable fakes while the real service is in progress.",
   });
 });
 
 app.listen(4000);`,
       output: `GET /api/${topic.slug}
-200 {"lesson":"${topic.title}","status":"mocked","note":"Use predictable fakes while the real backend is in progress."}`,
+200 {"lesson":"${topic.title}","status":"mocked","note":"Use predictable fakes while the real service is in progress."}`,
       walkthrough: [
         "Predictable JSON makes downstream code easier to test.",
         "A small server is enough to unblock teams waiting on the real one.",
@@ -238,13 +238,13 @@ function buildFallbackQuiz(
       kind: "concept",
       question: `Which statement best describes ${lowerTitle}?`,
       options: [
-        "It is a stylistic preference with no real impact on the backend.",
+        "It is a stylistic preference with no real impact on the code.",
         `It gives ${lowerModule} a clearer, safer way to express intent and behaviour.`,
         "It replaces unit tests, integration tests, and code review.",
         "It only applies to client-side code.",
       ],
       correctAnswer: `It gives ${lowerModule} a clearer, safer way to express intent and behaviour.`,
-      explanation: `${topic.title} matters because it makes code easier to read, change, and trust in production backends.`,
+      explanation: `${topic.title} matters because it makes .NET code easier to read, change, and trust in production.`,
     },
     {
       id: `${lessonId}-quiz-2`,
@@ -285,12 +285,12 @@ function buildFallbackQuiz(
       question: `In an interview, what is the strongest one-sentence answer about ${lowerTitle}?`,
       options: [
         "Memorise the textbook definition word-for-word.",
-        "Connect the concept to a concrete backend outcome — fewer bugs, clearer reviews, safer changes — and reference where you applied it.",
+        "Connect the concept to a concrete .NET outcome — fewer bugs, clearer reviews, safer changes — and reference where you applied it.",
         "Recite all the alternatives without naming a preference.",
         "Say it does not matter in modern .NET.",
       ],
       correctAnswer:
-        "Connect the concept to a concrete backend outcome — fewer bugs, clearer reviews, safer changes — and reference where you applied it.",
+        "Connect the concept to a concrete .NET outcome — fewer bugs, clearer reviews, safer changes — and reference where you applied it.",
       explanation:
         "Interviewers grade on whether you can translate theory into the daily impact on a real codebase.",
     },
@@ -306,15 +306,15 @@ function buildFallbackContent(
   const moduleTitle = moduleSeed.title;
   const scenario =
     topic.scenario ??
-    "a small backend service where clear contracts, predictable behaviour, and readable logs all matter";
+    "a small .NET service where clear contracts, predictable behaviour, and readable logs all matter";
 
   const fallback: LessonContent = {
-    whyItMatters: `${topic.title} matters because real backend work depends on small habits that compound. Get ${lower} right and code review, debugging, and onboarding all become noticeably easier.`,
-    simpleExplanation: `${topic.title} is a practical rule inside ${moduleTitle.toLowerCase()}: aim for clear intent, predictable behaviour, and a contract that a junior teammate could read out loud.`,
-    deepExplanation: `${topic.title} earns its place once a project has real users and real teammates. In a small demo you can get away with vague naming or skipping structure; in a real backend that habit produces hidden bugs and code only the original author understands. The deeper goal is to connect ${lower} to request flow, state changes, validation, and maintainability so the rule changes how you design and review code.`,
+    whyItMatters: `${topic.title} matters because real .NET work depends on small habits that compound. Get ${lower} right and code review, debugging, and onboarding all become noticeably easier.`,
+    simpleExplanation: `${topic.title} is a practical rule inside ${moduleTitle.toLowerCase()}: aim for clear intent, predictable behaviour, and a contract that any .NET developer can read out loud.`,
+    deepExplanation: `${topic.title} earns its place once a project has real users and real teammates. In a small demo you can get away with vague naming or skipping structure; in a real .NET application that habit produces hidden bugs and code only the original author understands. The deeper goal is to connect ${lower} to request flow, state changes, validation, and maintainability so the rule changes how you design and review code.`,
     realWorldUsage: `In a real project, ${lower} shows up when you are working on ${scenario}. Teams rarely ask for theory; they ask for code another developer can debug next week, test next month, and extend next quarter.`,
-    explainLikeBeginner: `If you are explaining ${lower} for the first time, keep it concrete: name the rule, point at where it appears in code, and describe one problem it prevents. If the answer feels abstract, ground it in a single request, class, or query.`,
-    interviewAnswer: `${topic.title} is important because it helps backend teams keep behaviour predictable, maintainable, and easy to reason about. A strong answer ties the concept to validation, request flow, data safety, and teamwork — not just the textbook definition.`,
+    explainLikeBeginner: `When you explain ${lower} for the first time, keep it concrete: name the rule, point at where it appears in code, and describe one problem it prevents. If the answer feels abstract, ground it in a single request, class, or query.`,
+    interviewAnswer: `${topic.title} is important because it helps .NET teams keep behaviour predictable, maintainable, and easy to reason about. A strong answer ties the concept to validation, request flow, data safety, and teamwork — not just the textbook definition.`,
     commonMistakes: [
       `Using ${lower} by name without understanding how it changes the code flow.`,
       "Skipping validation, naming, or structure because a tutorial example skipped them.",
@@ -326,13 +326,13 @@ function buildFallbackContent(
       "Show the expected output so the next reader can confirm the rule worked.",
     ],
     summary: [
-      `${topic.title} is easier to remember when connected to a real backend problem.`,
+      `${topic.title} is easier to remember when connected to a real .NET problem.`,
       "Strong solutions make the rule visible in code and easy to explain out loud.",
       "If you can describe the output and the common mistakes, you probably understand the topic.",
     ],
     codeExample: buildFallbackCodeExample(moduleSeed, topic, lessonId),
     practice: {
-      prompt: `Build a small backend-focused example that demonstrates ${lower} inside a ${moduleTitle.toLowerCase()} scenario. Keep it tight enough to walk through line by line.`,
+      prompt: `Build a small .NET example that demonstrates ${lower} inside a ${moduleTitle.toLowerCase()} scenario. Keep it tight enough to walk through line by line.`,
       expectedResult:
         "Another developer can read your example aloud, identify the rule, and confirm the output matches the intent.",
       hints: [
@@ -358,7 +358,7 @@ function buildDiagram(moduleSeed: ModuleSeed, topic: TopicSeed) {
   return `flowchart LR
     A["${moduleSeed.title}"] --> B["${topic.title}"]
     B --> C["Simple rule"]
-    B --> D["Backend example"]
+    B --> D[".NET example"]
     B --> E["Common mistakes"]
     B --> F["Interview answer"]`;
 }
@@ -436,8 +436,8 @@ function buildLesson(
       ]),
     ),
     outcomes: [
-      `Explain ${topic.title.toLowerCase()} in simple words a junior teammate would understand.`,
-      `Recognise ${topic.title.toLowerCase()} in real backend code.`,
+      `Explain ${topic.title.toLowerCase()} in simple words any .NET developer would understand.`,
+      `Recognise ${topic.title.toLowerCase()} in real .NET code.`,
       `Apply ${topic.title.toLowerCase()} in a small, focused practice task.`,
     ],
     whyItMatters: content.whyItMatters,

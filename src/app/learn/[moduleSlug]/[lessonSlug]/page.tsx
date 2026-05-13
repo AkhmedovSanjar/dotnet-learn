@@ -233,7 +233,7 @@ export default async function LessonPage({
                 <div className="space-y-5">
                   <CodeBlock
                     example={lesson.codeExamples[0]}
-                    caption="Realistic example with a clear backend-friendly explanation."
+                    caption="Practical example with a clear explanation for .NET developers."
                   />
                   <section id="code-example" className="rounded-[24px] border border-[color:var(--border-color)] bg-white p-5 shadow-[var(--shadow-soft)] dark:bg-slate-950/70">
                     <p className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">

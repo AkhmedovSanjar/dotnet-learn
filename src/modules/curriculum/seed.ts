@@ -29,14 +29,14 @@ export const moduleSeeds: ModuleSeed[] = [
     slug: "object-oriented-programming",
     title: "Object-Oriented Programming",
     description:
-      "Build the thinking model behind classes, objects, clean object state, and reusable backend design.",
+      "Build the thinking model behind classes, objects, clean object state, and reusable design in .NET.",
     summary:
-      "Start with the mental model every .NET backend relies on: safe state, clear behavior, and readable objects.",
+      "Start with the mental model every .NET application relies on: safe state, clear behavior, and readable objects.",
     category: "Core foundations",
     pace: "1 week",
     focusAreas: ["Classes", "Encapsulation", "Interfaces"],
     expectedOutcomes: [
-      "Understand the four core OOP principles in practical backend code.",
+      "Understand the four core OOP principles in practical .NET code.",
       "Model simple domain objects in C# with safe state changes.",
       "Explain how OOP helps service, entity, and DTO design.",
     ],
@@ -52,7 +52,7 @@ export const moduleSeeds: ModuleSeed[] = [
       { slug: "constructor", title: "Constructor", keywords: ["initialization", "dependencies"] },
       { slug: "access-modifiers", title: "Access Modifiers", keywords: ["public", "private", "internal"] },
       { slug: "simple-oop-coding-tasks", title: "Simple OOP Coding Tasks", keywords: ["practice", "oop tasks"] },
-      { slug: "oop-in-real-backend-projects", title: "How OOP Is Used in Real Backend Projects", keywords: ["service layer", "entities", "real project"] },
+      { slug: "oop-in-real-backend-projects", title: "How OOP Is Used in Real .NET Projects", keywords: ["service layer", "entities", "real project"] },
     ],
   },
   {
@@ -60,7 +60,7 @@ export const moduleSeeds: ModuleSeed[] = [
     slug: "git-basics",
     title: "Git Basics",
     description:
-      "Learn the daily Git workflow junior backend developers need for branches, reviews, fixes, and safe collaboration.",
+      "Learn the daily Git workflow .NET developers need for branches, reviews, fixes, and safe collaboration.",
     summary:
       "Cover the Git workflow you use every day: commit cleanly, recover mistakes, and collaborate without panic.",
     category: "Team workflow",
@@ -116,7 +116,7 @@ export const moduleSeeds: ModuleSeed[] = [
       { slug: "explore-new-documentation", title: "How to Explore New Documentation", keywords: ["docs", "overview", "navigation"] },
       { slug: "identify-installation-steps", title: "How to Identify Installation Steps", keywords: ["install", "prerequisites"] },
       { slug: "find-basic-examples", title: "How to Find Basic Examples", keywords: ["examples", "quickstart"] },
-      { slug: "test-a-new-backend-framework", title: "How to Test a New Backend Framework", keywords: ["experiment", "local test"] },
+      { slug: "test-a-new-backend-framework", title: "How to Test a New .NET Framework", keywords: ["experiment", "local test"] },
       { slug: "read-api-docs", title: "How to Read API Docs", keywords: ["api docs", "request", "response"] },
       { slug: "create-notes-from-documentation", title: "How to Create Notes from Documentation", keywords: ["notes", "learning loop"] },
     ],
@@ -126,10 +126,10 @@ export const moduleSeeds: ModuleSeed[] = [
     slug: "api-requests",
     title: "API Requests",
     description:
-      "Understand HTTP communication so you can call, inspect, and debug backend APIs with confidence.",
+      "Understand HTTP communication so you can call, inspect, and debug APIs with confidence.",
     summary:
       "Build strong HTTP intuition with requests, responses, parameters, status codes, and real testing tools.",
-    category: "Backend communication",
+    category: "Service communication",
     pace: "1 week",
     focusAreas: ["HTTP", "JSON", "Postman"],
     expectedOutcomes: [
@@ -157,7 +157,7 @@ export const moduleSeeds: ModuleSeed[] = [
     slug: "dtos-and-api-implementation",
     title: "DTOs and API Implementation",
     description:
-      "Learn how clean request and response shapes protect your API and keep your backend maintainable.",
+      "Learn how clean request and response shapes protect your API and keep your .NET application maintainable.",
     summary:
       "Understand how DTOs keep contracts safe, validation clear, and controller code easier to evolve.",
     category: "API design",
@@ -185,14 +185,14 @@ export const moduleSeeds: ModuleSeed[] = [
     slug: "api-simulation-and-mocking",
     title: "API Simulation and Mocking",
     description:
-      "Practice backend workflows even when the real service is missing, unstable, or not ready yet.",
+      "Practice service workflows even when the real API is missing, unstable, or not ready yet.",
     summary:
       "Keep moving when the real service is unavailable by creating mock endpoints, fake payloads, and stable test data.",
     category: "Testing workflow",
     pace: "3-4 days",
     focusAreas: ["Mocks", "Fake payloads", "Client testing"],
     expectedOutcomes: [
-      "Explain why mocking helps backend development.",
+      "Explain why mocking helps .NET development.",
       "Create simple fake endpoints and response payloads.",
       "Test client or service behavior with predictable data.",
     ],
@@ -209,7 +209,7 @@ export const moduleSeeds: ModuleSeed[] = [
   {
     id: "local-debugging",
     slug: "local-backend-service-setup-and-debugging",
-    title: "Local Backend Service Setup and Debugging",
+    title: "Local .NET Service Setup and Debugging",
     description:
       "Run .NET services locally, wire config safely, and debug step by step without panic.",
     summary:
@@ -218,13 +218,13 @@ export const moduleSeeds: ModuleSeed[] = [
     pace: "1 week",
     focusAreas: ["Local setup", "Breakpoints", "Stack traces"],
     expectedOutcomes: [
-      "Run a local backend with the right environment settings.",
+      "Run a local .NET service with the right environment settings.",
       "Use breakpoints and stack traces effectively.",
       "Diagnose common local service problems.",
     ],
     defaultLanguage: "csharp",
     lessons: [
-      { slug: "run-backend-service-locally", title: "How to Run Backend Service Locally", keywords: ["dotnet run", "local service"] },
+      { slug: "run-backend-service-locally", title: "How to Run a .NET Service Locally", keywords: ["dotnet run", "local service"] },
       { slug: "environment-variables", title: "Environment Variables", keywords: ["env vars", "configuration"] },
       { slug: "appsettings-json", title: "appsettings.json", keywords: ["appsettings", "config file"] },
       { slug: "debugging-in-ides", title: "Debugging in Visual Studio / Rider / VS Code", keywords: ["visual studio", "rider", "vscode"] },
@@ -240,7 +240,7 @@ export const moduleSeeds: ModuleSeed[] = [
     slug: "framework-basics",
     title: "Framework Basics",
     description:
-      "See how a .NET backend is assembled from controllers, services, DI, config, and middleware.",
+      "See how a .NET application is assembled from controllers, services, DI, config, and middleware.",
     summary:
       "Understand the moving parts of a .NET API so controllers, services, DI, and middleware feel connected instead of random.",
     category: ".NET architecture",
@@ -276,7 +276,7 @@ export const moduleSeeds: ModuleSeed[] = [
     focusAreas: ["SQL", "Keys", "EF Core"],
     expectedOutcomes: [
       "Understand core relational database concepts.",
-      "Read and write beginner SQL queries.",
+      "Read and write basic SQL queries.",
       "Explain how EF Core and repositories work with your database.",
     ],
     defaultLanguage: "sql",
@@ -301,14 +301,14 @@ export const moduleSeeds: ModuleSeed[] = [
     slug: "design-patterns-and-principles",
     title: "Design Patterns and Principles",
     description:
-      "Use simple patterns and maintainability rules to keep backend code readable as it grows.",
+      "Use simple patterns and maintainability rules to keep .NET code readable as it grows.",
     summary:
       "Learn a few high-value design rules that reduce tangles and make service code easier to read, test, and change.",
     category: "Code quality",
     pace: "4-5 days",
     focusAreas: ["Repository", "Separation of concerns", "Clean code"],
     expectedOutcomes: [
-      "Recognize common patterns used in backend services.",
+      "Recognize common patterns used in .NET services.",
       "Apply separation of concerns to avoid tangled code.",
       "Explain why maintainability matters to a team.",
     ],
@@ -337,7 +337,7 @@ export const moduleSeeds: ModuleSeed[] = [
     expectedOutcomes: [
       "Describe what makes an API RESTful.",
       "Design cleaner endpoints and validation flows.",
-      "Test REST APIs using familiar backend tools.",
+      "Test REST APIs using familiar .NET tools.",
     ],
     defaultLanguage: "json",
     lessons: [
@@ -394,7 +394,7 @@ export const moduleSeeds: ModuleSeed[] = [
     expectedOutcomes: [
       "Explain staging, builds, and deployment checklists.",
       "Understand environment-specific configuration.",
-      "Avoid common release mistakes as a junior developer.",
+      "Avoid common release mistakes during deployment.",
     ],
     defaultLanguage: "yaml",
     lessons: [
@@ -410,18 +410,18 @@ export const moduleSeeds: ModuleSeed[] = [
   {
     id: "best-practices",
     slug: "backend-best-practices",
-    title: "Backend Best Practices",
+    title: ".NET Best Practices",
     description:
-      "Adopt habits that keep your backend easier to debug, extend, and explain to teammates.",
+      "Adopt habits that keep your .NET code easier to debug, extend, and explain to teammates.",
     summary:
-      "Tie together naming, logging, validation, and structure so your backend code stays calm under pressure.",
+      "Tie together naming, logging, validation, and structure so your .NET code stays calm under pressure.",
     category: "Professional habits",
     pace: "4-5 days",
     focusAreas: ["Naming", "Logging", "Validation"],
     expectedOutcomes: [
       "Apply naming, validation, logging, and organization patterns consistently.",
       "Write service methods that are easier to read and test.",
-      "Recognize beginner mistakes before they grow.",
+      "Recognize common mistakes before they grow.",
     ],
     defaultLanguage: "csharp",
     lessons: [

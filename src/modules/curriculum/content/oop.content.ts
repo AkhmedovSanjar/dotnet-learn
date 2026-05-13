@@ -3,193 +3,192 @@ import type { ModuleContent } from "./types";
 export const oopContent = {
   "what-is-oop": {
     whyItMatters:
-      "Most backend codebases you will join are built around classes and interfaces. If you cannot read them, you cannot navigate the project — let alone change it safely.",
+      "OOP matters because it helps us write code that is easier to understand, change, test, and reuse. Without OOP, code can become messy very quickly. Picture an ERP system with Users, Orders, Invoices, Payments, Products, Reports, Permissions, and Notifications. If everything is written in one big file or one big function, the project becomes hard to maintain. OOP helps split the system into smaller meaningful parts where each part has a clear job.",
     simpleExplanation:
-      "OOP is a way of organising code around things (objects) instead of long lists of steps. Each object holds its own data and exposes the actions you can perform on it.",
+      "Object-Oriented Programming, or OOP, is a way of writing code by thinking in terms of objects. An object represents something from the real world or from your application — for example User, Student, Order, Product, or Invoice. Each object has its own data and its own behavior.",
     deepExplanation:
-      "Procedural code answers 'what steps run, in what order'. OOP answers 'who owns this state, who is allowed to change it'. In a .NET service this shows up as: an `Order` class owns its line items, a `PaymentService` owns the rule for charging, an `IEmailSender` is a contract that anyone can implement. The four pillars — encapsulation, inheritance, polymorphism, abstraction — are tools for keeping that ownership clean. Once you internalise that lens, opening a new repo stops feeling random.",
+      "OOP is built on four main ideas. Encapsulation means keeping data safe inside an object. Inheritance means one class can reuse the features of another. Polymorphism means the same method can behave differently for different objects. Abstraction means hiding details and showing only what is important. When you put these four ideas together, you can model almost any real business problem in a clean way. In .NET, every entity, service, and controller is built using these ideas.",
     realWorldUsage:
-      "In a checkout API, the controller receives a request, hands it to an `OrderService`, which mutates `Order` objects and persists them via an `IOrderRepository`. Each class has one job, and you can swap the repository for an in-memory fake in a test without touching the service.",
+      "In a .NET application, OOP is everywhere. Entities like User, Order, and Product represent database records. Services like OrderService and PaymentService contain business logic. DTOs like OrderDto carry data between layers. Controllers handle API requests and return responses. Each of these is a class with its own data and its own behavior.",
     explainLikeBeginner:
-      "Think of OOP as boxes with labels. Each box (object) carries its own things and knows how to use them. You ask the box to do something instead of reaching inside and rearranging it yourself.",
+      "Think of OOP as a way to build software using small boxes. Each box has its own information and its own actions. You ask the box to do something instead of doing it yourself. A User box knows its name and email. An Order box knows its items and how to confirm itself. This is much easier to manage than one big pile of code.",
     interviewAnswer:
-      "OOP is a paradigm where state and the operations on that state live together in objects. In .NET we use it to model domain concepts — orders, customers, payments — as classes with clear contracts so that business rules and persistence concerns stay separate.",
+      "Object-Oriented Programming is a way of designing software using objects. Each object has data and behavior. OOP is based on four ideas: encapsulation, inheritance, polymorphism, and abstraction. .NET applications use OOP to organize code into clean, reusable parts like entities, services, and controllers.",
     commonMistakes: [
-      "Treating classes as buckets of static helpers — losing the whole point of state ownership.",
-      "Putting every piece of logic in the controller and leaving 'model' classes that hold only public fields.",
-      "Adding inheritance for code reuse when a small interface or composition would have been clearer.",
+      "Putting too much logic in one big class so it becomes hard to read.",
+      "Creating classes that do not represent anything meaningful in the system.",
+      "Mixing data access, business logic, and presentation in the same class.",
     ],
     bestPractices: [
-      "Name classes after the noun in the domain, not after the technical layer (`Order`, not `OrderHandlerHelperUtil`).",
-      "Keep public surface small: prefer methods that describe intent (`order.Cancel()`) over setters (`order.Status = ...`).",
-      "Pass dependencies in through the constructor so each class is testable in isolation.",
+      "Name classes after the real thing they represent, such as Order, Customer, or Invoice.",
+      "Keep each class focused on one clear job.",
+      "Use dependency injection to give a class the things it needs from outside.",
     ],
     summary: [
-      "OOP groups data and behaviour into objects with clear contracts.",
-      "The four pillars are encapsulation, inheritance, polymorphism, abstraction.",
-      "Good .NET backends use OOP to separate domain rules from infrastructure.",
+      "OOP groups data and behavior into objects with clear contracts.",
+      "The four main ideas are encapsulation, inheritance, polymorphism, and abstraction.",
+      ".NET applications are built with OOP to separate domain rules from infrastructure.",
     ],
     codeExample: {
-      title: "Tiny Order class owning its own state",
-      code: `public sealed class Order
+      title: "A small Invoice class with data and behavior",
+      code: `public class Invoice
 {
-    public Guid Id { get; }
-    public string Status { get; private set; } = "Pending";
-    private readonly List<OrderLine> _lines = new();
+    public int Id { get; set; }
+    public decimal Amount { get; set; }
+    public bool IsPaid { get; private set; }
 
-    public Order(Guid id) => Id = id;
-
-    public void AddLine(string sku, int quantity)
+    public void MarkAsPaid()
     {
-        if (quantity <= 0) throw new ArgumentException("Quantity must be positive.");
-        _lines.Add(new OrderLine(sku, quantity));
+        IsPaid = true;
+        Console.WriteLine($"Invoice {Id} is paid");
     }
-
-    public void Confirm()
-    {
-        if (_lines.Count == 0) throw new InvalidOperationException("Empty order.");
-        Status = "Confirmed";
-    }
-}
-
-public record OrderLine(string Sku, int Quantity);`,
-      output: "Order id 8f3...   Status: Confirmed   Lines: 2",
+}`,
+      output: "Invoice 1 is paid",
       walkthrough: [
-        "`Order` owns its lines via a private list — outside code cannot mutate them directly.",
-        "Public methods (`AddLine`, `Confirm`) encode the rules: positive quantity, non-empty order.",
-        "Status changes are visible from outside but only writable from inside the class.",
+        "Invoice is an object in the system. It has Id and Amount as data.",
+        "MarkAsPaid is the behavior. It changes IsPaid and prints a message.",
+        "All invoice logic lives in one clear place, which makes the code easy to read.",
       ],
     },
     practice: {
       prompt:
-        "Create a `Customer` class with `Name` and `Email`. Expose a method `ChangeEmail(string newEmail)` that validates the value contains '@' before assigning. Outside code should not be able to set the email directly.",
+        "Create a Customer class with Name and Email properties. Add a method ChangeEmail(string newEmail) that checks the email contains '@' before saving it. Outside code should not be able to change Email directly.",
       expectedResult:
-        "Calling `customer.ChangeEmail(\"a@b.com\")` updates the value; calling it with `\"bad\"` throws.",
+        "Calling customer.ChangeEmail(\"a@b.com\") updates the value. Calling it with \"bad\" throws an ArgumentException.",
       hints: [
-        "Make the `Email` setter `private`.",
-        "Throw `ArgumentException` on invalid input — let the caller decide how to respond.",
-        "Cover the happy path and the invalid path in a small test.",
+        "Use a private setter for Email so only the class itself can change it.",
+        "Throw ArgumentException when the input is invalid.",
+        "Write one small test for the happy path and one for the invalid path.",
       ],
       solution:
-        "Declare `public string Email { get; private set; }`. In `ChangeEmail` guard with `if (!newEmail.Contains('@')) throw new ArgumentException(...);` then assign. Tests: `ChangeEmail_With_Valid_Updates` and `ChangeEmail_With_Invalid_Throws`.",
+        "Declare public string Email { get; private set; }. In ChangeEmail, check if the value contains '@'. If not, throw ArgumentException. If yes, assign it.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Which sentence best captures what OOP gives you in a .NET backend?",
+        question: "Which sentence best describes OOP in a .NET application?",
         options: [
           "A faster way to write SQL queries.",
-          "A way to keep state and the rules that change it together in one place.",
+          "A way to organize code into objects that hold both data and behavior.",
           "A guarantee that your code will be free of bugs.",
           "A replacement for unit testing.",
         ],
-        correctAnswer: "A way to keep state and the rules that change it together in one place.",
+        correctAnswer:
+          "A way to organize code into objects that hold both data and behavior.",
         explanation:
-          "OOP is about co-locating data with the behaviour that owns it. It does not replace tests, and it has nothing directly to do with SQL.",
+          "OOP is about putting related data and the behavior that uses it together inside one object. It does not replace tests, and it has nothing directly to do with SQL.",
       },
       {
         kind: "code-reading",
         question:
-          "Given the snippet:\n```csharp\nvar order = new Order(Guid.NewGuid());\norder.AddLine(\"SKU-1\", 2);\norder.Confirm();\n```\nWhat is the state of `order.Status` after the third line?",
-        options: ["\"Pending\"", "\"Cancelled\"", "\"Confirmed\"", "null"],
-        correctAnswer: "\"Confirmed\"",
+          "Given the snippet:\n```csharp\nvar invoice = new Invoice { Id = 1, Amount = 99 };\ninvoice.MarkAsPaid();\n```\nWhat is the value of `invoice.IsPaid` after the second line?",
+        options: ["true", "false", "null", "0"],
+        correctAnswer: "true",
         explanation:
-          "`Confirm()` flips the status from its initial value `\"Pending\"` to `\"Confirmed\"` once the order has at least one line.",
+          "MarkAsPaid sets IsPaid to true. The property is read-only from outside, so calling the method is the only way to change it.",
       },
       {
         kind: "spot-the-bug",
         question:
           "What is wrong with this design?\n```csharp\npublic class Order\n{\n    public string Status;\n    public List<OrderLine> Lines = new();\n}\n```",
         options: [
-          "Nothing — it is fine for a domain object.",
-          "It exposes mutable fields with no validation, so any caller can put the order in an invalid state.",
-          "It should inherit from `object` explicitly.",
-          "The list needs to be `IEnumerable` to compile.",
+          "Nothing — it is fine.",
+          "It exposes mutable public fields, so any caller can put the order into an invalid state without validation.",
+          "It should inherit from object explicitly.",
+          "The list should be IEnumerable to compile.",
         ],
         correctAnswer:
-          "It exposes mutable fields with no validation, so any caller can put the order in an invalid state.",
+          "It exposes mutable public fields, so any caller can put the order into an invalid state without validation.",
         explanation:
-          "Public mutable fields defeat encapsulation: a caller could set `Status = \"Confirmed\"` on an empty order. Hide the fields and expose intent-bearing methods.",
+          "Public fields let outside code change values without any rules. The class should use properties with controlled access and methods that protect the rules.",
       },
       {
         kind: "interview",
         question:
-          "An interviewer asks: 'Why use OOP for a small CRUD API at all?' What is the strongest junior-level answer?",
+          "Why use OOP for a small CRUD API at all?",
         options: [
-          "Because the framework will not compile otherwise.",
-          "Because it makes the executable smaller.",
-          "Because separating domain classes from infrastructure keeps validation, persistence, and HTTP concerns testable in isolation as the service grows.",
+          "Because the framework will not compile without it.",
           "Because OOP is required by REST.",
+          "Because separating entities, services, and controllers keeps validation, persistence, and HTTP concerns easy to test and easy to change as the service grows.",
+          "Because OOP makes the executable smaller.",
         ],
         correctAnswer:
-          "Because separating domain classes from infrastructure keeps validation, persistence, and HTTP concerns testable in isolation as the service grows.",
+          "Because separating entities, services, and controllers keeps validation, persistence, and HTTP concerns easy to test and easy to change as the service grows.",
         explanation:
-          "The interviewer is checking whether you can articulate the maintainability benefit. The compiler, executable size, and REST have no inherent OOP requirement.",
+          "The interviewer wants to hear that you understand the long-term benefit: clean separation of concerns and easier maintenance.",
       },
     ],
   },
 
   "class-vs-object": {
     whyItMatters:
-      "Confusing the two is the number-one reason juniors write code that compiles but does the wrong thing — usually by accidentally sharing state across requests.",
+      "It helps you organize code. It helps you understand how C# works. It helps separate structure from data. Confusing the two is one of the most common reasons code compiles but does the wrong thing — often by accidentally sharing data between users or requests.",
     simpleExplanation:
-      "A class is the blueprint. An object is one specific thing built from that blueprint. The class `Order` is the recipe; `new Order(...)` is one actual cake.",
+      "A class is a template. It describes what an object should have and what it can do. An object is a real instance created from a class. For example, Student is a class. student1 and student2 are objects, each with their own Name and Age.",
     deepExplanation:
-      "Every `new` allocates a fresh object with its own copy of instance fields. Two `Order` instances do not share their `_lines` lists — that is exactly what makes them safe to use concurrently across requests in an ASP.NET Core service. Static members, on the other hand, belong to the class itself and are shared by everyone. Understanding which is which is what stops you from putting `static List<Order> _orders` in a service and wondering why one user's data is leaking into another's.",
+      "A class lives in your source code. It does not take memory until you create an object from it. When you write new Student(), .NET allocates memory for a new object and gives you back a reference to it. Each object has its own copy of the data, but they share the same methods defined in the class. So if you change student1.Name, it does not affect student2.Name. They are independent.",
     realWorldUsage:
-      "ASP.NET Core resolves a new `OrderService` per HTTP request (scoped lifetime). Each request gets its own `Order` instances; the class definition is shared by the whole process.",
+      "In a real .NET application, classes describe entities, services, DTOs, and configuration. User is a class that describes a user record. OrderService is a class that describes the operations you can do with orders. LoginRequest is a class that describes the data sent in a login API call. When the application runs, it creates objects from these classes to handle real users, real orders, and real requests.",
     explainLikeBeginner:
-      "A cookie cutter is the class. Every cookie you press is an object. You can have many cookies, but they all came from the same shape.",
+      "A cookie cutter is the class. Each cookie you press is an object. The cookie cutter alone is not food. You need to press it to get a real cookie. You can press it many times, and each cookie is its own thing.",
     interviewAnswer:
-      "A class defines the shape and behaviour of a type. An object is a runtime instance with its own state. Two instances of the same class share the same methods but have independent field values.",
+      "A class is a blueprint or template that defines properties and methods. An object is a real instance created from that class. For example, Car can be a class, and bmw or toyota can be objects. This matters because C# and .NET applications are built using classes and objects to organize data and behavior in a clean and reusable way.",
     commonMistakes: [
-      "Using `static` fields to 'cache' per-request data — the value persists across all callers.",
-      "Comparing reference types with `==` and being surprised that two distinct objects are not equal even if their fields match.",
-      "Forgetting that a class with no `new` is just a definition; nothing runs until you instantiate it.",
+      "Using static fields to hold per-request data — the value stays the same for every user.",
+      "Comparing two objects with == and being surprised that two different objects are not equal even if their fields match.",
+      "Forgetting that a class with no new is just a definition. Nothing runs until you create an object from it.",
     ],
     bestPractices: [
-      "Default to instance state. Only reach for `static` when the data is genuinely shared and immutable.",
-      "Use records or override `Equals`/`GetHashCode` when you want value-based comparison.",
+      "Use instance state by default. Reach for static only when the data is truly shared and never changes.",
+      "Use records or override Equals when you want value-based comparison.",
       "Pass objects, not classes, into methods that need real data.",
     ],
     summary: [
-      "Class = blueprint, object = instance.",
-      "Each `new` produces independent state.",
-      "Static members belong to the class, not to instances.",
+      "Class is the template. Object is the real thing.",
+      "Each new creates an object with its own data.",
+      "Static members belong to the class, not to a specific object.",
     ],
     codeExample: {
-      title: "Two objects from one class",
-      code: `var a = new Counter();
-var b = new Counter();
-a.Increment();
-a.Increment();
-b.Increment();
-Console.WriteLine($"a={a.Value} b={b.Value}");
+      title: "Two Student objects from one Student class",
+      code: `var student1 = new Student();
+student1.Name = "Ali";
+student1.Age = 20;
+student1.Study();
 
-public sealed class Counter
+var student2 = new Student();
+student2.Name = "Aisha";
+student2.Age = 22;
+student2.Study();
+
+public class Student
 {
-    public int Value { get; private set; }
-    public void Increment() => Value++;
+    public string Name { get; set; }
+    public int Age { get; set; }
+
+    public void Study()
+    {
+        Console.WriteLine($"{Name} is studying");
+    }
 }`,
-      output: "a=2 b=1",
+      output: "Ali is studying\nAisha is studying",
       walkthrough: [
-        "`a` and `b` are two separate objects produced by the same `Counter` class.",
-        "Each holds its own `Value` field, so incrementing `a` does not affect `b`.",
-        "Methods like `Increment` are defined once on the class but operate on the calling instance.",
+        "Student is the class. It defines that every student has Name, Age, and Study().",
+        "student1 and student2 are objects, each with their own Name and Age.",
+        "Changing one student does not change the other because each object has its own data.",
       ],
     },
     practice: {
       prompt:
-        "Write a `Wallet` class with a `decimal Balance` (read-only from outside) and a `Deposit(decimal amount)` method. Create two `Wallet` instances and prove their balances are independent.",
+        "Create a Wallet class with a decimal Balance property that is read-only from outside. Add a Deposit(decimal amount) method that adds to the balance only if the amount is positive. Create two Wallet objects and show that their balances are independent.",
       expectedResult:
-        "After `walletA.Deposit(10)` and `walletB.Deposit(5)`, `walletA.Balance` is 10 and `walletB.Balance` is 5.",
+        "After walletA.Deposit(10) and walletB.Deposit(5), walletA.Balance is 10 and walletB.Balance is 5.",
       hints: [
-        "Declare `Balance` with a private setter.",
-        "Guard against negative deposits.",
-        "Write a quick `Console.WriteLine` to print both balances.",
+        "Use public decimal Balance { get; private set; }.",
+        "Guard against negative deposits inside the Deposit method.",
+        "Print both balances with Console.WriteLine to see that they are independent.",
       ],
       solution:
-        "`public decimal Balance { get; private set; }` plus `public void Deposit(decimal amount) { if (amount < 0) throw ...; Balance += amount; }`. Two `new Wallet()` instances have independent backing fields, so deposits do not bleed across.",
+        "Create the Wallet class with Balance and a Deposit method that validates the input. Two new Wallet() objects each get their own Balance field, so deposits do not affect each other.",
     },
     quiz: [
       {
@@ -197,1222 +196,1225 @@ public sealed class Counter
         question: "Which statement is true about classes and objects?",
         options: [
           "A class is created at runtime; an object is the source code.",
-          "Every object of a class shares the same instance fields.",
-          "A class describes a type; an object is one instance of that type with its own state.",
-          "You can use a class without ever instantiating it for anything except static methods.",
+          "Every object of the same class shares all instance fields.",
+          "A class is a template, and each object created from it has its own data.",
+          "Objects exist without classes.",
         ],
         correctAnswer:
-          "A class describes a type; an object is one instance of that type with its own state.",
+          "A class is a template, and each object created from it has its own data.",
         explanation:
-          "The last option about static-only usage is a special case, not the general truth; instance fields are per-object, not shared.",
+          "Every object created with new gets its own copy of the instance fields, even though the methods are defined once on the class.",
       },
       {
         kind: "code-reading",
         question:
-          "What does this print?\n```csharp\nvar x = new Counter();\nvar y = x;\ny.Increment();\nConsole.WriteLine(x.Value);\n```\n(`Counter` increments `Value` by 1.)",
-        options: ["0", "1", "Compilation error", "null"],
-        correctAnswer: "1",
+          "Given:\n```csharp\nvar a = new Counter();\nvar b = new Counter();\na.Increment();\na.Increment();\nb.Increment();\n```\nWhat are the values of a.Value and b.Value?",
+        options: ["a=1, b=2", "a=2, b=1", "a=3, b=3", "a=2, b=2"],
+        correctAnswer: "a=2, b=1",
         explanation:
-          "`y = x` copies the reference, not the object. Both names point at the same instance, so `y.Increment()` is visible through `x`.",
+          "Each Counter has its own Value. a was incremented twice, b was incremented once.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "Why is this dangerous in an ASP.NET Core service?\n```csharp\npublic class CartService\n{\n    private static List<string> _items = new();\n    public void Add(string item) => _items.Add(item);\n}\n```",
+          "Why is this design dangerous in a web API?\n```csharp\npublic class OrderCache\n{\n    public static List<Order> Orders = new();\n}\n```",
         options: [
+          "Nothing — it is a great cache.",
+          "Static fields are shared across all users and all requests, so one user can see another user's data.",
+          "It needs a constructor.",
           "It will not compile.",
-          "`static` makes `_items` shared by every request — one user can see another user's items.",
-          "`List<string>` is too slow for production.",
-          "`Add` should be `async`.",
         ],
         correctAnswer:
-          "`static` makes `_items` shared by every request — one user can see another user's items.",
+          "Static fields are shared across all users and all requests, so one user can see another user's data.",
         explanation:
-          "Per-request state must live on an instance whose lifetime is scoped to the request. `static` fields persist for the whole process.",
+          "A static field belongs to the class, not to a request or a user. In a web API, this leaks data between callers.",
       },
       {
         kind: "interview",
         question:
-          "How would you explain 'class vs object' to a non-technical product manager?",
+          "How would you explain the difference between a class and an object to another .NET developer?",
         options: [
-          "A class is a server; an object is the database.",
-          "A class is the form definition; each filled-in form is an object.",
           "A class is faster than an object.",
-          "They are the same thing.",
+          "An object is a class without methods.",
+          "A class is a blueprint that describes structure and behavior. An object is a real instance created from that class. Each object has its own data, but all objects of the same class share the same methods.",
+          "Classes and objects are the same thing in C#.",
         ],
         correctAnswer:
-          "A class is the form definition; each filled-in form is an object.",
+          "A class is a blueprint that describes structure and behavior. An object is a real instance created from that class. Each object has its own data, but all objects of the same class share the same methods.",
         explanation:
-          "Analogies to forms, blueprints, or cookie cutters all communicate the template-vs-instance idea without jargon.",
+          "This is the clearest definition. It separates the template from the actual data.",
       },
     ],
   },
 
   encapsulation: {
     whyItMatters:
-      "Encapsulation is what stops business objects from drifting into invalid states. Without it, every caller in the codebase becomes responsible for keeping your invariants, and they will not.",
+      "Encapsulation protects your data from being changed in wrong ways. A BankAccount balance should not be changed by anyone from outside. It should only change through deposit and withdraw methods. Without encapsulation, your business rules can be broken anywhere in the code, and bugs become very hard to find.",
     simpleExplanation:
-      "Encapsulation means an object protects its own data. Callers ask the object to do something instead of poking at its internals.",
+      "Encapsulation means keeping the data of an object safe and only allowing access through controlled methods or properties. The data is private inside the object. The class itself decides what is allowed.",
     deepExplanation:
-      "In .NET this usually looks like private fields, private setters, and methods that encode the rules. A `BankAccount` exposes `Deposit` and `Withdraw`; it never lets you do `account.Balance = -100`. The pay-off is local reasoning: when you see `balance` go negative in a log, you only need to look at the methods on that class to find the bug, not every place in the codebase that touches the value.",
+      "Encapsulation has two parts. First, you hide the internal data using private. Second, you give safe access through methods or properties. The class controls what is allowed. If a rule changes later, for example a minimum deposit amount, you only update it inside the class. The rest of the project keeps working the same way. This is what makes large projects easier to change over time.",
     realWorldUsage:
-      "A payment service receives a `ChargeRequest`, calls `account.Withdraw(amount)`, and trusts the account to refuse if the funds are insufficient. The service does not re-implement the rule because the rule lives on the entity.",
+      "Entity classes protect important fields like PasswordHash, Balance, or Status. Service classes keep internal helpers private and expose only the main operations such as CreateOrder or ProcessPayment. Configuration classes expose values as read-only properties so they cannot be changed at runtime.",
     explainLikeBeginner:
-      "An ATM does not let you reach into its cash drawer. You press buttons, and the ATM decides whether to hand out money. That is encapsulation.",
+      "An ATM does not let you reach into its cash drawer. You press buttons, and the ATM decides whether to give you money. The drawer is private. The buttons are the public methods. That is encapsulation.",
     interviewAnswer:
-      "Encapsulation is the OOP principle of hiding internal state and exposing controlled operations. It protects invariants and makes business rules explicit on the type that owns them.",
+      "Encapsulation means hiding the internal state of an object and exposing only what is needed through methods or properties. It protects the data from invalid changes and keeps business rules inside the class. In .NET, we use access modifiers like private and properties with controlled setters to apply encapsulation.",
     commonMistakes: [
-      "Making every property a public auto-property and then writing the validation in the controller.",
-      "Adding a `Validate()` method that callers must remember to invoke — if they forget, the rule is lost.",
-      "Exposing collections directly (`public List<T> Items`) so callers can `Add`/`Remove` without going through the owning class.",
+      "Making every field public so any caller can change it.",
+      "Putting validation rules in the controller instead of inside the class.",
+      "Exposing internal lists directly so callers can add or remove items without rules.",
     ],
     bestPractices: [
-      "Return `IReadOnlyList<T>` for collections; provide `AddItem` / `RemoveItem` methods that enforce rules.",
-      "Use `private set` (or init-only) for properties whose value should change only via a domain method.",
-      "Throw early — invalid input is rejected in the constructor or the method, never silently stored.",
+      "Use private fields and expose them only through controlled properties or methods.",
+      "Return IReadOnlyList<T> for collections and provide methods to change them.",
+      "Validate inputs as soon as they enter the class.",
     ],
     summary: [
-      "Encapsulation hides state behind methods that enforce rules.",
-      "Public read, controlled write: properties get publicly, are written privately.",
-      "It keeps business invariants on the object, not scattered across callers.",
+      "Encapsulation keeps data safe inside the object.",
+      "The class itself controls how the data can change.",
+      "Business rules live inside the class, not scattered across the code.",
     ],
     codeExample: {
-      title: "BankAccount with enforced invariants",
-      code: `public sealed class BankAccount
+      title: "A BankAccount that protects its balance",
+      code: `public class BankAccount
 {
-    public decimal Balance { get; private set; }
+    private decimal _balance;
 
-    public BankAccount(decimal opening)
-    {
-        if (opening < 0) throw new ArgumentException("Opening balance must be non-negative.");
-        Balance = opening;
-    }
+    public decimal Balance => _balance;
 
     public void Deposit(decimal amount)
     {
-        if (amount <= 0) throw new ArgumentException("Deposit must be positive.");
-        Balance += amount;
+        if (amount <= 0) throw new ArgumentException("Amount must be positive");
+        _balance += amount;
     }
 
     public void Withdraw(decimal amount)
     {
-        if (amount <= 0) throw new ArgumentException("Withdrawal must be positive.");
-        if (amount > Balance) throw new InvalidOperationException("Insufficient funds.");
-        Balance -= amount;
+        if (amount <= 0) throw new ArgumentException("Amount must be positive");
+        if (amount > _balance) throw new InvalidOperationException("Not enough money");
+        _balance -= amount;
     }
 }`,
-      output: "Balance: 80",
+      output: "Balance after deposit and withdraw: 70",
       walkthrough: [
-        "`Balance` is publicly readable but only writable from inside the class.",
-        "`Deposit` and `Withdraw` guard the rules; an invalid state is impossible from outside.",
-        "The constructor refuses to build an invalid account in the first place.",
+        "_balance is private, so no outside code can change it directly.",
+        "Deposit and Withdraw are the only ways to change the balance, and each one checks the input.",
+        "Balance is a read-only property that simply shows the current value.",
       ],
     },
     practice: {
       prompt:
-        "Encapsulate a `ShoppingCart`. Internally it holds `List<CartItem>`, but expose only `Items` (read-only), `AddItem(string sku, int qty)`, and `RemoveItem(string sku)`. Adding a non-positive quantity must throw.",
+        "Create a Product class with a Price property that is read-only from outside. Add a method ApplyDiscount(decimal percent) that reduces the price. The percent must be between 0 and 100, otherwise throw an exception.",
       expectedResult:
-        "Outside code can read the items but cannot mutate the underlying list directly; quantity validation is centralised.",
+        "After ApplyDiscount(10) on a product with Price 100, Price becomes 90. Calling ApplyDiscount(150) throws an ArgumentException.",
       hints: [
-        "Use `IReadOnlyList<CartItem>` as the public projection.",
-        "Keep the backing field `private readonly`.",
-        "Throw `ArgumentException` for invalid quantities.",
+        "Use a private setter for Price.",
+        "Validate the percent value inside the method.",
+        "Calculate the new price as Price - (Price * percent / 100).",
       ],
       solution:
-        "Private `List<CartItem> _items = new();` exposed via `public IReadOnlyList<CartItem> Items => _items;`. `AddItem` validates and appends; `RemoveItem` calls `_items.RemoveAll(i => i.Sku == sku)`. Callers cannot reach the list directly.",
+        "Declare public decimal Price { get; private set; }. Inside ApplyDiscount, check the range, then compute the new value and assign it.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Which property declaration best encapsulates a domain value?",
+        question: "What does encapsulation mean?",
         options: [
-          "`public decimal Balance;`",
-          "`public decimal Balance { get; set; }`",
-          "`public decimal Balance { get; private set; }`",
-          "`internal decimal Balance { get; init; }` with no other access path",
+          "Putting all classes in one file.",
+          "Hiding internal data and exposing safe operations.",
+          "Using inheritance to share behavior.",
+          "Naming files in PascalCase.",
         ],
-        correctAnswer: "`public decimal Balance { get; private set; }`",
+        correctAnswer: "Hiding internal data and exposing safe operations.",
         explanation:
-          "Public read with private write lets the class control all mutation paths while still exposing the current value to the world.",
+          "Encapsulation protects the data inside an object by allowing changes only through controlled methods or properties.",
       },
       {
         kind: "code-reading",
         question:
-          "Look at this call site:\n```csharp\nvar acct = new BankAccount(50);\nacct.Withdraw(60);\n```\nWhat happens?",
+          "What happens when this code runs?\n```csharp\nvar account = new BankAccount();\naccount.Deposit(100);\naccount.Withdraw(150);\n```",
         options: [
-          "Balance becomes -10.",
-          "Balance becomes 50 and `Withdraw` silently fails.",
-          "`InvalidOperationException` is thrown.",
-          "Compilation error.",
+          "Balance becomes -50.",
+          "Balance becomes 0.",
+          "An InvalidOperationException is thrown.",
+          "The code does nothing.",
         ],
-        correctAnswer: "`InvalidOperationException` is thrown.",
+        correctAnswer: "An InvalidOperationException is thrown.",
         explanation:
-          "The encapsulated rule rejects withdrawals greater than the balance — that is the whole point of routing mutations through the method.",
+          "Withdraw checks that the amount is not greater than the balance. Since 150 > 100, the method throws an exception.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What invariant does this class fail to protect?\n```csharp\npublic class Cart\n{\n    public List<CartItem> Items { get; } = new();\n}\n```",
+          "What is wrong here?\n```csharp\npublic class User\n{\n    public string PasswordHash;\n}\n```",
         options: [
-          "Nothing — `get`-only auto-property is enough.",
-          "Callers can still call `cart.Items.Add(...)` directly, bypassing any rule the `Cart` class might want to enforce.",
-          "`List` cannot be a property.",
-          "The constructor is missing.",
+          "Nothing — it is fine.",
+          "Anyone can change PasswordHash, which breaks security.",
+          "The class needs a constructor.",
+          "It will not compile.",
         ],
         correctAnswer:
-          "Callers can still call `cart.Items.Add(...)` directly, bypassing any rule the `Cart` class might want to enforce.",
+          "Anyone can change PasswordHash, which breaks security.",
         explanation:
-          "`get`-only blocks reassignment but not mutation of the underlying list. Expose `IReadOnlyList<T>` and provide methods.",
+          "PasswordHash is sensitive. Exposing it as a public field lets any code overwrite it, which is unsafe. Use a private setter and a method to change it through clear rules.",
       },
       {
         kind: "interview",
-        question: "How would you describe encapsulation to a teammate in one sentence?",
+        question:
+          "How would you explain encapsulation in an interview?",
         options: [
-          "Marking everything `private` so nothing else can use the class.",
-          "Hiding internal state behind methods that enforce the rules the class is responsible for.",
-          "Adding `[Encapsulated]` attributes to your properties.",
-          "Putting all classes in the same file so they can see each other.",
+          "It is a way to write short class names.",
+          "It means hiding internal state and exposing only safe operations through methods or properties. It keeps business rules inside the class.",
+          "It is the same as inheritance.",
+          "It is only useful in tests.",
         ],
         correctAnswer:
-          "Hiding internal state behind methods that enforce the rules the class is responsible for.",
+          "It means hiding internal state and exposing only safe operations through methods or properties. It keeps business rules inside the class.",
         explanation:
-          "Encapsulation is about controlling access in service of invariants, not about hiding everything for its own sake.",
+          "This is the cleanest one-line definition. It also explains why we use it.",
       },
     ],
   },
 
   inheritance: {
     whyItMatters:
-      "Inheritance is in every framework you will touch — controllers inherit from `ControllerBase`, exceptions from `Exception`. Misused, it is also the fastest way to make code rigid and hard to test.",
+      "Inheritance removes duplicate code. When many classes share the same fields or behavior, you can put the shared parts in a base class. This is very common in .NET projects where many entities share fields like Id, CreatedAt, and UpdatedAt.",
     simpleExplanation:
-      "Inheritance lets a class reuse the members of another class. The child gets everything the parent has, plus what it adds.",
+      "Inheritance allows one class to reuse the properties and methods of another class. The child class gets everything from the parent and can add new things or change existing behavior.",
     deepExplanation:
-      "Use inheritance for a true 'is-a' relationship — `AdminUser` is a `User`, `HttpException` is an `Exception`. The child substitutes for the parent everywhere the parent is expected (the Liskov Substitution Principle). When the relationship is 'has-a' or 'uses-a' (e.g. an `OrderService` uses an `IEmailSender`), composition is almost always the better tool. Deep inheritance trees are a smell: they couple the child's behaviour to choices made in classes it might not even see.",
+      "When a class inherits from another, it receives all the public and protected members of the parent. The child class can add new members or override the parent's methods. In C#, a class can inherit from only one parent class, but it can implement many interfaces. This keeps inheritance simple and easy to follow. Inheritance is best when there is a clear is-a relationship — for example, Customer is a Person, Employee is a Person.",
     realWorldUsage:
-      "ASP.NET Core's `ControllerBase` provides routing helpers, model binding, and `Ok()` / `NotFound()` results. Your `OrdersController : ControllerBase` inherits all of that and adds endpoints for the domain.",
+      "A base Entity class with Id, CreatedAt, and UpdatedAt is reused by all database entities. A base ApiController in ASP.NET Core adds shared logic for all controllers. A base AuditLog class is reused by different log types like UserAuditLog and OrderAuditLog.",
     explainLikeBeginner:
-      "If you build a `Car` class with wheels and an engine, a `RaceCar` class can inherit from `Car` and just add a spoiler. It reuses everything the car already has.",
+      "A base car has wheels, an engine, and a steering wheel. A sports car still has all of these, but it adds extra things like a turbo. The sports car inherits from the base car.",
     interviewAnswer:
-      "Inheritance models an is-a relationship between types so the child class reuses and may extend or override the parent's behaviour. In .NET it should respect the Liskov Substitution Principle, and prefer composition when you only want to reuse code rather than express a true subtype.",
+      "Inheritance lets one class reuse the members of another class. The child class extends the parent and can add or override behavior. For example, Customer and Employee can both inherit from Person. In .NET, inheritance helps remove duplicate code and create a clean hierarchy of types.",
     commonMistakes: [
-      "Inheriting just to share helper methods — composition or static utilities would be cleaner.",
-      "Deep hierarchies (`A : B : C : D`) where a change in `A` cascades through every descendant.",
-      "Overriding a method to do nothing — a sign the child is not really an `is-a` of the parent.",
+      "Using inheritance for code reuse when composition would be cleaner.",
+      "Building deep inheritance chains that are hard to follow.",
+      "Adding inheritance just because two classes share one or two fields.",
     ],
     bestPractices: [
-      "Use inheritance only for genuine 'is-a' relationships.",
-      "Keep hierarchies shallow; favour composition for code reuse.",
-      "Mark members `virtual` deliberately — overridable surface is part of your public contract.",
+      "Use inheritance only when there is a clear is-a relationship.",
+      "Keep the base class small and focused.",
+      "Prefer composition when classes do not share a real hierarchy.",
     ],
     summary: [
-      "Inheritance reuses and extends behaviour from a parent class.",
-      "It models 'is-a', not 'has-a'.",
-      "Prefer composition when in doubt; deep trees are a maintenance trap.",
+      "Inheritance lets a class reuse another class.",
+      "The child class can add or override behavior.",
+      "Use it when there is a clear is-a relationship.",
     ],
     codeExample: {
-      title: "Specialised exception type",
-      code: `public class NotFoundException : Exception
+      title: "Customer and Employee both inherit from Person",
+      code: `public class Person
 {
-    public string Resource { get; }
-
-    public NotFoundException(string resource, string id)
-        : base($"{resource} '{id}' was not found.")
-    {
-        Resource = resource;
-    }
+    public string Name { get; set; }
+    public string Email { get; set; }
 }
 
-// In a controller:
-throw new NotFoundException("Order", orderId.ToString());`,
-      output: "Unhandled exception: NotFoundException: Order '42' was not found.",
+public class Customer : Person
+{
+    public string CustomerCode { get; set; }
+}
+
+public class Employee : Person
+{
+    public decimal Salary { get; set; }
+}
+
+var customer = new Customer { Name = "Ali", Email = "ali@example.com", CustomerCode = "C-001" };
+var employee = new Employee { Name = "Aisha", Email = "aisha@example.com", Salary = 1000 };`,
+      output: "Customer: Ali, C-001\nEmployee: Aisha, 1000",
       walkthrough: [
-        "`NotFoundException` inherits from `Exception` and adds a domain-specific field.",
-        "The constructor forwards a formatted message to the base via `: base(...)`.",
-        "Anywhere `Exception` is expected — middleware, `catch` blocks — this type slots in.",
+        "Person is the base class with shared fields Name and Email.",
+        "Customer and Employee inherit from Person and add their own fields.",
+        "Both child classes already have Name and Email without writing them again.",
       ],
     },
     practice: {
       prompt:
-        "Create an abstract `Employee` class with `Name` and an abstract `decimal CalculatePay()` method. Add two children: `SalariedEmployee` (returns annual salary / 12) and `HourlyEmployee` (returns `HoursWorked * Rate`).",
+        "Create a base class Vehicle with properties Brand and Speed and a method Start() that prints 'Starting...'. Then create a Car class that inherits from Vehicle and adds a method Honk() that prints 'Beep beep!'.",
       expectedResult:
-        "A list of mixed employees can be iterated and each `CalculatePay()` returns the right value for its concrete type.",
+        "var car = new Car { Brand = \"Toyota\", Speed = 120 }; car.Start(); car.Honk(); prints 'Starting...' and 'Beep beep!'.",
       hints: [
-        "`abstract` forces children to provide an implementation.",
-        "Use a constructor on the base to initialise `Name`.",
-        "Loop with `foreach (var e in employees) Console.WriteLine(e.CalculatePay());`.",
+        "Use the syntax public class Car : Vehicle.",
+        "Car automatically gets Brand, Speed, and Start().",
+        "Add Honk() only on Car.",
       ],
       solution:
-        "`abstract class Employee { public string Name; protected Employee(string n) { Name = n; } public abstract decimal CalculatePay(); }`. Both subclasses override `CalculatePay`. The loop calls each subclass's override at runtime via virtual dispatch.",
+        "Define Vehicle with Brand, Speed, and Start(). Define Car : Vehicle that adds Honk(). The Car object can call Start() from the base class and Honk() from its own class.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "When is inheritance the right tool over composition in a .NET service?",
+        question: "What does inheritance allow you to do?",
         options: [
-          "When you want to reuse a single helper method.",
-          "When the child class is a true subtype that should be usable everywhere the parent is.",
-          "When you want to share fields between unrelated classes.",
-          "When you want faster code.",
+          "Create a class that reuses the fields and methods of another class.",
+          "Run code faster.",
+          "Hide internal data.",
+          "Replace unit tests.",
         ],
         correctAnswer:
-          "When the child class is a true subtype that should be usable everywhere the parent is.",
+          "Create a class that reuses the fields and methods of another class.",
         explanation:
-          "Inheritance is for is-a relationships that respect substitutability. For pure code reuse, composition is safer.",
+          "Inheritance lets a child class get everything from its parent and add or change behavior.",
       },
       {
         kind: "code-reading",
         question:
-          "What does this print?\n```csharp\nException ex = new NotFoundException(\"Order\", \"42\");\nConsole.WriteLine(ex.Message);\n```",
+          "Given that Employee inherits from Person, and Person has Name and Email, what fields does an Employee object have?",
         options: [
-          "\"NotFoundException\"",
-          "\"Order '42' was not found.\"",
-          "\"42\"",
-          "An empty string",
+          "Only Salary",
+          "Only Name and Email",
+          "Name, Email, and Salary",
+          "Nothing — it must be declared again",
         ],
-        correctAnswer: "\"Order '42' was not found.\"",
+        correctAnswer: "Name, Email, and Salary",
         explanation:
-          "The child constructor forwarded that formatted string to `Exception`'s constructor, and `Message` returns it through the base reference.",
+          "Employee inherits Name and Email from Person and adds its own Salary field.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "Why is this hierarchy a red flag?\n```csharp\nclass Animal { public virtual void Move() { } }\nclass Dog : Animal { public override void Move() { /* run */ } }\nclass Stone : Animal { public override void Move() { /* throw? */ } }\n```",
+          "What is wrong with this design?\n```csharp\npublic class Animal {}\npublic class Dog : Animal {}\npublic class Cat : Animal {}\npublic class Truck : Animal {}\n```",
         options: [
-          "There is no bug — it compiles.",
-          "`Stone` is not an `Animal` in any sensible sense, so the inheritance breaks the is-a rule and forces an awkward override.",
-          "`virtual` is not allowed in C#.",
-          "`Move` should be `static`.",
+          "Nothing.",
+          "Truck is not an animal. Inheritance should describe a real is-a relationship.",
+          "Animal needs a method.",
+          "The classes need constructors.",
         ],
         correctAnswer:
-          "`Stone` is not an `Animal` in any sensible sense, so the inheritance breaks the is-a rule and forces an awkward override.",
+          "Truck is not an animal. Inheritance should describe a real is-a relationship.",
         explanation:
-          "If the override has to throw or do nothing, the child is signalling it does not belong under that parent.",
+          "Inheritance models a real hierarchy. Truck does not belong under Animal.",
       },
       {
         kind: "interview",
         question:
-          "An interviewer asks: 'When would you reach for composition instead of inheritance?'",
+          "When is inheritance the right choice in a .NET project?",
         options: [
-          "When the relationship is more 'has-a' than 'is-a' and you want to swap implementations without coupling to a base class.",
-          "Whenever the parent is in the same assembly.",
-          "Composition is always wrong; inheritance is preferred.",
-          "When the parent class is `sealed`.",
+          "Always — it is the cleanest pattern.",
+          "Never — composition is always better.",
+          "When two classes share a real is-a relationship and benefit from shared fields or behavior. Otherwise, composition is usually cleaner.",
+          "When two classes share at least one method name.",
         ],
         correctAnswer:
-          "When the relationship is more 'has-a' than 'is-a' and you want to swap implementations without coupling to a base class.",
+          "When two classes share a real is-a relationship and benefit from shared fields or behavior. Otherwise, composition is usually cleaner.",
         explanation:
-          "Composition keeps coupling explicit (you pass the dependency in) and is the standard answer for testable, flexible designs.",
+          "Use inheritance for true hierarchies. Use composition when classes only need to share some behavior without a parent-child relationship.",
       },
     ],
   },
 
   polymorphism: {
     whyItMatters:
-      "Polymorphism is what makes DI containers, controllers, and EF Core actually work — the framework calls your code through an interface or base class without caring which concrete type you wrote.",
+      "Polymorphism allows you to write flexible code. You can call the same method on different objects and get the correct behavior for each one. This is the idea behind dependency injection, interfaces, and many design patterns in .NET.",
     simpleExplanation:
-      "Polymorphism means one method name behaves differently depending on the object behind it. The caller does not need a `switch` on the type.",
+      "Polymorphism means the same method can behave differently depending on the object that calls it. A Payment class can have child classes like CardPayment and CashPayment, and each one has its own version of Process().",
     deepExplanation:
-      "Two flavours matter in .NET. Subtype polymorphism: `IEmailSender` has two implementations, `SmtpEmailSender` and `FakeEmailSender`; the service depends on the interface and the runtime picks the concrete instance. Parametric polymorphism: generics like `Repository<T>` work for any `T` without copy-pasting. The pay-off is open-for-extension code: adding a third email sender does not require touching the consumer.",
+      "Polymorphism works through virtual and override in C#. The base class marks a method as virtual, and the child class replaces it with override. At runtime, .NET checks the real type of the object and calls the matching method. This is called runtime polymorphism. It lets you write code that works with the base type while still getting the correct behavior of each child type. Interfaces work in a similar way: you depend on an abstraction, and at runtime any implementation can be plugged in.",
     realWorldUsage:
-      "Your `OrderService` accepts an `IPaymentGateway`. In production it is wired to `StripeGateway`; in tests it is a `FakePaymentGateway`. The service code is identical in both cases.",
+      "Payment processors: CardPayment, CashPayment, and BankTransferPayment all share a common Process method. Notification senders: EmailNotification, SmsNotification, and PushNotification all share a Send method. Report exporters: PdfExporter, ExcelExporter, and CsvExporter all share an Export method. The calling code does not care which one it is using.",
     explainLikeBeginner:
-      "A remote control has one 'on' button. It works whether you point it at a TV or a stereo — each device responds to 'on' its own way.",
+      "The button on a remote control says 'play'. The same button works for music, movies, or audiobooks. The button is the method. The device is the object. Each device knows what 'play' means for itself.",
     interviewAnswer:
-      "Polymorphism lets one call site work with many concrete types through a shared interface or base class. In .NET it underpins dependency injection, virtual method dispatch, and generics, and it is what lets a service depend on abstractions rather than concrete implementations.",
+      "Polymorphism means the same method can have different behavior depending on the object type. In C#, we use virtual in the base class and override in the child class. For example, a Payment class can have child classes like CardPayment and CashPayment, each with its own Process method. This makes .NET applications flexible and easy to extend.",
     commonMistakes: [
-      "Switching on a runtime type (`if (x is Foo) ... else if (x is Bar) ...`) instead of letting a virtual method dispatch.",
-      "Marking everything `virtual` 'just in case' — overridable members become part of the contract.",
-      "Forgetting to register the new implementation in the DI container so the abstraction is never resolved.",
+      "Forgetting to mark the base method as virtual.",
+      "Using new instead of override, which hides the method instead of replacing it.",
+      "Writing big if/else chains based on the type instead of using polymorphism.",
     ],
     bestPractices: [
-      "Depend on interfaces in service constructors; resolve concretes only in the composition root.",
-      "Use `sealed` on classes that should not be inherited from to make intent explicit.",
-      "Reach for generics when the logic is identical and only the type changes.",
+      "Use virtual and override when you want different behavior in child classes.",
+      "Prefer interfaces when the only thing children share is the contract.",
+      "Let the runtime pick the method — do not switch on the type by hand.",
     ],
     summary: [
-      "Polymorphism = one call, many concrete behaviours.",
-      "Backed by virtual methods, interfaces, and generics.",
-      "It is the mechanism behind DI and replaceable infrastructure.",
+      "Polymorphism lets the same method call produce different results based on the object type.",
+      "Use virtual in the base and override in the child class.",
+      "It is the foundation of dependency injection and many design patterns.",
     ],
     codeExample: {
-      title: "Swappable email senders",
-      code: `public interface IEmailSender
+      title: "Different payment types share the same Process method",
+      code: `public class Payment
 {
-    Task SendAsync(string to, string subject, string body);
-}
-
-public sealed class SmtpEmailSender : IEmailSender
-{
-    public Task SendAsync(string to, string subject, string body)
+    public virtual void Process()
     {
-        Console.WriteLine($"[SMTP] -> {to}: {subject}");
-        return Task.CompletedTask;
+        Console.WriteLine("Processing payment");
     }
 }
 
-public sealed class WelcomeEmailService
+public class CardPayment : Payment
 {
-    private readonly IEmailSender _sender;
-    public WelcomeEmailService(IEmailSender sender) => _sender = sender;
+    public override void Process()
+    {
+        Console.WriteLine("Processing card payment");
+    }
+}
 
-    public Task SendAsync(string to) =>
-        _sender.SendAsync(to, "Welcome", "Glad to have you on board.");
-}`,
-      output: "[SMTP] -> alice@example.com: Welcome",
+public class CashPayment : Payment
+{
+    public override void Process()
+    {
+        Console.WriteLine("Processing cash payment");
+    }
+}
+
+Payment payment = new CardPayment();
+payment.Process();`,
+      output: "Processing card payment",
       walkthrough: [
-        "`WelcomeEmailService` does not know which sender it is using.",
-        "Swapping `SmtpEmailSender` for `FakeEmailSender` in DI changes the behaviour with no edits to the service.",
-        "This is subtype polymorphism in everyday .NET code.",
+        "Payment defines a virtual Process method that child classes can override.",
+        "CardPayment and CashPayment each provide their own Process logic.",
+        "The variable is typed as Payment, but the actual object is a CardPayment, so the card version runs.",
       ],
     },
     practice: {
       prompt:
-        "Define `INotifier` with `void Notify(string message)`. Provide `EmailNotifier` and `SmsNotifier`. Write an `AlertService` that takes an `IEnumerable<INotifier>` in its constructor and notifies all of them in one call.",
+        "Create a base class Notification with a virtual Send() method that prints 'Sending notification'. Create two child classes, EmailNotification and SmsNotification, that override Send() to print 'Sending email' and 'Sending SMS' respectively. Use a list of Notification to send all of them.",
       expectedResult:
-        "Calling `alertService.Alert(\"down\")` causes every registered notifier to log its own variant of the message.",
+        "Looping over a List<Notification> { new EmailNotification(), new SmsNotification() } and calling Send() prints 'Sending email' and 'Sending SMS'.",
       hints: [
-        "Use a `foreach` over the notifiers.",
-        "Inject the list in the constructor — do not new them up inside the service.",
-        "Register both implementations in DI in the composition root.",
+        "Mark Send as virtual in the base class.",
+        "Use override in the child classes.",
+        "Store both notifications in a list typed as Notification.",
       ],
       solution:
-        "`AlertService` stores `IEnumerable<INotifier> _notifiers`. `Alert(msg)` iterates and calls `Notify(msg)` on each. Adding a `SlackNotifier` later requires zero changes to `AlertService` — just register it.",
+        "Define Notification with virtual Send. Define EmailNotification and SmsNotification with override Send. Put them in a List<Notification> and call Send on each one — the correct version runs for each object.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Which sentence best defines polymorphism in .NET?",
+        question: "What does polymorphism mean in C#?",
         options: [
-          "A class can have multiple constructors.",
-          "One call site can invoke different concrete implementations through a shared interface or base type.",
-          "A method can be overloaded with different parameter lists.",
-          "A program can run on multiple operating systems.",
+          "Two classes with the same name.",
+          "The same method call can run different behavior depending on the actual object type.",
+          "A way to write SQL queries.",
+          "Hiding data inside a class.",
         ],
         correctAnswer:
-          "One call site can invoke different concrete implementations through a shared interface or base type.",
+          "The same method call can run different behavior depending on the actual object type.",
         explanation:
-          "Constructor count and method overloading are unrelated. Cross-platform support is also unrelated — that is the runtime.",
+          "Polymorphism is about one interface that supports many shapes of behavior.",
       },
       {
         kind: "code-reading",
         question:
-          "Given `IEmailSender sender = new SmtpEmailSender();`, what determines which `SendAsync` runs?",
+          "If Payment has a virtual Process method and CardPayment overrides it, what happens here?\n```csharp\nPayment p = new CardPayment();\np.Process();\n```",
         options: [
-          "The declared type `IEmailSender`.",
-          "The runtime type `SmtpEmailSender`.",
-          "Whichever was registered first in DI.",
-          "Whichever method has the most parameters.",
+          "Process from Payment runs.",
+          "Process from CardPayment runs.",
+          "The code throws an exception.",
+          "Nothing happens.",
         ],
-        correctAnswer: "The runtime type `SmtpEmailSender`.",
+        correctAnswer: "Process from CardPayment runs.",
         explanation:
-          "Virtual dispatch picks the concrete implementation, not the static type of the variable.",
+          "Even though the variable is Payment, the actual object is CardPayment, so the override runs.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this code?\n```csharp\npublic void Send(IEmailSender s)\n{\n    if (s is SmtpEmailSender smtp) smtp.SendAsync(...);\n    else if (s is FakeEmailSender fake) fake.SendAsync(...);\n}\n```",
+          "What is wrong here?\n```csharp\npublic class Animal\n{\n    public void Speak() => Console.WriteLine(\"...\");\n}\npublic class Dog : Animal\n{\n    public new void Speak() => Console.WriteLine(\"Woof\");\n}\nAnimal a = new Dog();\na.Speak();\n```",
         options: [
-          "Nothing — the type checks make it explicit.",
-          "It defeats polymorphism: just call `s.SendAsync(...)` and let dispatch pick the implementation.",
-          "`is` is not a valid C# keyword.",
-          "`SendAsync` cannot be called on an interface.",
+          "Nothing — Dog's Speak runs.",
+          "Animal's Speak runs because new only hides the method; it does not override it.",
+          "The code does not compile.",
+          "It prints both lines.",
         ],
         correctAnswer:
-          "It defeats polymorphism: just call `s.SendAsync(...)` and let dispatch pick the implementation.",
+          "Animal's Speak runs because new only hides the method; it does not override it.",
         explanation:
-          "Manually switching on the concrete type forces this method to change every time a new sender is added — exactly what polymorphism is supposed to avoid.",
+          "To get polymorphism, the base method must be virtual and the child must use override. Otherwise new just hides it for that variable type.",
       },
       {
         kind: "interview",
         question:
-          "Why is polymorphism essential to dependency injection?",
+          "How is polymorphism connected to dependency injection?",
         options: [
-          "DI containers literally cannot work without it.",
-          "Because consumers depend on an abstraction, the container can hand them any concrete implementation that satisfies that abstraction at runtime.",
-          "It makes the container thread-safe.",
-          "It is unrelated to DI.",
+          "It is not.",
+          "Dependency injection relies on polymorphism: consumers depend on an interface or base type, and the container provides any implementation that fits.",
+          "Dependency injection replaces polymorphism.",
+          "They both require static classes.",
         ],
         correctAnswer:
-          "Because consumers depend on an abstraction, the container can hand them any concrete implementation that satisfies that abstraction at runtime.",
+          "Dependency injection relies on polymorphism: consumers depend on an interface or base type, and the container provides any implementation that fits.",
         explanation:
-          "DI's whole value is decoupling consumers from implementations; polymorphism is the language mechanism that makes the swap safe.",
+          "DI works because of polymorphism. The consumer does not care which class is injected, only that it follows the contract.",
       },
     ],
   },
 
   abstraction: {
     whyItMatters:
-      "Abstraction is what lets you change a database, message broker, or cloud provider later without rewriting your business logic.",
+      "Abstraction keeps your code simple. When you use a class, you only need to know what it does, not how it works inside. This is the idea behind interfaces like IEmailSender, IRepository, and IPaymentGateway — the rest of the code does not care about the details.",
     simpleExplanation:
-      "Abstraction means exposing what something does and hiding how it does it. Callers see the contract; the implementation can change without breaking them.",
+      "Abstraction means showing only the important parts of an object and hiding the details. You decide what to expose and what to keep private. The user of the class sees a clean and simple set of operations.",
     deepExplanation:
-      "In .NET, abstraction usually takes the shape of an interface or an abstract class. `IOrderRepository` says 'something can get and save orders' without saying whether it talks to SQL Server, an in-memory dictionary, or a REST API. Code that depends on the interface is decoupled from the storage choice. The art is choosing the right contract — too narrow and you constantly have to widen it; too wide and you have leaked implementation details and lost the benefit.",
+      "Abstraction is about deciding what to expose. The user of a class should see a small and clear set of operations, while the internal details stay hidden. In C#, you can create abstraction using abstract classes, interfaces, and well-designed public methods. The goal is the same: make the type easy to use without showing how it works inside. This is what makes it possible to change the implementation later without breaking the rest of the project.",
     realWorldUsage:
-      "Your `OrderService` depends on `IOrderRepository`. In production it is an EF Core repository; in unit tests it is a hand-written in-memory fake. The service did not change.",
+      "IRepository<T> hides how data is read or saved. IEmailSender hides whether emails are sent through SMTP, SendGrid, or another service. IPaymentGateway hides which provider is used to process a payment. The service code calls Send or Save, and the real work happens behind the abstraction.",
     explainLikeBeginner:
-      "When you drive a car, you only use the steering wheel and pedals. You do not need to know what the engine is doing. That is abstraction.",
+      "When you drive a car, you press the gas pedal. You do not need to know how the engine works. The pedal is the abstraction. The engine is the hidden detail.",
     interviewAnswer:
-      "Abstraction is exposing essential behaviour through a contract while hiding the implementation. In .NET it is realised through interfaces and abstract classes, and it is what makes infrastructure swappable and code testable.",
+      "Abstraction means hiding the internal details of a class and showing only what is needed to use it. In .NET, we use abstract classes and interfaces to define the shape of a type without giving the implementation. For example, IEmailSender describes that we can send an email, but the actual sending logic is hidden in the implementation.",
     commonMistakes: [
-      "Defining an interface with the same shape as the only implementation 'just in case' — adds noise without value.",
-      "Leaking implementation details (e.g. SQL-specific exceptions) through the abstraction.",
-      "Designing abstractions before understanding the domain — the contract becomes wrong almost immediately.",
+      "Exposing internal methods that should be private.",
+      "Making abstractions too broad or too vague to be useful.",
+      "Creating an interface for every class even when there is no real benefit.",
     ],
     bestPractices: [
-      "Extract an interface when you have two real implementations (or a real one plus a test fake).",
-      "Keep contracts focused: one role per interface.",
-      "Throw or return abstraction-level errors, not infrastructure-specific ones.",
+      "Keep the public surface of a class small.",
+      "Name the abstraction after the capability, not the implementation.",
+      "Hide details that may change in the future.",
     ],
     summary: [
-      "Abstraction exposes the 'what', hides the 'how'.",
-      "Realised in C# by `interface` and `abstract class`.",
-      "Earn an abstraction; do not pre-emptively guess.",
+      "Abstraction shows what an object can do, not how it does it.",
+      "It makes code easier to use and easier to change later.",
+      "Use abstract classes and interfaces to design clean contracts.",
     ],
     codeExample: {
-      title: "Repository abstraction",
-      code: `public interface IOrderRepository
+      title: "A Report abstract class with a shared Save method",
+      code: `public abstract class Report
 {
-    Task<Order?> FindAsync(Guid id);
-    Task SaveAsync(Order order);
+    public abstract void Generate();
+
+    public void Save()
+    {
+        Console.WriteLine("Report saved");
+    }
 }
 
-public sealed class InMemoryOrderRepository : IOrderRepository
+public class SalesReport : Report
 {
-    private readonly Dictionary<Guid, Order> _store = new();
-    public Task<Order?> FindAsync(Guid id) =>
-        Task.FromResult(_store.GetValueOrDefault(id));
-    public Task SaveAsync(Order order)
+    public override void Generate()
     {
-        _store[order.Id] = order;
-        return Task.CompletedTask;
+        Console.WriteLine("Generating sales report");
     }
-}`,
-      output: "(no console output — exercised through service / tests)",
+}
+
+var report = new SalesReport();
+report.Generate();
+report.Save();`,
+      output: "Generating sales report\nReport saved",
       walkthrough: [
-        "The interface describes intent: find by id, save.",
-        "The in-memory implementation is enough for unit tests and a first prototype.",
-        "An EF Core implementation can replace it without consumers noticing.",
+        "Report is abstract, so you cannot create it directly.",
+        "Generate is abstract, so each child class must define it.",
+        "Save has a default implementation that all reports share.",
       ],
     },
     practice: {
       prompt:
-        "Define `ITimeProvider { DateTimeOffset Now { get; } }`. Provide `SystemTimeProvider` (returns `DateTimeOffset.UtcNow`) and `FakeTimeProvider` (returns a configurable value). Refactor a method that currently calls `DateTimeOffset.UtcNow` to take an `ITimeProvider` instead.",
+        "Create an abstract class Shape with an abstract method Area(). Create two children, Circle and Rectangle, that each implement Area() with the correct formula.",
       expectedResult:
-        "A unit test can pin time to a known value and assert against it without touching the system clock.",
+        "new Circle { Radius = 2 }.Area() returns about 12.56. new Rectangle { Width = 3, Height = 4 }.Area() returns 12.",
       hints: [
-        "Inject `ITimeProvider` through the constructor.",
-        "Set `FakeTimeProvider.Now` in the test setup.",
-        "Replace `DateTimeOffset.UtcNow` everywhere in the unit under test.",
+        "Use the keyword abstract on both the class and the method.",
+        "Circle needs a Radius property. Rectangle needs Width and Height.",
+        "Use Math.PI for the circle formula.",
       ],
       solution:
-        "Constructor stores `_clock`. Calls become `_clock.Now`. Production wires `SystemTimeProvider`; tests use `FakeTimeProvider { Now = new DateTimeOffset(2025,1,1,...) }` to make time-sensitive logic deterministic.",
+        "Define Shape with abstract double Area(). Define Circle : Shape with Radius and an override Area returning Math.PI * Radius * Radius. Define Rectangle : Shape with Width and Height and an override Area returning Width * Height.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Abstraction in C# is primarily realised through which constructs?",
+        question: "What does abstraction mean in object-oriented design?",
         options: [
-          "`interface` and `abstract class`",
-          "`enum` and `struct`",
-          "`record` and `delegate`",
-          "`namespace` and `using`",
+          "Showing only the parts of a class that matter and hiding the rest.",
+          "Making the class run faster.",
+          "Putting all logic in one method.",
+          "Removing all comments from code.",
         ],
-        correctAnswer: "`interface` and `abstract class`",
+        correctAnswer:
+          "Showing only the parts of a class that matter and hiding the rest.",
         explanation:
-          "Interfaces define pure contracts; abstract classes can mix contract with shared implementation. Records, enums, namespaces are unrelated.",
+          "Abstraction is about exposing a small, clean set of operations and hiding the internal details.",
       },
       {
         kind: "code-reading",
         question:
-          "Why is this method easy to unit-test?\n```csharp\npublic class TokenIssuer\n{\n    private readonly ITimeProvider _clock;\n    public TokenIssuer(ITimeProvider clock) => _clock = clock;\n    public DateTimeOffset Expiry() => _clock.Now.AddMinutes(15);\n}\n```",
+          "Can you write var report = new Report(); when Report is an abstract class?",
         options: [
-          "Because `DateTimeOffset` is immutable.",
-          "Because the dependency on time is abstracted behind `ITimeProvider`, so tests can pin `Now` to a known value.",
-          "Because the method is `public`.",
-          "Because it returns `DateTimeOffset`.",
+          "Yes, always.",
+          "No, you cannot create an instance of an abstract class directly.",
+          "Yes, but only inside a using block.",
+          "Only if Report has no methods.",
         ],
         correctAnswer:
-          "Because the dependency on time is abstracted behind `ITimeProvider`, so tests can pin `Now` to a known value.",
+          "No, you cannot create an instance of an abstract class directly.",
         explanation:
-          "The abstraction turns time into an injected dependency, removing the implicit dependency on the system clock.",
+          "Abstract classes can only be instantiated through their concrete child classes.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is the design smell here?\n```csharp\npublic interface IOrderRepository\n{\n    SqlConnection Connection { get; }\n    Task<Order?> FindAsync(Guid id);\n}\n```",
+          "What is wrong with this design?\n```csharp\npublic interface IEmailSender\n{\n    void Send(string to, string body);\n    string ConnectToSmtpServer();\n}\n```",
         options: [
-          "Interfaces cannot have properties — won't compile.",
-          "The `SqlConnection` property leaks the storage choice through the abstraction, defeating its purpose.",
-          "`FindAsync` should not return `Order?`.",
-          "Nothing is wrong.",
+          "Nothing.",
+          "ConnectToSmtpServer leaks an implementation detail into the abstraction. The interface should only describe what to do, not how.",
+          "The interface should be abstract.",
+          "Send needs a return type.",
         ],
         correctAnswer:
-          "The `SqlConnection` property leaks the storage choice through the abstraction, defeating its purpose.",
+          "ConnectToSmtpServer leaks an implementation detail into the abstraction. The interface should only describe what to do, not how.",
         explanation:
-          "An abstraction should not name a specific implementation type. Consumers now depend on SQL Server whether they want to or not.",
+          "The interface should describe sending an email, not the SMTP detail. Implementation details belong inside the concrete class, not in the contract.",
       },
       {
         kind: "interview",
         question:
-          "An interviewer asks: 'When should you NOT introduce an interface?'",
+          "Why is abstraction important in real .NET projects?",
         options: [
-          "Never — always extract an interface for every class.",
-          "When there is exactly one implementation, no test fake, and no concrete swap planned — the interface adds indirection without benefit.",
-          "When the class is `sealed`.",
-          "When the class is `public`.",
+          "It makes code run faster.",
+          "It makes code shorter.",
+          "It hides details so the rest of the project does not depend on them, which makes the implementation easy to change later.",
+          "It removes the need for testing.",
         ],
         correctAnswer:
-          "When there is exactly one implementation, no test fake, and no concrete swap planned — the interface adds indirection without benefit.",
+          "It hides details so the rest of the project does not depend on them, which makes the implementation easy to change later.",
         explanation:
-          "Premature abstraction has a real cost. Introduce the contract when you have at least two real consumers of it.",
+          "Good abstractions let you swap implementations — for example, a fake email sender in tests and a real one in production — without changing the rest of the code.",
       },
     ],
   },
 
   "interface-vs-abstract-class": {
     whyItMatters:
-      "Picking the wrong one locks your design. Interfaces commit you to no implementation; abstract classes commit you to a particular base. Knowing when to use each saves rewrites later.",
+      "Choosing the right one keeps your design clean. Interfaces are great for describing a capability. Abstract classes are great when child classes share both behavior and common code. Picking the wrong one makes the code harder to extend later.",
     simpleExplanation:
-      "Use an interface to describe a capability that many unrelated types can have. Use an abstract class when several related classes share both behaviour and state.",
+      "An interface defines only what to do. An abstract class can also include shared logic. A class can implement many interfaces but can inherit from only one abstract class.",
     deepExplanation:
-      "In modern C# the line has blurred — interfaces can have default implementations — but the rules of thumb still hold. Interfaces define what an object can do; a class can implement many of them. Abstract classes define what a related family is, can hold fields, can run constructor logic, and can enforce a template. If you need shared state or a partial implementation that subclasses fill in, abstract class is the right pick. If you need a capability label like `IDisposable`, interface is the right pick.",
+      "An interface is a pure contract. It only lists method signatures. A class can implement many interfaces, which gives a lot of flexibility. An abstract class is a partial implementation. It can have fields, constructors, and full methods, but a class can inherit from only one abstract class. A simple rule: use an interface when you want to describe a capability like 'can be sent' or 'can be saved'. Use an abstract class when child classes share a common base with real code.",
     realWorldUsage:
-      "`ControllerBase` is abstract — every controller is a controller of a particular shape and inherits the framework's helpers. `IActionResult` is an interface — anything that knows how to write an HTTP response can implement it.",
+      "IRepository<T>, ILogger, and IEmailSender are interfaces used with dependency injection. A base EntityBase abstract class can hold shared properties like Id and CreatedAt. The ControllerBase class in ASP.NET Core is an abstract class that gives shared controller behavior such as helper methods for HTTP responses.",
     explainLikeBeginner:
-      "Interface = job description ('can drive'). Abstract class = unfinished base car ('this is a car, but the engine is up to you').",
+      "An interface is like a job description: it lists what the person must do. An abstract class is like an unfinished house: the walls are already built, but some rooms are left for the new owner to design.",
     interviewAnswer:
-      "Interfaces define a capability and support multiple inheritance of contract. Abstract classes define a partial implementation in an is-a hierarchy and support shared state and constructors. Choose interfaces for cross-cutting capabilities, abstract classes for related families with shared behaviour.",
+      "An interface defines only the method signatures with no implementation. An abstract class can have both method signatures and real code. In C#, a class can implement many interfaces but inherit only one abstract class. We use interfaces for contracts and dependency injection, and abstract classes when child classes need to share common logic.",
     commonMistakes: [
-      "Defining an abstract class when no shared state or implementation exists — an interface would have been simpler.",
-      "Defining an interface when the family naturally shares constructor logic or fields — leading to copy-paste in every implementation.",
-      "Forgetting that classes can implement many interfaces but can only inherit from one base class.",
+      "Using an abstract class when an interface is enough.",
+      "Putting too many unrelated methods into one interface.",
+      "Forgetting that interfaces support multiple inheritance, but classes do not.",
     ],
     bestPractices: [
-      "Default to an interface for cross-cutting roles (logging, sending, formatting).",
-      "Reach for an abstract class when the children share fields, constructor parameters, or a template method.",
-      "Mix them: an abstract class can implement an interface and provide the shared parts.",
+      "Default to an interface unless you need shared code.",
+      "Keep interfaces small and focused on one capability.",
+      "Use abstract classes when a family of types shares real implementation.",
     ],
     summary: [
-      "Interface = capability contract; many can be implemented per class.",
-      "Abstract class = partial implementation in an is-a hierarchy.",
-      "Choose based on whether you need shared state or just a shared role.",
+      "Interface = pure contract. Many interfaces per class.",
+      "Abstract class = partial implementation. Only one base class per class.",
+      "Pick the one that matches the design — capability or shared base.",
     ],
     codeExample: {
-      title: "Both, working together",
-      code: `public interface IReport
+      title: "IEmailSender interface vs NotificationBase abstract class",
+      code: `public interface IEmailSender
 {
-    string Render();
+    void Send(string to, string body);
 }
 
-public abstract class PdfReport : IReport
+public abstract class NotificationBase
 {
-    protected abstract string BuildBody();
-    public string Render() => $"%PDF\\n{BuildBody()}";
+    public abstract void Send(string to, string body);
+
+    public void LogSend(string to)
+    {
+        Console.WriteLine($"Sent to {to}");
+    }
 }
 
-public sealed class InvoicePdfReport : PdfReport
+public class SmtpEmailSender : IEmailSender
 {
-    private readonly decimal _total;
-    public InvoicePdfReport(decimal total) => _total = total;
-    protected override string BuildBody() => $"Total due: {_total:C}";
+    public void Send(string to, string body)
+    {
+        Console.WriteLine($"SMTP: send to {to}");
+    }
 }`,
-      output: "%PDF\\nTotal due: $42.50",
+      output: "SMTP: send to user@example.com",
       walkthrough: [
-        "`IReport` is the capability: anything that can render itself implements it.",
-        "`PdfReport` is the partial implementation common to every PDF.",
-        "`InvoicePdfReport` adds the only thing it owns — the body content.",
+        "IEmailSender is an interface — it only declares Send.",
+        "NotificationBase is abstract — it declares Send and also provides a real LogSend method.",
+        "SmtpEmailSender implements IEmailSender and provides the real Send code.",
       ],
     },
     practice: {
       prompt:
-        "Design `IValidator<T> { bool IsValid(T value); }` as the capability. Then design `abstract class StringValidator : IValidator<string>` that pre-trims input and delegates to an abstract `bool IsValidTrimmed(string)` for the actual rule. Subclass it for `EmailValidator`.",
+        "Create an interface IPaymentMethod with a method Pay(decimal amount). Create two classes, CardPayment and CashPayment, that each implement IPaymentMethod with their own Pay logic.",
       expectedResult:
-        "Trimming logic lives in one place; each subclass writes only the rule for its specific format.",
+        "IPaymentMethod payment = new CardPayment(); payment.Pay(100); prints something like 'Charged card with 100'.",
       hints: [
-        "`IsValid` calls `IsValidTrimmed(value.Trim())`.",
-        "Subclass overrides `IsValidTrimmed`.",
-        "Keep `EmailValidator` focused on the email rule only.",
+        "Use the syntax public class CardPayment : IPaymentMethod.",
+        "Each class must implement Pay.",
+        "Console.WriteLine works fine for the example.",
       ],
       solution:
-        "`IValidator<T>` is the cross-cutting capability. `StringValidator` handles the trim once. Adding a `PhoneValidator` later is a one-method override, not a re-implementation of the trim logic.",
+        "Define IPaymentMethod with one method Pay(decimal amount). Each implementation provides its own version. The calling code can hold any IPaymentMethod and call Pay without knowing which one it is.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Which is true of interfaces but not of abstract classes?",
+        question: "What is the main difference between an interface and an abstract class?",
         options: [
-          "They can hold instance fields.",
-          "A class can implement multiple of them.",
-          "They can have constructors.",
-          "They can be marked `sealed`.",
+          "There is no difference.",
+          "An interface only declares methods. An abstract class can also have real code and shared state.",
+          "An abstract class cannot have methods.",
+          "An interface is faster.",
         ],
-        correctAnswer: "A class can implement multiple of them.",
+        correctAnswer:
+          "An interface only declares methods. An abstract class can also have real code and shared state.",
         explanation:
-          "C# allows multiple interface implementation; only one base class. Fields and constructors are abstract-class features.",
+          "Interfaces are pure contracts. Abstract classes can also provide shared implementation.",
       },
       {
         kind: "code-reading",
         question:
-          "Why does this compile?\n```csharp\npublic class InvoicePdfReport : PdfReport, IDisposable\n{\n    public void Dispose() { /* ... */ }\n    protected override string BuildBody() => \"...\";\n}\n```",
-        options: [
-          "Because `IDisposable` is special-cased by the runtime.",
-          "Because a class can inherit one base class and implement multiple interfaces simultaneously.",
-          "It does not compile.",
-          "Because `Dispose` has a default implementation.",
-        ],
-        correctAnswer:
-          "Because a class can inherit one base class and implement multiple interfaces simultaneously.",
+          "How many interfaces can a single class implement in C#?",
+        options: ["Only one", "Up to two", "Any number", "None"],
+        correctAnswer: "Any number",
         explanation:
-          "Single base inheritance, multiple interfaces — a foundational rule of the C# type system.",
+          "C# allows a class to implement as many interfaces as it needs, but only one base class.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with using an abstract class here?\n```csharp\npublic abstract class Loggable { public abstract void Log(string m); }\npublic class Order : Loggable { ... }\npublic class Email : Loggable { ... }\n```",
+          "Why is this often a bad idea?\n```csharp\npublic abstract class BaseService\n{\n}\npublic class OrderService : BaseService { }\npublic class EmailService : BaseService { }\n```",
         options: [
-          "`Order` and `Email` are not in the same family; an interface `ILoggable` would model this capability better without forcing a fake hierarchy.",
-          "Abstract classes cannot have abstract methods.",
-          "`Log` should return a value.",
-          "Nothing is wrong.",
+          "Nothing — it is fine.",
+          "OrderService and EmailService have nothing in common. Using inheritance with an empty base only adds confusion.",
+          "BaseService should be sealed.",
+          "Both classes need constructors.",
         ],
         correctAnswer:
-          "`Order` and `Email` are not in the same family; an interface `ILoggable` would model this capability better without forcing a fake hierarchy.",
+          "OrderService and EmailService have nothing in common. Using inheritance with an empty base only adds confusion.",
         explanation:
-          "Loggable is a cross-cutting capability, not an is-a relationship. An interface keeps the design open without burning the single base-class slot.",
+          "Abstract classes should add real shared behavior. An empty base class adds noise without value.",
       },
       {
         kind: "interview",
         question:
-          "When would you specifically prefer an abstract class over an interface?",
+          "When would you pick an abstract class over an interface?",
         options: [
-          "When you need multiple inheritance.",
-          "When several related types share fields and constructor logic and you want to enforce a template method.",
-          "Whenever the codebase is large.",
-          "When you only have one implementation.",
+          "Always — abstract classes are stronger.",
+          "When the family of types shares real implementation, fields, or constructor logic that you do not want to repeat.",
+          "Never — interfaces are always better.",
+          "When the class is sealed.",
         ],
         correctAnswer:
-          "When several related types share fields and constructor logic and you want to enforce a template method.",
+          "When the family of types shares real implementation, fields, or constructor logic that you do not want to repeat.",
         explanation:
-          "Shared state and template methods are the abstract-class sweet spot; the other options are either wrong or unrelated.",
+          "An abstract class is the right choice when there is real shared code that all children should reuse.",
       },
     ],
   },
 
   constructor: {
     whyItMatters:
-      "Constructors are where you validate inputs and accept dependencies. Get them right and the rest of the class can trust its state; get them wrong and `null` checks leak into every method.",
+      "A constructor makes sure every object starts in a valid state. An Order should always have a customer and at least one item. A User should always have a name. Without constructors, you can create objects that are half-filled and unsafe to use.",
     simpleExplanation:
-      "A constructor builds an object in a valid state. It runs once, when you call `new`, and is where required values are set.",
+      "A constructor is a special method that runs when you create an object. It sets up the initial state of the object. The constructor has the same name as the class and no return type.",
     deepExplanation:
-      "In .NET DI, the constructor is also the wiring point. ASP.NET Core looks at the parameter list, resolves each one from the container, and hands you a fully constructed service. Two rules follow: do not do real work in the constructor (no DB calls, no I/O), and refuse to build the object if a precondition is violated — throw instead of saving a `null`. This way every method on the class can assume the constructor succeeded and the fields are set.",
+      "A constructor has the same name as the class and no return type. A class can have many constructors, each with a different list of parameters. This is called constructor overloading. If you do not define any constructor, C# gives you a default one with no parameters. As soon as you add your own constructor, the default one is gone unless you write it yourself. In .NET, constructors are also where dependency injection happens — services receive their dependencies as constructor parameters.",
     realWorldUsage:
-      "`public OrderService(IOrderRepository repo, ILogger<OrderService> logger)` — the framework resolves both arguments from DI at request time. Inside the constructor, the service may assign and null-check but should not query the database.",
+      "An OrderService receives IOrderRepository and IEmailSender through its constructor. An entity like Invoice may use a constructor to make sure required fields are set. A configuration class loads values from settings at construction time. Almost every service class in a .NET application uses a constructor for dependency injection.",
     explainLikeBeginner:
-      "When you build a LEGO set, you snap the required pieces together first. The constructor is that initial 'must have' assembly.",
+      "A constructor is like setting up a new phone. Before you can use it, you turn it on, sign in, and set your preferences. The constructor does this setup automatically when the object is created.",
     interviewAnswer:
-      "The constructor's job is to put the object into a valid, fully-initialised state. In .NET it is also where required dependencies are accepted (constructor injection) and where preconditions on inputs are validated by throwing early.",
+      "A constructor is a special method that runs when an object is created. It sets the initial values of the object. In .NET, constructors are also used for dependency injection, where services receive the dependencies they need as constructor parameters.",
     commonMistakes: [
-      "Doing I/O in the constructor (database queries, HTTP calls) — makes the object hard to construct and impossible to test.",
-      "Accepting nullable dependencies and `null`-checking in every method instead of rejecting `null` at construction.",
-      "Writing many overloaded constructors with subtly different rules — converge on one main constructor and chain the others.",
+      "Forgetting to initialize required fields, which leaves the object in a bad state.",
+      "Putting heavy work like database calls inside a constructor.",
+      "Adding too many parameters, which is usually a sign the class is doing too much.",
     ],
     bestPractices: [
-      "Throw `ArgumentNullException` for required nullable params; throw `ArgumentException` for invalid values.",
-      "Keep constructors cheap and synchronous — defer real work to a method.",
-      "Use `: this(...)` constructor chaining to avoid duplicating validation logic.",
+      "Initialize all required fields in the constructor.",
+      "Use constructor parameters for dependencies and required values.",
+      "Keep constructors small and fast.",
     ],
     summary: [
-      "Constructors build an object in a valid state.",
-      "They are the wiring point for constructor injection.",
-      "Never do real work in a constructor — validate and assign.",
+      "A constructor prepares an object when it is created.",
+      "It makes sure every object starts in a valid state.",
+      "It is the main place for dependency injection in .NET.",
     ],
     codeExample: {
-      title: "Constructor with validation + DI",
-      code: `public sealed class PricingService
+      title: "Order constructor that requires id and customer",
+      code: `public class Order
 {
-    private readonly IRateProvider _rates;
-    private readonly ILogger<PricingService> _logger;
-    private readonly decimal _markup;
+    public int Id { get; }
+    public string Customer { get; }
+    public DateTime CreatedAt { get; }
 
-    public PricingService(
-        IRateProvider rates,
-        ILogger<PricingService> logger,
-        decimal markup)
+    public Order(int id, string customer)
     {
-        _rates = rates ?? throw new ArgumentNullException(nameof(rates));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        if (markup < 0) throw new ArgumentOutOfRangeException(nameof(markup));
-        _markup = markup;
+        if (string.IsNullOrWhiteSpace(customer))
+            throw new ArgumentException("Customer is required");
+
+        Id = id;
+        Customer = customer;
+        CreatedAt = DateTime.UtcNow;
     }
-}`,
-      output: "(throws ArgumentNullException if any dependency is null)",
+}
+
+var order = new Order(1, "Ali");
+Console.WriteLine($"Order {order.Id} for {order.Customer}");`,
+      output: "Order 1 for Ali",
       walkthrough: [
-        "Required dependencies are rejected with `ArgumentNullException` — the class cannot exist without them.",
-        "Domain values are bounded with `ArgumentOutOfRangeException`.",
-        "After the constructor returns, every method can trust that the fields are valid.",
+        "The constructor takes id and customer as parameters.",
+        "It validates that customer is not empty.",
+        "CreatedAt is set automatically to the current time.",
       ],
     },
     practice: {
       prompt:
-        "Write a `Money(decimal amount, string currency)` class. Reject `currency` that is not three uppercase letters, and reject negative amounts. Add a primary constructor and a second one that defaults the currency to `USD` by chaining.",
+        "Create a Student class with Name and Age. The constructor must accept both values and throw an exception if Name is empty or Age is less than 1.",
       expectedResult:
-        "`new Money(10, \"usd\")` throws; `new Money(10, \"USD\")` succeeds; `new Money(10)` succeeds with `USD`.",
+        "new Student(\"Ali\", 20) works. new Student(\"\", 20) throws ArgumentException. new Student(\"Ali\", 0) throws ArgumentException.",
       hints: [
-        "Validate with a small regex or `Length == 3 && currency.All(char.IsUpper)`.",
-        "Chain with `public Money(decimal amount) : this(amount, \"USD\") { }`.",
-        "Throw `ArgumentOutOfRangeException` for negative amounts.",
+        "Use string.IsNullOrWhiteSpace to check Name.",
+        "Throw ArgumentException with a clear message.",
+        "Set the values only after validation passes.",
       ],
       solution:
-        "Primary constructor performs all validation. Secondary chains to it. All call sites converge through a single guarded path, so there is no way to construct an invalid `Money`.",
+        "Inside the constructor, validate Name and Age first. If either is invalid, throw ArgumentException. If both are valid, assign them to the properties.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What should a constructor NOT do?",
+        question: "What is a constructor?",
         options: [
-          "Assign required fields from its parameters.",
-          "Validate inputs and throw on invalid values.",
-          "Perform an HTTP call to fetch additional data.",
-          "Chain to another constructor with `: this(...)`.",
+          "A method that runs when the program starts.",
+          "A special method that runs when an object is created and sets up its initial state.",
+          "A method that closes the application.",
+          "A type of interface.",
         ],
-        correctAnswer: "Perform an HTTP call to fetch additional data.",
+        correctAnswer:
+          "A special method that runs when an object is created and sets up its initial state.",
         explanation:
-          "Real work — I/O, DB, network — belongs in a method you can call when you need it, not in the constructor.",
+          "The constructor runs once per new object, right when it is created.",
       },
       {
         kind: "code-reading",
         question:
-          "What does this print?\n```csharp\ntry { var s = new PricingService(null!, NullLogger<PricingService>.Instance, 0.1m); }\ncatch (Exception e) { Console.WriteLine(e.GetType().Name); }\n```",
-        options: ["NullReferenceException", "ArgumentNullException", "ArgumentOutOfRangeException", "InvalidOperationException"],
-        correctAnswer: "ArgumentNullException",
+          "What happens when you write new Order(1, \"\")?\n```csharp\npublic Order(int id, string customer)\n{\n    if (string.IsNullOrWhiteSpace(customer))\n        throw new ArgumentException(\"Customer is required\");\n    Id = id;\n    Customer = customer;\n}\n```",
+        options: [
+          "An Order is created with empty Customer.",
+          "An ArgumentException is thrown.",
+          "Nothing happens.",
+          "Customer is set to null.",
+        ],
+        correctAnswer: "An ArgumentException is thrown.",
         explanation:
-          "The `?? throw` pattern raises `ArgumentNullException` specifically for null dependencies.",
+          "The constructor validates input and throws an exception if Customer is empty.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is the problem?\n```csharp\npublic class CustomerService\n{\n    private readonly Customer _customer;\n    public CustomerService(Guid id)\n    {\n        _customer = _db.Customers.Find(id);\n    }\n}\n```",
+          "What is the problem here?\n```csharp\npublic class OrderService\n{\n    public OrderService()\n    {\n        var orders = LoadAllOrdersFromDatabase();\n    }\n}\n```",
         options: [
-          "It cannot reference `_db` from a constructor.",
-          "The constructor does I/O against a database, making the service slow to construct, hard to test, and dependent on a static `_db`.",
-          "`Find` should be `FindAsync`.",
-          "Nothing is wrong.",
+          "Nothing — it is fine.",
+          "Heavy work like a database call should not happen inside a constructor.",
+          "OrderService needs a property.",
+          "The class needs to be sealed.",
         ],
         correctAnswer:
-          "The constructor does I/O against a database, making the service slow to construct, hard to test, and dependent on a static `_db`.",
+          "Heavy work like a database call should not happen inside a constructor.",
         explanation:
-          "Move the load into a method or accept a `Customer` as a parameter. Constructors should not block on network or DB.",
+          "Constructors should be fast and simple. Load data through a method, not during construction.",
       },
       {
         kind: "interview",
         question:
-          "Why is constructor injection preferred over property injection in .NET?",
+          "How are constructors used for dependency injection in .NET?",
         options: [
-          "Property injection is slower at runtime.",
-          "Constructor injection makes required dependencies explicit and the object always valid after construction; property injection allows half-initialised objects.",
-          "Property injection is not supported by C#.",
-          "Constructor injection requires less code.",
+          "Dependency injection does not use constructors.",
+          "Services declare their dependencies as constructor parameters. The DI container creates the object and passes the right instances automatically.",
+          "DI happens only through properties.",
+          "DI requires interfaces only.",
         ],
         correctAnswer:
-          "Constructor injection makes required dependencies explicit and the object always valid after construction; property injection allows half-initialised objects.",
+          "Services declare their dependencies as constructor parameters. The DI container creates the object and passes the right instances automatically.",
         explanation:
-          "Required deps belong in the constructor; the type system then enforces the contract at the call site.",
+          "Constructor injection is the standard pattern in .NET. The DI container builds the object graph and supplies dependencies through constructors.",
       },
     ],
   },
 
   "access-modifiers": {
     whyItMatters:
-      "Access modifiers are how you communicate intent to the rest of the team. The compiler then enforces it, so a teammate's autocomplete reflects what is actually safe to use.",
+      "Access modifiers protect your code. They make sure other parts of the project only use what they are allowed to use. They are the simplest tool we have to keep encapsulation in place.",
     simpleExplanation:
-      "Access modifiers control who can see a class or member. The defaults are restrictive on purpose — open things up only when you mean to.",
+      "Access modifiers control who can see and use a class member. The main ones are public, private, protected, and internal.",
     deepExplanation:
-      "The five you will use daily in .NET: `public` (visible everywhere), `internal` (visible inside the same assembly — the default for top-level classes), `protected` (visible to derived classes), `private` (visible inside the type — the default for members), and the combinations like `protected internal`. Two common patterns: keep helpers `private`; expose only the methods that are part of the type's contract `public`. For library code, prefer `internal` for things that are not part of the public API so you can change them without breaking consumers.",
+      "Each access modifier controls a different scope. Public is visible everywhere. Private is visible only inside the same class. Protected is visible inside the class and its child classes. Internal is visible inside the same project. There are also protected internal and private protected for more specific cases. Good code uses the smallest scope that still works — this is what makes encapsulation effective.",
     realWorldUsage:
-      "Your `OrderService` is `public` so the DI container can construct it. Its helper `RecalculateTotals` is `private`. A `protected virtual` `BuildBody` on `PdfReport` lets subclasses customise without making the seam public.",
+      "Entity properties are usually public so EF Core can read and write them. Helper methods inside a service are private because only the service itself uses them. Base entity members like CreatedAt setters may be protected so only child classes can set them. Internal is used to share code between files in the same project without exposing it to other projects.",
     explainLikeBeginner:
-      "A door labelled 'staff only' is `private`. A door labelled 'employees of this branch' is `internal`. The front door of the shop is `public`.",
+      "Think of a house. The front door is public — anyone can knock. Your bedroom is private — only you can enter. The hallway is protected — anyone in the family can use it. The shared family living room is internal — only people inside the house.",
     interviewAnswer:
-      "Access modifiers express what is part of a type's contract versus what is an implementation detail. In .NET the common ones are `public`, `internal`, `protected`, and `private`, plus combinations like `protected internal`. Keeping the public surface small is what lets a class evolve without breaking callers.",
+      "Access modifiers control the visibility of classes and members. In C#, the main ones are public, private, protected, and internal. We use them to protect data, control how parts of the application interact, and keep the design clean.",
     commonMistakes: [
-      "Making everything `public` 'just in case'. The public surface becomes the contract, even accidentally.",
-      "Forgetting that top-level classes default to `internal` — and being surprised when another project cannot see them.",
-      "Mixing `private` fields with `public` setters that bypass the rules the fields were meant to protect.",
+      "Making every field public, which breaks encapsulation.",
+      "Using internal when a member should be clearly public or private.",
+      "Forgetting that protected gives access to all child classes, not only the parent.",
     ],
     bestPractices: [
-      "Start `private`; widen access only when something else needs it.",
-      "Use `internal` for assembly-private helpers in libraries; `public` only for the official API.",
-      "Pair `protected virtual` with `sealed override` where appropriate to control extension points.",
+      "Default to private unless a wider scope is needed.",
+      "Use public only for the real API of the class.",
+      "Use protected only when child classes truly need access.",
     ],
     summary: [
-      "Access modifiers shape the type's contract.",
-      "Default to the most restrictive level that compiles.",
-      "Use `internal` to keep library internals replaceable.",
+      "Public = visible everywhere.",
+      "Private = visible only in the same class.",
+      "Protected = visible in the class and its child classes.",
+      "Internal = visible in the same project.",
     ],
     codeExample: {
-      title: "Mixed access on one type",
-      code: `public sealed class OrderService
+      title: "Different access levels on one Product class",
+      code: `public class Product
 {
-    private readonly IOrderRepository _repo;
+    public string Name { get; set; }
+    private decimal _price;
+    protected int StockLevel { get; set; }
+    internal string InternalCode { get; set; }
 
-    public OrderService(IOrderRepository repo) => _repo = repo;
+    public decimal GetPrice() => _price;
 
-    public async Task ConfirmAsync(Guid orderId)
+    public void SetPrice(decimal price)
     {
-        var order = await _repo.FindAsync(orderId) ?? throw new InvalidOperationException();
-        ApplyDiscount(order);
-        order.Confirm();
-        await _repo.SaveAsync(order);
+        if (price < 0) throw new ArgumentException("Price must be positive");
+        _price = price;
     }
-
-    private static void ApplyDiscount(Order order) { /* ... */ }
 }`,
-      output: "(implementation detail hidden; only ConfirmAsync is part of the contract)",
+      output: "Product created with controlled access to its data",
       walkthrough: [
-        "`public ConfirmAsync` is the operation other code is allowed to call.",
-        "`private ApplyDiscount` is an implementation detail, free to refactor without breaking callers.",
-        "`private readonly _repo` belongs to the service and is invisible to the outside.",
+        "Name is public, so any code can read or change it.",
+        "_price is private, so only the Product class can change it directly.",
+        "StockLevel is protected, so child classes can read or change it.",
+        "InternalCode is internal, so only code in the same project can see it.",
       ],
     },
     practice: {
       prompt:
-        "Take an existing class that has many `public` properties and audit each one. For every property, decide whether it is part of the type's contract. If not, change it to `private` (or `private` set, `public` get).",
+        "Create a User class with a public Name property, a private PasswordHash field, and a public method SetPassword(string plain) that stores a hashed version (you can just call plain.GetHashCode().ToString() for the example).",
       expectedResult:
-        "The public surface of the class shrinks; methods inside it still work because nothing outside relied on the now-private members.",
+        "Outside code can set Name and call SetPassword. PasswordHash is not visible from outside.",
       hints: [
-        "Use 'Find All References' in your IDE to confirm no external caller uses each member.",
-        "Migrate fields to properties with appropriate access at the same time.",
-        "Compile after each change.",
+        "Use private string _passwordHash.",
+        "Add a public method SetPassword that updates _passwordHash.",
+        "Do not expose _passwordHash as a public property.",
       ],
       solution:
-        "The exercise enforces the discipline of minimising public surface. Anything no external caller needs becomes `private` (or `internal` for cross-class but assembly-local use).",
+        "Declare _passwordHash as private. Add a SetPassword method that takes the plain password, hashes it, and assigns the result to _passwordHash. Name is a normal public property.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What is the default access for a top-level class with no modifier?",
-        options: ["`public`", "`internal`", "`private`", "`protected`"],
-        correctAnswer: "`internal`",
+        question: "Which access modifier limits visibility to the same class only?",
+        options: ["public", "internal", "protected", "private"],
+        correctAnswer: "private",
         explanation:
-          "Top-level types default to `internal`. Members of a class default to `private`. Knowing this avoids surprises in multi-project solutions.",
+          "Private members are only visible inside the class where they are declared.",
       },
       {
         kind: "code-reading",
         question:
-          "Which line will fail to compile, given `Bar` lives in another assembly?\n```csharp\n// in assembly A\ninternal class Foo { internal void Run() { } }\n\n// in assembly B\nclass Bar { void X() { var f = new Foo(); f.Run(); } }\n```",
+          "Given:\n```csharp\npublic class Animal { protected int Age { get; set; } }\npublic class Dog : Animal {\n    public void Show() { Console.WriteLine(Age); }\n}\n```\nDoes this compile?",
         options: [
-          "Only `var f = new Foo();`",
-          "Only `f.Run();`",
-          "Both — `Foo` and its method are not visible outside assembly A.",
-          "Nothing — it compiles.",
+          "No — Age is private.",
+          "Yes — Age is protected, so Dog can access it because Dog inherits from Animal.",
+          "No — protected fields cannot be used.",
+          "Yes, but it prints nothing.",
         ],
-        correctAnswer: "Both — `Foo` and its method are not visible outside assembly A.",
+        correctAnswer:
+          "Yes — Age is protected, so Dog can access it because Dog inherits from Animal.",
         explanation:
-          "`internal` confines visibility to the declaring assembly. Both the construction and the call fail.",
+          "Protected members are visible in the class itself and in any class that inherits from it.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is the design problem?\n```csharp\npublic class Order\n{\n    public decimal Total;\n    public void Recalculate() { Total = /* ... */; }\n}\n```",
+          "Why is this design weak?\n```csharp\npublic class BankAccount\n{\n    public decimal Balance;\n}\n```",
         options: [
-          "`Total` is a public field, which lets external code overwrite it and bypass `Recalculate`.",
-          "`Recalculate` should be `private`.",
-          "Fields are illegal in C#.",
-          "Nothing is wrong.",
+          "Nothing.",
+          "Balance is a public field, so anyone can change it directly without any rule.",
+          "BankAccount needs a constructor.",
+          "It will not compile.",
         ],
         correctAnswer:
-          "`Total` is a public field, which lets external code overwrite it and bypass `Recalculate`.",
+          "Balance is a public field, so anyone can change it directly without any rule.",
         explanation:
-          "Make `Total` a `public decimal Total { get; private set; }`. Public mutable fields defeat encapsulation regardless of intent.",
+          "Public fields break encapsulation. Use a private field with a property that has controlled access, or expose changes only through methods like Deposit and Withdraw.",
       },
       {
         kind: "interview",
         question:
-          "Why prefer `internal` over `public` for helper classes in a library?",
+          "How would you explain access modifiers in an interview?",
         options: [
-          "It is faster at runtime.",
-          "It keeps them out of the package's public API so you can refactor them later without breaking consumers.",
-          "`internal` types cannot be used in DI.",
-          "There is no real difference.",
+          "They are required by C# but optional in real projects.",
+          "Access modifiers control who can see and use a class member. They are the main tool we use to protect data and keep encapsulation in place.",
+          "They only affect performance.",
+          "They replace the need for tests.",
         ],
         correctAnswer:
-          "It keeps them out of the package's public API so you can refactor them later without breaking consumers.",
+          "Access modifiers control who can see and use a class member. They are the main tool we use to protect data and keep encapsulation in place.",
         explanation:
-          "Anything `public` is a contract for everyone who depends on your package. Keep that surface as small as you can.",
+          "Access modifiers are a small feature with a big impact on safety and design.",
       },
     ],
   },
 
   "simple-oop-coding-tasks": {
     whyItMatters:
-      "OOP only sticks if you write it. Small drills — bank account, shopping cart, library book — are the fastest way to internalise the four pillars without drowning in framework noise.",
+      "Reading about OOP is not enough. You learn it by writing small classes and using them in tiny programs. Practice is what turns theory into a real skill.",
     simpleExplanation:
-      "These are bite-sized exercises that ask you to model one concept (account, cart, book) using classes, encapsulation, and methods that enforce rules.",
+      "These are small exercises that help you practice the main OOP ideas — classes, encapsulation, inheritance, polymorphism, and abstraction — with real types like Student, Order, Product, and BankAccount.",
     deepExplanation:
-      "Aim for code that another junior could read aloud. Each class has one job, fields are private, methods describe intent, invariants are checked at the boundary. After you finish a drill, refactor it once: extract an interface where you can imagine a fake, add a unit test that pins the rule. That second pass is where most of the learning lives.",
+      "Start with one class and one simple rule. Add a constructor that validates the input. Add a method that protects the state. Then build something slightly bigger, like a list of objects and a service that uses them. Each small task focuses on one idea. Over time, these small habits build into the design skills you use in real .NET projects every day.",
     realWorldUsage:
-      "Every entity in a production service — `Order`, `Invoice`, `Subscription` — is essentially one of these drills scaled up. Mastering the small version makes the large version routine.",
+      "The same patterns from practice appear in real applications. A CartService works with CartItem objects and calculates totals. A PaymentService validates and processes payments. A UserService handles user registration and password updates. Small practice classes are simple versions of the same patterns you will see in production code.",
     explainLikeBeginner:
-      "Like practising scales before playing a song. Small drills make the bigger pieces feel obvious.",
+      "Learning OOP is like learning to cook. You read recipes, but you only get good by cooking small meals. Each practice task is a small meal that teaches you one technique.",
     interviewAnswer:
-      "I work through small OOP drills — model a `BankAccount`, a `ShoppingCart`, an `Inventory` — focusing on private state, intent-revealing methods, and unit tests. The goal is to internalise encapsulation and clear contracts before tackling framework-heavy code.",
+      "Practical OOP tasks turn theory into real code. For example, building a BankAccount class with Deposit and Withdraw methods shows encapsulation, validation, and clean object state. These are the same patterns used in real .NET services every day.",
     commonMistakes: [
-      "Solving the drill with one giant method instead of methods named after the rules.",
-      "Skipping the unit test — the test is where the design hurts when it is wrong.",
-      "Adding inheritance or interfaces before they are needed by the problem.",
+      "Skipping practice and reading only theory.",
+      "Building classes without validation or behavior.",
+      "Trying to add too many features to one class instead of keeping it focused.",
     ],
     bestPractices: [
-      "Name methods after what they do in the domain, not how they do it.",
-      "Write one passing test per behaviour you implement.",
-      "Refactor immediately after the test goes green — that is the cheap moment.",
+      "Pick one OOP idea per task — encapsulation, inheritance, or polymorphism.",
+      "Use realistic names like Student, Order, or Invoice.",
+      "Keep the class small and focused on one job.",
     ],
     summary: [
-      "Small OOP drills cement the pillars.",
-      "Always write at least one test per behaviour.",
-      "Refactor in the green moment, not later.",
+      "Small coding tasks turn OOP from theory into a skill.",
+      "Each task should focus on one idea.",
+      "Practice with classes like Student, Order, and BankAccount.",
     ],
     codeExample: {
-      title: "Drill: BankAccount with overdraft rule",
-      code: `public sealed class BankAccount
+      title: "A small Student class with grades and an average",
+      code: `public class Student
 {
-    private decimal _balance;
-    private readonly decimal _overdraftLimit;
+    public string Name { get; set; }
+    public List<int> Grades { get; } = new();
 
-    public BankAccount(decimal opening, decimal overdraftLimit = 0)
+    public double Average()
     {
-        if (opening < 0) throw new ArgumentException();
-        _balance = opening;
-        _overdraftLimit = overdraftLimit;
+        if (Grades.Count == 0) return 0;
+        return Grades.Average();
     }
+}
 
-    public decimal Balance => _balance;
-
-    public void Withdraw(decimal amount)
-    {
-        if (amount <= 0) throw new ArgumentException();
-        if (_balance - amount < -_overdraftLimit)
-            throw new InvalidOperationException("Exceeds overdraft.");
-        _balance -= amount;
-    }
-}`,
-      output: "Balance after withdraw 30 from 50 with overdraft 0: 20",
+var student = new Student { Name = "Ali" };
+student.Grades.Add(80);
+student.Grades.Add(90);
+Console.WriteLine($"{student.Name} average: {student.Average()}");`,
+      output: "Ali average: 85",
       walkthrough: [
-        "Private field, public read-only projection.",
-        "The overdraft rule is a single guard inside `Withdraw`.",
-        "Tests would cover: at limit, beyond limit, zero, negative.",
+        "Student has a name and a list of grades.",
+        "Average returns the average grade, or zero if there are no grades.",
+        "The object is created, two grades are added, and the average is printed.",
       ],
     },
     practice: {
       prompt:
-        "Implement a `Library` class with a `BorrowBook(string isbn, string memberId)` and a `ReturnBook(string isbn)` method. Track loans internally. A book that is already on loan cannot be borrowed again.",
+        "Build a small Order class that has a list of OrderItem (Name and Price). Add a method Total() that returns the sum of all item prices. Then create an order with three items and print the total.",
       expectedResult:
-        "Borrowing a book on loan throws; returning it makes it available again; the library never exposes the raw loan map.",
+        "An order with items priced 10, 20, and 30 should return 60 from Total().",
       hints: [
-        "Use a `Dictionary<string, string>` keyed by ISBN with the borrower as the value.",
-        "Expose loans only via a read-only projection.",
-        "Write tests for the borrow/return/borrow-again sequence.",
+        "Create OrderItem with Name and Price.",
+        "Use a private list inside Order and expose it as IReadOnlyList<OrderItem>.",
+        "Add an AddItem method so callers cannot mutate the list directly.",
       ],
       solution:
-        "Private `_loans` dictionary; `BorrowBook` checks `ContainsKey` and throws if true. `ReturnBook` calls `Remove`. Public `Loans` returns `IReadOnlyDictionary<string, string>`. Three small tests cover the main paths.",
+        "Define OrderItem with Name and Price. Define Order with a private List<OrderItem>, an AddItem method, and a Total method that sums the prices. Use it to add three items and print the total.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What is the main goal of a small OOP drill?",
+        question: "Why is small coding practice important when learning OOP?",
         options: [
-          "To write as much code as possible.",
-          "To practise encapsulation, intent-revealing methods, and small tests on a problem you can hold in your head.",
-          "To explore framework features.",
-          "To memorise design patterns.",
+          "It is not — reading is enough.",
+          "It turns theory into a real skill by giving you hands-on experience with classes, methods, and validation.",
+          "It only matters before interviews.",
+          "It replaces the need for design.",
         ],
         correctAnswer:
-          "To practise encapsulation, intent-revealing methods, and small tests on a problem you can hold in your head.",
+          "It turns theory into a real skill by giving you hands-on experience with classes, methods, and validation.",
         explanation:
-          "Drills are deliberately tiny so the design choices stand out and you can finish them with a test in the green.",
+          "OOP is a skill, not just a topic. Small practice tasks build the habits you will use every day.",
       },
       {
         kind: "code-reading",
         question:
-          "What does this assert?\n```csharp\nvar acct = new BankAccount(50, overdraftLimit: 0);\nAssert.Throws<InvalidOperationException>(() => acct.Withdraw(60));\n```",
-        options: [
-          "That withdrawing more than the balance throws when overdraft is zero.",
-          "That `Withdraw` returns the new balance.",
-          "That `Withdraw` is `async`.",
-          "Nothing — the code does not compile.",
-        ],
-        correctAnswer: "That withdrawing more than the balance throws when overdraft is zero.",
-        explanation:
-          "The test pins the overdraft rule precisely at the boundary the class is responsible for.",
+          "Given:\n```csharp\nvar account = new BankAccount();\naccount.Deposit(50);\naccount.Withdraw(20);\nConsole.WriteLine(account.Balance);\n```\nIf Deposit and Withdraw work correctly, what is printed?",
+        options: ["30", "20", "70", "50"],
+        correctAnswer: "30",
+        explanation: "50 deposited minus 20 withdrawn equals 30.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is the design problem?\n```csharp\npublic void DoStuff(BankAccount a)\n{\n    if (a.Balance >= 50) { a.Balance -= 50; }\n}\n```",
+          "What is wrong here?\n```csharp\npublic class Order\n{\n    public List<OrderItem> Items;\n    public decimal Total => Items.Sum(i => i.Price);\n}\n```",
         options: [
-          "It will not compile if `Balance` has a private setter.",
-          "It defeats encapsulation by performing the withdrawal rule outside the class instead of calling `a.Withdraw(50)`.",
-          "`DoStuff` should be `async`.",
-          "`50` should be a constant.",
+          "Nothing.",
+          "Items is public and not initialized, so any caller can replace it or get a NullReferenceException.",
+          "Total should be a method.",
+          "OrderItem must be sealed.",
         ],
         correctAnswer:
-          "It defeats encapsulation by performing the withdrawal rule outside the class instead of calling `a.Withdraw(50)`.",
+          "Items is public and not initialized, so any caller can replace it or get a NullReferenceException.",
         explanation:
-          "Even if the setter were public, the rule belongs on the account. The caller should ask, not poke.",
+          "Initialize the list and keep it private. Expose it only through controlled methods like AddItem.",
       },
       {
         kind: "interview",
-        question: "Why are small OOP drills useful as interview prep?",
+        question:
+          "How would you talk about small OOP practice tasks in an interview?",
         options: [
-          "They prove you can write huge applications.",
-          "They show in 15 minutes whether a candidate can model a domain, hide state, and write a focused test — exactly the skills a junior backend role needs.",
-          "They make you memorise framework APIs.",
-          "They are not useful.",
+          "They are only for students.",
+          "They help me practice each OOP idea in isolation — encapsulation, inheritance, polymorphism — and the same patterns appear in real .NET services every day.",
+          "They have no value in real work.",
+          "They are required for every interview.",
         ],
         correctAnswer:
-          "They show in 15 minutes whether a candidate can model a domain, hide state, and write a focused test — exactly the skills a junior backend role needs.",
+          "They help me practice each OOP idea in isolation — encapsulation, inheritance, polymorphism — and the same patterns appear in real .NET services every day.",
         explanation:
-          "Live-coding rounds are usually a small OOP drill; mastering the form pays back directly.",
+          "Small practice tasks build the habits used in production code, which is exactly what interviewers want to hear.",
       },
     ],
   },
 
   "oop-in-real-backend-projects": {
     whyItMatters:
-      "Tutorials show single-file examples; real backends layer dozens of classes. Knowing how OOP plays out across controllers, services, repositories, and entities is what makes a real codebase legible.",
+      "When you join a real project, you will read code written by other .NET developers. Knowing how OOP is used in real applications helps you read the code, understand it, and contribute safely without breaking things.",
     simpleExplanation:
-      "In a real .NET service, OOP shows up as a stack: controllers handle HTTP, services contain rules, repositories talk to the database, and entities (or domain objects) hold business state.",
+      "Real .NET projects are built using many classes and interfaces that work together. Entities describe data. Services contain business logic. Repositories handle the database. Controllers handle API requests. DTOs carry data between layers. Each part is a class with a clear job.",
     deepExplanation:
-      "Each layer has one job. The controller turns HTTP into a method call on a service. The service orchestrates rules and uses repositories for persistence. The entity owns the invariants — it is the OOP heart of the system. Dependencies point inwards: controllers know services, services know repository interfaces, but entities know nothing about HTTP or SQL. This separation is what lets you swap EF Core for Dapper, or unit-test a service without standing up a database.",
+      "A typical .NET application is organized into layers. Entities describe the data, like User, Order, and Product. Repositories handle database access through interfaces like IOrderRepository. Services contain business logic. Controllers handle API requests. DTOs carry data between layers. Each layer is built with classes and interfaces. Dependency injection connects them. Encapsulation keeps data safe. Polymorphism lets you swap implementations. Abstraction lets you change one part without breaking the rest. This is why OOP is the foundation of every modern .NET application.",
     realWorldUsage:
-      "A POST to `/orders/{id}/confirm` calls `OrdersController.Confirm(id)`, which calls `_orderService.ConfirmAsync(id)`, which loads via `IOrderRepository`, calls `order.Confirm()` on the entity, then saves. Three layers, each replaceable.",
+      "An ERP system has services for orders, invoices, payments, and reports, all built as classes. An e-commerce API has controllers for products, carts, and checkout, each using injected services. A banking application uses entities like Account and Transaction with strict encapsulation around balances. The structure is similar across most .NET projects.",
     explainLikeBeginner:
-      "Think of a restaurant. The waiter (controller) takes the order. The chef (service) decides how to cook it. The pantry (repository) holds ingredients. The dish (entity) is what gets served.",
+      "Think of a company. Each person has a role: the cashier, the manager, the accountant. They each have their own job and tools, but they work together to run the business. A .NET application is the same — each class has its own job, and they work together to handle real requests.",
     interviewAnswer:
-      "I structure backends with controllers handling HTTP, services holding business rules, repositories abstracting persistence, and entities owning the domain invariants. Each layer depends on abstractions from the layer beneath it, which keeps the rules testable and the infrastructure swappable.",
+      "In real .NET applications, OOP is used to organize the code into entities, services, repositories, controllers, and DTOs. Each part is a class or interface with a clear job. Dependency injection connects them. This design makes the project easy to read, test, and extend over time.",
     commonMistakes: [
-      "Putting business rules in the controller — the controller becomes a god class and the service is a pass-through.",
-      "Letting entities query the database — they should know nothing about persistence.",
-      "Skipping the repository abstraction and using `DbContext` directly in services for 'simplicity', then being unable to test them.",
+      "Putting business logic in the controller instead of a service.",
+      "Skipping interfaces and tying services directly to a specific database implementation.",
+      "Building classes with too many responsibilities.",
     ],
     bestPractices: [
-      "Push rules down: controllers parse, services decide, entities enforce.",
-      "Depend on `IRepository`, never on `DbContext`, inside services.",
-      "Keep entities free of attributes and references that tie them to a specific framework.",
+      "Keep controllers thin — they should only handle HTTP and delegate to services.",
+      "Use interfaces for services and repositories so they can be replaced or mocked.",
+      "Separate the entity (database shape) from the DTO (API shape).",
     ],
     summary: [
-      "Real .NET backends layer controllers, services, repositories, entities.",
-      "Dependencies point inwards toward the domain.",
-      "Each layer is replaceable and testable in isolation.",
+      "OOP is the way real .NET applications are organized.",
+      "Entities, services, repositories, controllers, and DTOs each have a clear role.",
+      "Dependency injection connects the parts cleanly.",
     ],
     codeExample: {
-      title: "The full slice for confirming an order",
-      code: `[ApiController, Route("orders")]
-public class OrdersController : ControllerBase
+      title: "A clean OrderService that depends on IOrderRepository",
+      code: `public interface IOrderRepository
 {
-    private readonly IOrderService _orders;
-    public OrdersController(IOrderService orders) => _orders = orders;
-
-    [HttpPost("{id:guid}/confirm")]
-    public async Task<IActionResult> Confirm(Guid id)
-    {
-        await _orders.ConfirmAsync(id);
-        return NoContent();
-    }
+    Task<Order> GetByIdAsync(int id);
+    Task AddAsync(Order order);
 }
 
-public sealed class OrderService : IOrderService
+public class OrderService
 {
-    private readonly IOrderRepository _repo;
-    public OrderService(IOrderRepository repo) => _repo = repo;
+    private readonly IOrderRepository _orders;
 
-    public async Task ConfirmAsync(Guid id)
+    public OrderService(IOrderRepository orders)
     {
-        var order = await _repo.FindAsync(id)
-            ?? throw new NotFoundException("Order", id.ToString());
-        order.Confirm();
-        await _repo.SaveAsync(order);
+        _orders = orders;
+    }
+
+    public async Task<Order> PlaceOrderAsync(Order order)
+    {
+        await _orders.AddAsync(order);
+        return order;
     }
 }`,
-      output: "HTTP/1.1 204 No Content",
+      output: "PlaceOrderAsync saves the order through the repository",
       walkthrough: [
-        "Controller is a thin adapter — it parses the route and calls the service.",
-        "Service holds the orchestration: load, mutate, save.",
-        "Entity enforces the rule (`order.Confirm()` rejects empty orders, etc.).",
+        "IOrderRepository is an interface that hides the data access details.",
+        "OrderService receives the repository through its constructor.",
+        "The service uses the repository without knowing how it works inside.",
       ],
     },
     practice: {
       prompt:
-        "Slice a tiny `/customers/{id}/deactivate` endpoint. Implement a `CustomersController`, an `ICustomerService` with `DeactivateAsync`, an `ICustomerRepository`, and a `Customer` entity that refuses to deactivate if there are unpaid invoices.",
+        "Design a small CustomerService that depends on an ICustomerRepository interface. The service has a method GetCustomerNameAsync(int id) that returns the customer's name, or 'Unknown' if the customer is not found.",
       expectedResult:
-        "The rule lives on `Customer.Deactivate`; the service orchestrates load-mutate-save; the controller is two lines.",
+        "When the repository returns a customer with Name = 'Ali', the service returns 'Ali'. When the repository returns null, the service returns 'Unknown'.",
       hints: [
-        "Inject the service into the controller via constructor.",
-        "Use an in-memory repository to test the service without a database.",
-        "Throw a meaningful exception (`InvalidOperationException`) when invoices are unpaid.",
+        "Define ICustomerRepository with Task<Customer?> GetByIdAsync(int id).",
+        "Inject the repository through the CustomerService constructor.",
+        "Inside the method, await the repository call and check for null.",
       ],
       solution:
-        "The endpoint returns `204` on success and translates the exception to `409 Conflict` via middleware. Each layer is testable in isolation: controller (with a fake service), service (with an in-memory repo), entity (pure unit test).",
+        "Define ICustomerRepository and Customer. CustomerService receives ICustomerRepository through its constructor and uses it inside GetCustomerNameAsync. If the customer is null, return 'Unknown'. Otherwise return customer.Name.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Where do business rules belong in a layered .NET backend?",
+        question: "Which OOP idea makes it possible to swap a real repository with a fake one in a test?",
         options: [
-          "In the controller, so they are close to the HTTP route.",
-          "In the database via stored procedures.",
-          "On the entity and orchestrated by the service.",
-          "Anywhere — it does not matter.",
+          "Inheritance",
+          "Encapsulation",
+          "Polymorphism through interfaces and dependency injection",
+          "Static methods",
         ],
-        correctAnswer: "On the entity and orchestrated by the service.",
+        correctAnswer:
+          "Polymorphism through interfaces and dependency injection",
         explanation:
-          "Putting rules on the entity keeps them centralised and unit-testable; the service orchestrates without re-implementing the rule.",
+          "The service depends on the interface, so any implementation that matches can be plugged in — including a fake one in a test.",
       },
       {
         kind: "code-reading",
         question:
-          "Why is `OrdersController` easy to test even without a real database?",
+          "In this code, what is the role of OrderService?\n```csharp\npublic class OrderService\n{\n    private readonly IOrderRepository _orders;\n    public OrderService(IOrderRepository orders) => _orders = orders;\n    public Task<Order> PlaceOrderAsync(Order order) => _orders.AddAsync(order);\n}\n```",
         options: [
-          "Because controllers are special-cased by the framework.",
-          "Because it depends on `IOrderService`, which can be replaced with a fake in tests.",
-          "Because `ConfirmAsync` is `async`.",
-          "Because `NoContent` does not touch the database.",
+          "It handles HTTP requests directly.",
+          "It contains business logic and uses the repository for data access.",
+          "It is a DTO.",
+          "It is a database table.",
         ],
         correctAnswer:
-          "Because it depends on `IOrderService`, which can be replaced with a fake in tests.",
+          "It contains business logic and uses the repository for data access.",
         explanation:
-          "Depending on the abstraction is the unlock. The controller never sees the concrete implementation.",
+          "Services hold business logic. They depend on repositories or other services through interfaces.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What design rule does this break?\n```csharp\npublic class CustomersController : ControllerBase\n{\n    private readonly AppDbContext _db;\n    public async Task<IActionResult> Deactivate(Guid id)\n    {\n        var c = await _db.Customers.FindAsync(id);\n        if (c.HasUnpaidInvoices()) return Conflict();\n        c.IsActive = false;\n        await _db.SaveChangesAsync();\n        return NoContent();\n    }\n}`",
+          "What is wrong with this controller?\n```csharp\n[HttpPost]\npublic async Task<IActionResult> CreateOrder(Order order)\n{\n    using var context = new AppDbContext();\n    context.Orders.Add(order);\n    await context.SaveChangesAsync();\n    return Ok(order);\n}\n```",
         options: [
-          "It puts persistence and business logic directly in the controller, with no service or repository abstraction.",
-          "`Deactivate` is not allowed to be `async`.",
-          "`FindAsync` does not exist.",
-          "Nothing is wrong.",
+          "Nothing — it is clean.",
+          "The controller knows about the database directly. Data access should be hidden behind a service or repository, and the DbContext should be injected, not created manually.",
+          "The method should be synchronous.",
+          "Order should be a DTO.",
         ],
         correctAnswer:
-          "It puts persistence and business logic directly in the controller, with no service or repository abstraction.",
+          "The controller knows about the database directly. Data access should be hidden behind a service or repository, and the DbContext should be injected, not created manually.",
         explanation:
-          "The controller now knows about EF Core and the business rule simultaneously. It is also untestable without spinning up the database.",
+          "Controllers should be thin. They handle HTTP and call services. Mixing data access into the controller makes it hard to test and reuse.",
       },
       {
         kind: "interview",
         question:
-          "An interviewer asks: 'Why introduce a repository when EF Core already abstracts the database?'",
+          "How would you describe a clean .NET project structure using OOP?",
         options: [
-          "It does not — always use `DbContext` directly.",
-          "A repository gives a domain-shaped abstraction that the service can fake in tests, and it isolates the choice of EF Core so it can be swapped or supplemented later.",
-          "It is faster than EF Core.",
-          "Repositories are required by C#.",
+          "Everything in one big class.",
+          "Entities for data, services for business logic, repositories for data access, controllers for HTTP, and DTOs for the API contract — all connected through interfaces and dependency injection.",
+          "Static classes everywhere.",
+          "Inheritance for every relationship.",
         ],
         correctAnswer:
-          "A repository gives a domain-shaped abstraction that the service can fake in tests, and it isolates the choice of EF Core so it can be swapped or supplemented later.",
+          "Entities for data, services for business logic, repositories for data access, controllers for HTTP, and DTOs for the API contract — all connected through interfaces and dependency injection.",
         explanation:
-          "EF Core abstracts SQL but couples you to its API. A thin repository keeps services depending on your domain language, not on the ORM.",
+          "This is the standard layered design used in most modern .NET applications.",
       },
     ],
   },

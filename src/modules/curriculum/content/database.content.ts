@@ -3,1644 +3,1653 @@ import type { ModuleContent } from "./types";
 export const databaseContent: ModuleContent = {
   entity: {
     whyItMatters:
-      "An entity is the noun in your domain — Order, Customer, Invoice. Naming it well and shaping it deliberately is the first decision the schema and the API both inherit.",
+      "Entities are how your .NET code talks to the database. Every Customer, Order, or Invoice you save and load goes through an entity class. Getting them right is what makes the rest of the data layer simple and safe.",
     simpleExplanation:
-      "An entity is a thing your system stores and reasons about. It usually corresponds to a row in a table or a document in a store.",
+      "An entity is a C# class that represents a row in a database table. Each property maps to a column. EF Core uses entities to read and write data.",
     deepExplanation:
-      "Entities have identity (an `Id` that distinguishes one from another even when fields are equal), state (their fields), and behaviour (methods that enforce rules). In .NET with EF Core, an entity is a C# class mapped to a table. Identity is usually a `Guid` or `int` primary key. Anything without stable identity (a pair of address lines, a money amount) is a value object, not an entity.",
+      "An entity has properties for each column and usually an Id property for the primary key. EF Core tracks entities while they are loaded, so when you change a property and call SaveChanges, the framework generates the right UPDATE statement. Entities can also have navigation properties — references to other entities — that map to foreign key relationships.",
     realWorldUsage:
-      "`Order` is an entity — two orders with the same total are still different orders because they have different ids. `Money(amount, currency)` is a value object — two `Money(10, USD)` are interchangeable.",
+      "A Customer entity has Id, Name, Email, and a list of Orders. An Order entity has Id, CustomerId, CreatedAt, and a list of OrderLines. Each entity matches one table. The service layer loads, modifies, and saves entities through EF Core.",
     explainLikeBeginner:
-      "Entities are like people: even twins are different individuals. Value objects are like banknotes of the same denomination: one $10 bill is as good as another.",
+      "An entity is like a printed form. Each form has labeled fields (Name, Date, Total). Each form fills one row in a binder (the table). The class describes what the form looks like.",
     interviewAnswer:
-      "An entity is a domain concept with stable identity, state, and behaviour, mapped to a row in a relational database. We distinguish it from value objects, which are interchangeable on equal fields.",
+      "An entity is a C# class that maps to a row in a database table. Properties map to columns. EF Core uses entities to load data, track changes, and save updates. Entities are the foundation of the data layer in a .NET application.",
     commonMistakes: [
-      "Modelling everything as an entity, including values like Money or Address.",
-      "Treating an entity as a bag of public setters, losing all invariants.",
-      "Letting database concerns (column names, indexes) bleed into the entity's class name.",
+      "Mixing API attributes and database attributes on the same class.",
+      "Forgetting to include navigation properties for relationships.",
+      "Exposing the entity directly through the API instead of using a DTO.",
     ],
     bestPractices: [
-      "Name entities after the business noun.",
-      "Give them an `Id`; default to `Guid` unless ordering matters.",
-      "Encapsulate state changes behind methods.",
+      "Keep entities focused on the database.",
+      "Use clear names that match the real world (Customer, Order, Invoice).",
+      "Use navigation properties to express relationships.",
     ],
     summary: [
-      "Entity = identity + state + behaviour.",
-      "Value object = no identity, equal fields = equal value.",
-      "Name after the domain, not the technical layer.",
+      "An entity = a row in a table, expressed as a C# class.",
+      "EF Core tracks entities and saves changes automatically.",
+      "Entities live in the data layer, not in the API contract.",
     ],
     codeExample: {
-      title: "Entity vs value object",
-      code: `public sealed class Order   // entity
+      title: "A simple Customer entity with one related list",
+      code: `public class Customer
 {
-    public Guid Id { get; }
-    public Money Total { get; private set; }
-    public Order(Guid id, Money total) { Id = id; Total = total; }
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public List<Order> Orders { get; set; } = new();
 }
 
-public readonly record struct Money(decimal Amount, string Currency); // value object`,
-      output: "(types only; identity vs equality semantics)",
+public class Order
+{
+    public int Id { get; set; }
+    public int CustomerId { get; set; }
+    public Customer? Customer { get; set; }
+    public decimal Total { get; set; }
+}`,
+      output: "Two entities — one for customers and one for orders, connected by CustomerId.",
       walkthrough: [
-        "`Order` has an identity-only equality — two orders with the same total are not equal.",
-        "`Money` is a value: equal amount and currency means equal money.",
-        "Choosing the right kind reduces accidental bugs in collections and comparisons.",
+        "Customer maps to the Customers table.",
+        "Order maps to the Orders table and has a CustomerId foreign key.",
+        "Navigation properties (Orders and Customer) describe the relationship.",
       ],
     },
     practice: {
       prompt:
-        "Decide for each of these whether it is an entity or a value object: `Address`, `Customer`, `Coordinates(lat, lng)`, `Invoice`. Justify each.",
-      expectedResult: "Each decision is grounded in whether two instances with the same fields are interchangeable.",
+        "Define an Invoice entity with Id, Number (string), CreatedAt (DateTime), Total (decimal), and a CustomerId foreign key. Add a navigation property Customer back to the Customer entity.",
+      expectedResult:
+        "Invoice has five scalar properties and one navigation property to Customer.",
       hints: [
-        "If swapping one for another with the same fields would never matter, it is a value.",
-        "If you would refer to it by id elsewhere, it is an entity.",
-        "When in doubt, lean value object — they are simpler.",
+        "Use int Id and int CustomerId.",
+        "Add a Customer? property as the navigation.",
+        "Use decimal for monetary values.",
       ],
       solution:
-        "Address = value (usually). Customer = entity. Coordinates = value. Invoice = entity. Apply the same lens to your own domain types.",
+        "Define Invoice with Id, Number, CreatedAt, Total, CustomerId, and a nullable Customer? property. EF Core uses CustomerId as the foreign key and Customer as the navigation.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What distinguishes an entity from a value object?",
+        question: "What is an entity in .NET?",
         options: [
-          "Entities are stored in databases; value objects are not.",
-          "Entities have identity; two instances with the same fields are still different. Value objects have no identity; equal fields means equal value.",
-          "Entities can have behaviour; value objects cannot.",
-          "There is no real difference.",
+          "A controller.",
+          "A C# class that maps to a row in a database table.",
+          "A type of HTTP response.",
+          "A configuration file.",
         ],
         correctAnswer:
-          "Entities have identity; two instances with the same fields are still different. Value objects have no identity; equal fields means equal value.",
+          "A C# class that maps to a row in a database table.",
         explanation:
-          "Identity is the line between the two. Both can carry behaviour; both can be persisted.",
+          "Entities are the foundation of the data layer in .NET applications using EF Core.",
       },
       {
         kind: "code-reading",
         question:
-          "Why is `Money` declared as a `readonly record struct` here?",
+          "What does this property do?\n```csharp\npublic List<Order> Orders { get; set; } = new();\n```",
         options: [
-          "To make it an entity.",
-          "To get value equality, immutability, and small stack-friendly allocation.",
-          "Because EF Core requires it.",
-          "Records cannot be classes.",
+          "It is just a list.",
+          "It is a navigation property that lets EF Core load the orders related to this entity.",
+          "It is a database column.",
+          "It is a controller method.",
         ],
         correctAnswer:
-          "To get value equality, immutability, and small stack-friendly allocation.",
+          "It is a navigation property that lets EF Core load the orders related to this entity.",
         explanation:
-          "Records give value equality; `readonly` makes it immutable; `struct` keeps it efficient for small values.",
+          "Navigation properties describe relationships between entities.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "Why is this design awkward?\n```csharp\npublic class Address\n{\n    public Guid Id { get; set; }\n    public string Street { get; set; } = \"\";\n}\n```",
+          "Why is this design weak?\n```csharp\npublic class Order\n{\n    public int Id { get; set; }\n    [JsonPropertyName(\"order_total\")]\n    public decimal Total { get; set; }\n}\n```",
         options: [
           "Nothing.",
-          "Addresses are usually values (no identity beyond their fields); adding an `Id` forces a row in the database for every copy of the same address.",
-          "`Guid` is illegal here.",
-          "`string Street` should be `Street?`.",
+          "It mixes API serialization attributes into the entity. Entities should focus on the database; API shape belongs to DTOs.",
+          "It needs a constructor.",
+          "JsonPropertyName does not exist.",
         ],
         correctAnswer:
-          "Addresses are usually values (no identity beyond their fields); adding an `Id` forces a row in the database for every copy of the same address.",
+          "It mixes API serialization attributes into the entity. Entities should focus on the database; API shape belongs to DTOs.",
         explanation:
-          "Model address as an owned value object in EF Core when possible; identity is a database concern that may not belong.",
+          "Keep entities clean. Use DTOs for the API.",
       },
       {
         kind: "interview",
         question:
-          "When would you turn a value object into an entity?",
+          "How would you describe entities in a real .NET application?",
         options: [
-          "Never.",
-          "When the same logical value (e.g. an `Address`) needs to be referenced from multiple places, have an audit trail, or carry its own lifecycle.",
-          "Always.",
-          "When EF Core suggests it.",
+          "They are the same as DTOs.",
+          "They are C# classes that map to database tables. EF Core uses them to read, track changes, and save updates. Entities live in the data layer and stay separate from the API.",
+          "They are configuration objects.",
+          "They are middleware.",
         ],
         correctAnswer:
-          "When the same logical value (e.g. an `Address`) needs to be referenced from multiple places, have an audit trail, or carry its own lifecycle.",
+          "They are C# classes that map to database tables. EF Core uses them to read, track changes, and save updates. Entities live in the data layer and stay separate from the API.",
         explanation:
-          "Identity has a cost; introduce it only when the domain or the audit trail truly needs it.",
+          "This is the standard role of entities in modern .NET applications.",
       },
     ],
   },
 
   table: {
     whyItMatters:
-      "Every backend developer reads schemas. Tables are the physical home of your entities; understanding columns, types, constraints, and indexes is how you reason about query performance and data integrity.",
+      "Tables are the basic unit of storage in a relational database. Every entity maps to a table. Knowing how tables work — rows, columns, types, constraints — is the foundation of any data work in .NET.",
     simpleExplanation:
-      "A table is a named grid of rows and typed columns. Each row holds one record; each column has a name and a type.",
+      "A table is a collection of rows and columns in a database. Each row is one record. Each column has a name and a data type. Tables are linked together by keys.",
     deepExplanation:
-      "Define columns with the smallest type that fits (`int` over `bigint`, `nvarchar(80)` over `nvarchar(max)`). Add constraints: `NOT NULL` where the data must exist, `UNIQUE` where the value must be one-of-a-kind, `CHECK` for simple rules, foreign keys for relationships. Indexes speed up queries by trading write throughput and disk. EF Core generates DDL from your entity configuration; reading the generated migration SQL is the fastest way to confirm what you actually shipped.",
+      "A table has a schema that defines its columns: their names, types, nullability, and constraints. Rows are added with INSERT, read with SELECT, changed with UPDATE, and removed with DELETE. Real tables also have indexes for fast lookups and constraints like UNIQUE or NOT NULL to enforce rules. EF Core creates and updates tables based on entity classes through migrations.",
     realWorldUsage:
-      "`Orders` table holds an `Id GUID PRIMARY KEY`, `Status NVARCHAR(20) NOT NULL`, `CustomerId GUID NOT NULL REFERENCES Customers(Id)`, `CreatedAt DATETIMEOFFSET NOT NULL`.",
+      "A Customers table stores customer records. An Orders table stores order records, linked to Customers through CustomerId. A Products table stores product records. Every .NET application that uses a relational database has tables like these.",
     explainLikeBeginner:
-      "A table is a spreadsheet: rows are records, columns are properties, and the column headers say what kind of data each cell can hold.",
+      "A table is like a spreadsheet. Each row is one item. Each column has a header. The header says what the value means. Different tables track different things — customers, orders, products.",
     interviewAnswer:
-      "A table stores rows of typed data. Good schema design uses the narrowest type that fits, enforces constraints at the database level, and adds indexes only where queries demand them.",
+      "A table is the basic storage unit in a relational database. It has columns with types and rows with data. Each entity in .NET maps to one table. Tables are connected by keys, and constraints like NOT NULL and UNIQUE enforce data quality.",
     commonMistakes: [
-      "Using `nvarchar(max)` for everything because 'it might grow' — bloats storage and slows scans.",
-      "Skipping `NOT NULL` constraints and inheriting silent data quality issues.",
-      "Adding indexes to every column 'just in case', then watching writes slow down.",
+      "Storing everything in one big table.",
+      "Skipping NOT NULL and UNIQUE constraints.",
+      "Using vague column names like Field1 instead of clear ones like CustomerName.",
     ],
     bestPractices: [
-      "Default to `NOT NULL` with an explicit default; nullable should be a choice.",
-      "Pick a primary key strategy and keep it consistent across the schema.",
-      "Add indexes for queries you actually run, not queries you imagine.",
+      "One entity per table.",
+      "Use clear, descriptive column names.",
+      "Apply constraints to enforce data rules at the database level.",
     ],
     summary: [
-      "Tables = rows × typed columns + constraints.",
-      "Narrow types, explicit nullability, deliberate indexes.",
-      "Read the generated SQL — it is the source of truth.",
+      "A table = rows + columns.",
+      "Each row is a record. Each column has a name and a type.",
+      "Tables are linked by keys.",
     ],
     codeExample: {
-      title: "Reading the generated DDL",
-      code: `-- generated from EF Core migration for Order
-CREATE TABLE [Orders] (
-    [Id] uniqueidentifier NOT NULL,
-    [CustomerId] uniqueidentifier NOT NULL,
-    [Status] nvarchar(20) NOT NULL,
-    [CreatedAt] datetimeoffset NOT NULL,
-    CONSTRAINT [PK_Orders] PRIMARY KEY ([Id]),
-    CONSTRAINT [FK_Orders_Customers_CustomerId]
-        FOREIGN KEY ([CustomerId]) REFERENCES [Customers] ([Id]) ON DELETE CASCADE
-);
-CREATE INDEX [IX_Orders_CustomerId] ON [Orders] ([CustomerId]);`,
-      output: "(DDL applied during migration)",
+      title: "A Customers table created from an EF Core entity",
+      code: `public class Customer
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+}
+
+// Equivalent SQL
+// CREATE TABLE Customers (
+//     Id INT PRIMARY KEY IDENTITY,
+//     Name NVARCHAR(MAX) NOT NULL,
+//     Email NVARCHAR(MAX) NOT NULL
+// );`,
+      output: "A Customers table with three columns and a primary key on Id.",
       walkthrough: [
-        "Types match domain intent: `uniqueidentifier` for ids, `nvarchar(20)` capped for status.",
-        "Constraints — PK, FK, NOT NULL — live in the database, not just in code.",
-        "An index on the FK supports lookups of orders by customer.",
+        "EF Core picks the table name from the DbSet property.",
+        "Each property becomes a column.",
+        "Id is the primary key by convention.",
       ],
     },
     practice: {
       prompt:
-        "Sketch the table for a `Customer` entity with `Id`, `Email`, `Name`, `CreatedAt`. Decide types, nullability, and a unique constraint on `Email`. Write the SQL by hand and compare to the EF migration.",
+        "Design a Products table with Id (primary key), Name, Price, and CategoryId. Write the SQL CREATE TABLE statement, then express it as a C# entity that EF Core can use.",
       expectedResult:
-        "Your hand-written DDL is close to the generator's; the differences teach you what the framework defaults are.",
+        "A Products entity with four properties and an equivalent SQL CREATE TABLE statement that includes the primary key and a foreign key column.",
       hints: [
-        "`Email` should be `UNIQUE`.",
-        "`Name` length capped (e.g. 100).",
-        "Choose `DATETIMEOFFSET` over `DATETIME` for time-zone safety.",
+        "Use INT for Id and CategoryId.",
+        "Use DECIMAL(18,2) for Price.",
+        "Use NVARCHAR(MAX) for Name.",
       ],
       solution:
-        "Compare hand-written DDL with `dotnet ef migrations add` output. Differences (e.g. column ordering, default constraint names) are minor; the substance should match.",
+        "Create a Product class with Id, Name, Price, CategoryId. The CREATE TABLE statement defines the columns and the primary key on Id, plus a foreign key on CategoryId.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Which is the safest default for a column that always has a value?",
+        question: "What is a table in a relational database?",
         options: [
-          "NULL allowed.",
-          "NOT NULL.",
-          "Computed.",
-          "There is no safe default.",
+          "A class in C#.",
+          "A collection of rows and columns that stores records of one kind, like Customers or Orders.",
+          "A file on disk.",
+          "An HTTP endpoint.",
         ],
-        correctAnswer: "NOT NULL.",
+        correctAnswer:
+          "A collection of rows and columns that stores records of one kind, like Customers or Orders.",
         explanation:
-          "If the value is mandatory, encode that in the schema. Nullable should be a deliberate choice.",
+          "Tables are the basic unit of storage in relational databases.",
       },
       {
         kind: "code-reading",
         question:
-          "What does the `IX_Orders_CustomerId` index optimise?",
+          "What does this SQL do?\n`CREATE TABLE Customers (Id INT PRIMARY KEY, Name NVARCHAR(100));`",
         options: [
-          "Inserts into the orders table.",
-          "Lookups of orders by customer id.",
-          "Sorting orders by status.",
-          "Nothing useful.",
+          "Deletes a table.",
+          "Creates a Customers table with two columns and Id as the primary key.",
+          "Selects all rows.",
+          "Updates the Name column.",
         ],
-        correctAnswer: "Lookups of orders by customer id.",
+        correctAnswer:
+          "Creates a Customers table with two columns and Id as the primary key.",
         explanation:
-          "Indexes on foreign keys speed up `WHERE CustomerId = ?` queries and joins on the FK.",
+          "CREATE TABLE defines the structure of a new table.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this column choice?\n```sql\n[Status] nvarchar(max) NULL\n```",
+          "Why is this design weak?\n`CREATE TABLE Data (Field1 NVARCHAR, Field2 NVARCHAR, Field3 NVARCHAR);`",
         options: [
           "Nothing.",
-          "`nvarchar(max)` is far wider than needed for a short status string, and `NULL` makes 'no status' indistinguishable from 'unknown' — both hurt schema quality.",
-          "`nvarchar` is illegal.",
-          "Status must be `int`.",
+          "Column names are vague and tell you nothing about the data. Use clear names like CustomerName, Email, and PhoneNumber.",
+          "It needs a key.",
+          "NVARCHAR is not allowed.",
         ],
         correctAnswer:
-          "`nvarchar(max)` is far wider than needed for a short status string, and `NULL` makes 'no status' indistinguishable from 'unknown' — both hurt schema quality.",
+          "Column names are vague and tell you nothing about the data. Use clear names like CustomerName, Email, and PhoneNumber.",
         explanation:
-          "Bound the length (`nvarchar(20)`) and disallow nulls with a default. Constraints document intent.",
+          "Clear column names make queries readable and reduce bugs.",
       },
       {
         kind: "interview",
         question:
-          "When should you NOT add an index?",
+          "How are entities and tables connected in EF Core?",
         options: [
-          "Never — always index everything.",
-          "When the column is rarely filtered on or when the table is write-heavy and the index would slow inserts more than it helps reads.",
-          "When the column is the primary key.",
-          "When there are no foreign keys.",
+          "They are not.",
+          "EF Core maps each entity class to a table. Properties become columns. Conventions handle most of the mapping; you can override them with attributes or Fluent API.",
+          "Only manually.",
+          "Through middleware.",
         ],
         correctAnswer:
-          "When the column is rarely filtered on or when the table is write-heavy and the index would slow inserts more than it helps reads.",
+          "EF Core maps each entity class to a table. Properties become columns. Conventions handle most of the mapping; you can override them with attributes or Fluent API.",
         explanation:
-          "Indexes are not free. Measure the read benefit against the write cost before adding one.",
+          "Entity-to-table mapping is the core of how EF Core works.",
       },
     ],
   },
 
   "primary-key": {
     whyItMatters:
-      "The primary key is how every other table refers to this one. Picking the wrong shape leads to fragmented indexes, leaky URLs, and migrations you cannot reverse.",
+      "Primary keys are how the database uniquely identifies a row. Without them, you cannot reliably update, delete, or join data. Every well-designed table has a primary key.",
     simpleExplanation:
-      "The primary key is the column (or columns) that uniquely identify a row in a table.",
+      "A primary key is a column (or a set of columns) whose value uniquely identifies each row in a table. The most common pattern in .NET is an Id column with an auto-generated integer.",
     deepExplanation:
-      "Two common choices in .NET: `Guid` (random, ideal for distributed systems and APIs that expose ids) and `int`/`bigint` identity (compact, sequential, friendly to indexes). Guids fragment clustered indexes unless you use `sequential` Guids (`Guid.CreateVersion7()` in .NET 9+ or `NEWSEQUENTIALID()` in SQL Server). Compound primary keys are valid but harder to reason about; default to a single surrogate key.",
+      "A primary key has two rules: it cannot be null, and it must be unique. EF Core uses the property named Id (or {ClassName}Id) as the primary key by convention. Most databases generate the value automatically through IDENTITY (SQL Server), SERIAL (PostgreSQL), or AUTO_INCREMENT (MySQL). You can also use a Guid as a primary key when you need globally unique values.",
     realWorldUsage:
-      "`Orders.Id` is a `Guid`, exposed in URLs like `/orders/8f3a...`. `OrderLines` has `(OrderId, LineNumber)` as a compound PK because lines are scoped to their parent.",
+      "Customers.Id is the primary key. Orders.Id is the primary key. Products.Id is the primary key. Every entity in a typical .NET application has an Id primary key that EF Core uses to track and update the row.",
     explainLikeBeginner:
-      "The primary key is the row's unique badge number. No two badges are the same in the same table.",
+      "A primary key is like a customer number on a receipt. Every customer gets a unique number. The shop uses that number to find the customer's records quickly.",
     interviewAnswer:
-      "The primary key is the column or columns that uniquely identify a row. We pick between sequential ints and Guids based on whether the id is exposed externally and whether the system is distributed; we use sequential Guids when both matter.",
+      "A primary key uniquely identifies each row in a table. It must be unique and not null. In .NET, EF Core uses an Id property by convention, usually with an auto-generated integer or a Guid.",
     commonMistakes: [
-      "Using a random `Guid` as a clustered primary key on a high-write table — fragmentation problems.",
-      "Exposing internal integer ids in public URLs — easy to enumerate.",
-      "Adding 'Id' columns to junction tables instead of using a natural compound PK.",
+      "Using a business value like Email as the primary key — these can change.",
+      "Forgetting to set the primary key, which leaves the table without a reliable identifier.",
+      "Mixing primary key types across the database without a clear reason.",
     ],
     bestPractices: [
-      "Sequential Guids (`Guid.CreateVersion7()` or DB-generated) for distributed-friendly, index-friendly ids.",
-      "Surrogate keys by default; compound keys when the semantic relationship is natural.",
-      "Never expose raw incremental ints in public APIs.",
+      "Use Id (int or Guid) as the primary key.",
+      "Let the database generate the value automatically.",
+      "Keep the primary key separate from business data.",
     ],
     summary: [
-      "PK = unique identity for a row.",
-      "Choose between sequential ints and Guids deliberately.",
-      "Compound PKs exist; surrogate keys are the default.",
+      "A primary key uniquely identifies each row.",
+      "It must be unique and not null.",
+      "EF Core uses Id by convention.",
     ],
     codeExample: {
-      title: "Sequential Guid in C# 12",
-      code: `public sealed class Order
+      title: "Primary key on a Customer entity",
+      code: `public class Customer
 {
-    public Guid Id { get; }
-    public Order() => Id = Guid.CreateVersion7(); // sequential
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
 }
 
-// EF Core fluent config
-modelBuilder.Entity<Order>()
-    .HasKey(o => o.Id);
-modelBuilder.Entity<Order>()
-    .Property(o => o.Id)
-    .ValueGeneratedNever(); // we generate it in code`,
-      output: "Generated id: 0190ad3a-...",
+// Equivalent SQL
+// CREATE TABLE Customers (
+//     Id INT IDENTITY PRIMARY KEY,
+//     Name NVARCHAR(100) NOT NULL
+// );`,
+      output: "Customers table with an auto-generated Id as the primary key.",
       walkthrough: [
-        "`Guid.CreateVersion7()` produces a Guid with timestamp ordering.",
-        "Sequential Guids index well even when clustered.",
-        "EF Core's `ValueGeneratedNever` says we provide the value, not the database.",
+        "Id is the primary key by convention in EF Core.",
+        "IDENTITY tells SQL Server to generate the value automatically.",
+        "The application never sets Id manually when creating a new customer.",
       ],
     },
     practice: {
       prompt:
-        "For a `Tag` entity that is referenced by many `Post` rows, choose a primary key type. Justify the choice. Then write the EF Core configuration.",
+        "Define a Product entity with a primary key. Then write the equivalent SQL CREATE TABLE statement and explain why an Id column is better than using Name as the primary key.",
       expectedResult:
-        "You can articulate why `int` may suit a small lookup table and why `Guid` may suit a high-write distributed system.",
+        "A Product entity with int Id, a CREATE TABLE statement that uses Id as the primary key with IDENTITY, and a clear note that Name can change but the primary key should not.",
       hints: [
-        "Tags are usually low-write; `int` is fine.",
-        "Compound PKs are useful for `PostTag` join tables.",
-        "Use `HasKey` in fluent config.",
+        "Use int Id and a string Name property.",
+        "In SQL, use IDENTITY PRIMARY KEY for Id.",
+        "Explain that business values like Name can change and so should not be the key.",
       ],
       solution:
-        "`Tag` with `int Id` is reasonable; `PostTag` uses `(PostId, TagId)` as a compound key. The choice is grounded in cardinality and write patterns.",
+        "Define Product with int Id and string Name. Write CREATE TABLE Products (Id INT IDENTITY PRIMARY KEY, Name NVARCHAR(200) NOT NULL). Add a note: business values change; primary keys should not.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Which primary key strategy fragments a clustered index the least when rows are inserted concurrently?",
+        question: "What is a primary key?",
         options: [
-          "Random Guid (`Guid.NewGuid()`).",
-          "Sequential Guid (`Guid.CreateVersion7()` or `NEWSEQUENTIALID()`).",
-          "Compound key of two random columns.",
-          "It does not matter.",
+          "Any field in a table.",
+          "A column whose value uniquely identifies each row and cannot be null.",
+          "A foreign key.",
+          "A nullable column.",
         ],
         correctAnswer:
-          "Sequential Guid (`Guid.CreateVersion7()` or `NEWSEQUENTIALID()`).",
+          "A column whose value uniquely identifies each row and cannot be null.",
         explanation:
-          "Sequential Guids keep new rows appended at the end of the clustered index instead of inserting into random pages.",
+          "Primary keys must be unique and not null.",
       },
       {
         kind: "code-reading",
         question:
-          "Why is `ValueGeneratedNever()` configured for `Id`?",
+          "In this entity, which property is the primary key?\n```csharp\npublic class Order { public int Id { get; set; } public DateTime CreatedAt { get; set; } }\n```",
         options: [
-          "Because the column is computed in the database.",
-          "Because the application generates the Guid in code (`Guid.CreateVersion7()`), so EF Core should not try to.",
-          "Because Guids cannot have values.",
-          "It is required for foreign keys.",
+          "CreatedAt",
+          "Id",
+          "Both",
+          "Neither",
         ],
-        correctAnswer:
-          "Because the application generates the Guid in code (`Guid.CreateVersion7()`), so EF Core should not try to.",
+        correctAnswer: "Id",
         explanation:
-          "Without `ValueGeneratedNever`, EF tries to defer Guid generation, which conflicts with code-generated ids.",
+          "EF Core uses Id as the primary key by convention.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What problem does this URL hint at?\n`GET /users/42`",
+          "Why is Email a bad primary key for Customers?",
         options: [
-          "It is fine.",
-          "An integer id is enumerable — `/users/41`, `/users/43` lets an attacker guess valid ids and probe access controls.",
-          "`42` is not a valid id.",
-          "URLs cannot use numbers.",
+          "Email is too short.",
+          "Email can change when the customer updates it, which means every related table's foreign keys would need to update too.",
+          "Email cannot be a string.",
+          "Primary keys must be numbers.",
         ],
         correctAnswer:
-          "An integer id is enumerable — `/users/41`, `/users/43` lets an attacker guess valid ids and probe access controls.",
+          "Email can change when the customer updates it, which means every related table's foreign keys would need to update too.",
         explanation:
-          "Use opaque ids (Guids) in public URLs to make enumeration attacks meaningless.",
+          "Use stable, non-business values like an auto-generated Id.",
       },
       {
         kind: "interview",
         question:
-          "Why are compound primary keys sometimes preferred over surrogate keys?",
+          "When should you use a Guid as a primary key instead of int?",
         options: [
-          "They are faster.",
-          "They express the natural relationship in junction tables (e.g. `(PostId, TagId)`) and prevent duplicate pairs without an extra unique constraint.",
-          "They are required by EF Core.",
-          "There is no benefit.",
+          "Always.",
+          "When the value needs to be globally unique across systems, generated by the client, or hard to guess for security reasons. int is simpler for single-database applications.",
+          "Never.",
+          "Only for tests.",
         ],
         correctAnswer:
-          "They express the natural relationship in junction tables (e.g. `(PostId, TagId)`) and prevent duplicate pairs without an extra unique constraint.",
+          "When the value needs to be globally unique across systems, generated by the client, or hard to guess for security reasons. int is simpler for single-database applications.",
         explanation:
-          "Surrogate keys add a layer; compound keys can be exactly what the relationship needs.",
+          "Pick the type that fits the use case, not the popular choice.",
       },
     ],
   },
 
   "foreign-key": {
     whyItMatters:
-      "Foreign keys are the database's way of guaranteeing your data still makes sense after a thousand writes. Skip them and orphaned rows quietly pile up.",
+      "Foreign keys are how tables connect to each other. They keep the data consistent — you cannot have an order pointing to a customer that does not exist. Foreign keys are at the heart of every relational design.",
     simpleExplanation:
-      "A foreign key is a column that points at a primary key in another table. It enforces the relationship at the database level.",
+      "A foreign key is a column in one table that points to the primary key of another table. It expresses a relationship, like 'this order belongs to this customer'.",
     deepExplanation:
-      "Configure FKs with EF Core via `HasOne`/`WithMany`. Choose the delete behaviour deliberately: `Cascade` removes children with the parent, `Restrict` refuses the delete if children exist, `SetNull` orphans the children. Defaults vary by relationship — always read the migration SQL and pick the explicit behaviour for your domain.",
+      "If you have a Customer table and an Order table, the Order table has a CustomerId column. CustomerId is a foreign key pointing to Customers.Id. The database enforces this — you cannot insert an order with a CustomerId that does not exist. EF Core uses navigation properties on the entity to express the relationship. When you load an Order, you can include the related Customer with .Include(o => o.Customer).",
     realWorldUsage:
-      "`OrderLines.OrderId` references `Orders.Id` with `ON DELETE CASCADE`: deleting an order removes its lines automatically and atomically.",
+      "Orders.CustomerId points to Customers.Id. OrderLines.OrderId points to Orders.Id. Invoices.CustomerId points to Customers.Id. Almost every real .NET database is full of foreign keys that express how the entities connect.",
     explainLikeBeginner:
-      "A foreign key is a sticker on a paper that says 'belongs to file 42'. The system refuses to throw away file 42 if there are papers pointing at it (or it shreds them with it, depending on the rule).",
+      "A foreign key is like writing your customer number on a receipt. The receipt belongs to your customer record. The number is the link between the receipt and the customer.",
     interviewAnswer:
-      "A foreign key links rows in one table to rows in another and enforces that link at the database level. We pick the delete behaviour (cascade, restrict, set-null) based on whether the children's existence depends on the parent.",
+      "A foreign key is a column that references the primary key of another table to express a relationship. The database enforces referential integrity — you cannot insert a row pointing to a missing parent. EF Core uses navigation properties and foreign key columns to express relationships in C#.",
     commonMistakes: [
-      "Forgetting to add an index on the foreign-key column — every join becomes a scan.",
-      "Defaulting to cascade delete on relationships where a soft delete is the real intent.",
-      "Letting the application enforce referential integrity that the database could enforce for free.",
+      "Forgetting to declare the relationship in EF Core, so the foreign key is not created.",
+      "Allowing the foreign key to be nullable when the relationship is required.",
+      "Skipping cascade behavior, which can cause unexpected delete failures.",
     ],
     bestPractices: [
-      "Add an index on the FK column.",
-      "Be explicit about delete behaviour in the EF Core configuration.",
-      "Prefer DB-level cascades over application code for atomic cleanup.",
+      "Match the type of the foreign key to the primary key it references.",
+      "Use clear naming like CustomerId for Customer references.",
+      "Decide cascade delete behavior explicitly.",
     ],
     summary: [
-      "FKs enforce relationships at the DB level.",
-      "Index the FK column.",
-      "Choose delete behaviour deliberately.",
+      "Foreign key = a column that references another table's primary key.",
+      "It expresses relationships and enforces consistency.",
+      "EF Core uses navigation properties to model relationships in C#.",
     ],
     codeExample: {
-      title: "FK + index + cascade",
-      code: `modelBuilder.Entity<OrderLine>()
-    .HasOne<Order>()
-    .WithMany(o => o.Lines)
-    .HasForeignKey(l => l.OrderId)
-    .OnDelete(DeleteBehavior.Cascade);
+      title: "An Order with a CustomerId foreign key",
+      code: `public class Customer
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
 
-modelBuilder.Entity<OrderLine>()
-    .HasIndex(l => l.OrderId);`,
-      output: `-- generated DDL
-ALTER TABLE [OrderLines] ADD CONSTRAINT [FK_OrderLines_Orders_OrderId]
-    FOREIGN KEY ([OrderId]) REFERENCES [Orders] ([Id]) ON DELETE CASCADE;
-CREATE INDEX [IX_OrderLines_OrderId] ON [OrderLines] ([OrderId]);`,
+public class Order
+{
+    public int Id { get; set; }
+    public int CustomerId { get; set; }
+    public Customer? Customer { get; set; }
+    public decimal Total { get; set; }
+}
+
+// Equivalent SQL
+// CREATE TABLE Orders (
+//     Id INT PRIMARY KEY IDENTITY,
+//     CustomerId INT NOT NULL,
+//     Total DECIMAL(18, 2),
+//     FOREIGN KEY (CustomerId) REFERENCES Customers(Id)
+// );`,
+      output: "Orders table with a foreign key on CustomerId pointing to Customers.Id.",
       walkthrough: [
-        "Fluent config sets relationship, FK column, and delete behaviour explicitly.",
-        "The index supports `WHERE OrderId = ?` lookups and joins.",
-        "Cascade keeps the database consistent without application code.",
+        "Order has a CustomerId column.",
+        "Customer is the navigation property that EF Core uses to load the parent.",
+        "The database refuses an order with a CustomerId that does not exist.",
       ],
     },
     practice: {
       prompt:
-        "Model an `Invoice` with many `InvoicePayment` children. Decide whether deleting an invoice should cascade to payments or restrict. Configure EF Core and inspect the generated migration.",
+        "Define an Invoice entity with a foreign key CustomerId pointing to Customer. Add a navigation property and write the SQL FOREIGN KEY constraint.",
       expectedResult:
-        "Your choice is reflected in the migration SQL; you can defend it from an audit perspective.",
+        "Invoice has Id, CustomerId, Customer?, and Total. The SQL includes FOREIGN KEY (CustomerId) REFERENCES Customers(Id).",
       hints: [
-        "Financial data usually wants `Restrict` — losing payments silently is bad.",
-        "If your domain truly wants cascade, document why.",
-        "Always pair with an index on the FK column.",
+        "Use int CustomerId in Invoice.",
+        "Add public Customer? Customer { get; set; } as the navigation.",
+        "In SQL, add FOREIGN KEY (CustomerId) REFERENCES Customers(Id).",
       ],
       solution:
-        "`Restrict` is the conservative choice for payments. The audit story improves: an invoice cannot disappear while payments exist; the application must clean up explicitly.",
+        "Define Invoice with CustomerId, the navigation property, and the foreign key. EF Core builds the constraint when you run migrations.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What does a foreign key enforce?",
+        question: "What is a foreign key?",
         options: [
-          "Uniqueness of a column.",
-          "That every value in the FK column either is `NULL` or matches a primary key in the referenced table.",
-          "An automatic index.",
-          "Nothing — FKs are documentation only.",
+          "A primary key from another database.",
+          "A column that references the primary key of another table to express a relationship.",
+          "A nullable column.",
+          "An index.",
         ],
         correctAnswer:
-          "That every value in the FK column either is `NULL` or matches a primary key in the referenced table.",
+          "A column that references the primary key of another table to express a relationship.",
         explanation:
-          "Referential integrity: the FK guarantees the link is valid for as long as it exists.",
+          "Foreign keys connect tables and enforce consistency.",
       },
       {
         kind: "code-reading",
         question:
-          "Given `OnDelete(DeleteBehavior.Cascade)`, what happens when you `DELETE FROM Orders WHERE Id = ?`?",
+          "What does this property indicate?\n```csharp\npublic int CustomerId { get; set; }\npublic Customer? Customer { get; set; }\n```",
         options: [
-          "The order is deleted, but its lines remain orphaned.",
-          "The delete is rejected because lines exist.",
-          "The order and its dependent lines are deleted in the same transaction.",
-          "Nothing happens.",
+          "Two separate concepts.",
+          "CustomerId is the foreign key column. Customer is the navigation property EF Core uses to load the related customer.",
+          "Both are primary keys.",
+          "Both are ignored by EF Core.",
         ],
         correctAnswer:
-          "The order and its dependent lines are deleted in the same transaction.",
+          "CustomerId is the foreign key column. Customer is the navigation property EF Core uses to load the related customer.",
         explanation:
-          "Cascade lets the database remove dependent rows automatically.",
+          "EF Core uses both to express a relationship cleanly.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this schema?\n```sql\nALTER TABLE OrderLines ADD CONSTRAINT FK_OrderLines_OrderId\n    FOREIGN KEY (OrderId) REFERENCES Orders(Id);\n-- no index on OrderLines.OrderId\n```",
+          "Why does this INSERT fail?\n`INSERT INTO Orders (CustomerId, Total) VALUES (999, 100);` when there is no customer with Id 999.",
         options: [
-          "Nothing.",
-          "Without an index on `OrderLines.OrderId`, every query that filters or joins on it scans the table — performance degrades as the table grows.",
-          "Foreign keys must come with indexes automatically.",
-          "The syntax is invalid.",
+          "Nothing fails.",
+          "The foreign key constraint stops the insert because there is no parent customer with Id 999.",
+          "Total is missing.",
+          "INSERT is the wrong command.",
         ],
         correctAnswer:
-          "Without an index on `OrderLines.OrderId`, every query that filters or joins on it scans the table — performance degrades as the table grows.",
+          "The foreign key constraint stops the insert because there is no parent customer with Id 999.",
         explanation:
-          "Some databases auto-index FKs; SQL Server does not. Always add the index explicitly.",
+          "Foreign keys protect the database from orphan rows.",
       },
       {
         kind: "interview",
         question:
-          "When would you choose `Restrict` over `Cascade`?",
+          "How does EF Core model relationships between entities?",
         options: [
-          "Never.",
-          "When the children represent records you must not silently lose (payments, audit logs); `Restrict` forces a deliberate cleanup path.",
-          "Always — cascades are dangerous.",
-          "When the FK is nullable.",
+          "Through static methods.",
+          "Through navigation properties (Customer, Orders) and foreign key columns (CustomerId). Conventions or Fluent API connect them.",
+          "Through HTTP requests.",
+          "Through controllers.",
         ],
         correctAnswer:
-          "When the children represent records you must not silently lose (payments, audit logs); `Restrict` forces a deliberate cleanup path.",
+          "Through navigation properties (Customer, Orders) and foreign key columns (CustomerId). Conventions or Fluent API connect them.",
         explanation:
-          "Both are valid; the choice is a domain-driven trade-off between automatic cleanup and audit safety.",
+          "This is the standard EF Core relationship pattern.",
       },
     ],
   },
 
   "simple-sql-queries": {
     whyItMatters:
-      "Even when you use EF Core, the database thinks in SQL. Reading and writing simple queries is what lets you diagnose 'why is this slow' without guessing.",
+      "Even when you use EF Core, you still need to read SQL during debugging, performance work, and database reviews. Knowing basic SQL gives you confidence in every data-related task.",
     simpleExplanation:
-      "SQL is the language used to read and modify relational data. The core verbs are `SELECT`, `INSERT`, `UPDATE`, `DELETE`.",
+      "SQL is the language used to talk to a relational database. The most important commands are SELECT (read), INSERT (create), UPDATE (change), and DELETE (remove).",
     deepExplanation:
-      "Start with the four shapes you will write daily: filter (`WHERE`), pick columns (`SELECT col1, col2`), order (`ORDER BY`), and limit (`TOP n` or `LIMIT n`). Joins combine tables (`JOIN ... ON`). Aggregates count or sum groups (`GROUP BY`). Practising these by hand makes EF Core's `LINQ` translation predictable, and it makes you faster at reading query plans when something is slow.",
+      "A SELECT statement reads rows from a table. You choose columns, filter with WHERE, sort with ORDER BY, and limit with TOP or LIMIT. INSERT adds new rows. UPDATE changes existing rows. DELETE removes rows. SQL also supports JOINs to combine data from multiple tables. EF Core converts your LINQ queries into SQL, so understanding the result helps you write efficient queries.",
     realWorldUsage:
-      "`SELECT Id, Status, Total FROM Orders WHERE CustomerId = @cid ORDER BY CreatedAt DESC OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY` — the SQL behind a typical paged 'list my orders' endpoint.",
+      "A team writes SELECT queries when reviewing production data. A developer runs an INSERT to seed a new lookup table. A migration uses UPDATE to fix data. A SELECT with a JOIN reports orders per customer. These are everyday tasks in .NET projects.",
     explainLikeBeginner:
-      "SQL is asking the database in plain words: 'show me these columns from this table where this is true'.",
+      "SQL is like asking the librarian for books. SELECT is 'show me'. INSERT is 'add this book'. UPDATE is 'change the cover'. DELETE is 'remove this book'.",
     interviewAnswer:
-      "SQL is the relational query language. The core skills are filtering with `WHERE`, projecting with `SELECT`, joining tables, and ordering or paging the result. Even when using an ORM, the developer should be able to read the generated SQL to reason about performance.",
+      "SQL is the standard language for working with relational databases. The most common commands are SELECT, INSERT, UPDATE, and DELETE. .NET developers use SQL directly for debugging and reports, and indirectly through EF Core for application queries.",
     commonMistakes: [
-      "`SELECT *` everywhere — fetches columns you do not need and breaks if the schema changes.",
-      "Not parameterising — concatenating user input creates SQL injection vulnerabilities.",
-      "Forgetting `ORDER BY` on paged queries, getting non-deterministic results.",
+      "Running UPDATE or DELETE without a WHERE clause.",
+      "SELECT * everywhere, even when only a few columns are needed.",
+      "Not testing queries against a representative dataset.",
     ],
     bestPractices: [
-      "Project only the columns you need.",
-      "Always parameterise — `@id`, not `'+id+'`.",
-      "Pair `OFFSET/FETCH` with a deterministic `ORDER BY`.",
+      "Always include a WHERE clause for UPDATE and DELETE.",
+      "Select only the columns you need.",
+      "Format queries clearly with line breaks for each clause.",
     ],
     summary: [
-      "Filter, project, join, order, page — the daily SQL shapes.",
-      "Parameterise everything.",
-      "Read the generated SQL when EF Core feels slow.",
+      "SQL is the language for relational databases.",
+      "The core commands are SELECT, INSERT, UPDATE, DELETE.",
+      "Even with EF Core, reading SQL is a daily .NET skill.",
     ],
     codeExample: {
-      title: "Filter + project + page",
-      code: `SELECT o.Id, o.Status, o.Total
-FROM Orders o
-WHERE o.CustomerId = @customerId
-  AND o.Status = 'Confirmed'
-ORDER BY o.CreatedAt DESC
-OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY;`,
-      output: `Id        Status      Total
-8f3a...   Confirmed   42.50
-1c01...   Confirmed   18.00
-...`,
+      title: "Four basic SQL commands on a Customers table",
+      code: `-- Read
+SELECT Id, Name, Email FROM Customers WHERE IsActive = 1 ORDER BY Name;
+
+-- Create
+INSERT INTO Customers (Name, Email, IsActive)
+VALUES ('Ali', 'ali@example.com', 1);
+
+-- Update
+UPDATE Customers SET Email = 'new@example.com' WHERE Id = 5;
+
+-- Delete
+DELETE FROM Customers WHERE Id = 5;`,
+      output: "Each command does what the keyword says.",
       walkthrough: [
-        "Filter narrows the rows; project narrows the columns.",
-        "Parameterised `@customerId` prevents injection.",
-        "`OFFSET/FETCH` paginates deterministically because `ORDER BY` is present.",
+        "SELECT reads rows filtered by WHERE.",
+        "INSERT adds one new row with the values provided.",
+        "UPDATE and DELETE always need a WHERE clause to avoid changing everything.",
       ],
     },
     practice: {
       prompt:
-        "Write a SQL query that returns the top 5 customers by total order value in the last 30 days. Include only customers with at least 2 orders.",
+        "Write four SQL statements on a Products table: read the names and prices of products that cost more than 100, insert a new product, update one product's price, and delete a product by id.",
       expectedResult:
-        "A `JOIN` + `GROUP BY` + `HAVING` + `ORDER BY` query that produces the right shape.",
+        "Four valid SQL statements with proper WHERE clauses where needed.",
       hints: [
-        "Aggregate with `SUM(o.Total)` per customer.",
-        "Filter the date range with `WHERE`.",
-        "Use `HAVING COUNT(*) >= 2` for the order-count condition.",
+        "Use SELECT Name, Price FROM Products WHERE Price > 100.",
+        "INSERT INTO Products (Name, Price) VALUES (...).",
+        "Include WHERE Id = X on UPDATE and DELETE.",
       ],
       solution:
-        "`SELECT TOP 5 c.Id, c.Name, SUM(o.Total) AS Total FROM Customers c JOIN Orders o ON o.CustomerId = c.Id WHERE o.CreatedAt >= DATEADD(day, -30, GETUTCDATE()) GROUP BY c.Id, c.Name HAVING COUNT(*) >= 2 ORDER BY Total DESC;`",
+        "Write the four statements with the right structure. Always include a WHERE clause on UPDATE and DELETE to avoid affecting all rows.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Why is `SELECT * FROM Orders` a problem in production code?",
-        options: [
-          "It is the fastest possible query.",
-          "It returns every column, including ones the application does not need, and it silently changes shape when the schema evolves.",
-          "It is illegal SQL.",
-          "It causes deadlocks.",
-        ],
-        correctAnswer:
-          "It returns every column, including ones the application does not need, and it silently changes shape when the schema evolves.",
+        question: "Which command reads data from a table?",
+        options: ["INSERT", "UPDATE", "SELECT", "DELETE"],
+        correctAnswer: "SELECT",
         explanation:
-          "List the columns you actually consume; the explicit shape acts as a contract.",
+          "SELECT is the SQL command for reading rows.",
       },
       {
         kind: "code-reading",
         question:
-          "Why is `@customerId` used instead of string concatenation?",
+          "What does this query return?\n`SELECT Name FROM Customers WHERE IsActive = 1;`",
         options: [
-          "Style preference.",
-          "Parameterisation: the driver sends the value separately from the SQL text, which prevents SQL injection and lets the planner cache the query.",
-          "It is slower.",
-          "It is required by EF Core.",
+          "All customers.",
+          "The Name column for all customers where IsActive is 1.",
+          "Nothing — IsActive is a boolean.",
+          "An error.",
         ],
         correctAnswer:
-          "Parameterisation: the driver sends the value separately from the SQL text, which prevents SQL injection and lets the planner cache the query.",
+          "The Name column for all customers where IsActive is 1.",
         explanation:
-          "Parameterise every user-supplied value, every time, with no exceptions.",
+          "SELECT reads the chosen columns from the rows that match WHERE.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong here?\n```sql\nSELECT Id, Status FROM Orders OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY;\n```",
+          "Why is this dangerous?\n`UPDATE Customers SET Email = 'x@example.com';`",
         options: [
           "Nothing.",
-          "There is no `ORDER BY`, so the rows returned for a given page are not deterministic — page 1 and page 2 may overlap.",
-          "`OFFSET/FETCH` is illegal.",
-          "`Status` is not a column.",
+          "There is no WHERE clause, so every customer in the table gets the same email.",
+          "UPDATE cannot be used.",
+          "Email is too short.",
         ],
         correctAnswer:
-          "There is no `ORDER BY`, so the rows returned for a given page are not deterministic — page 1 and page 2 may overlap.",
+          "There is no WHERE clause, so every customer in the table gets the same email.",
         explanation:
-          "Paging without ordering is undefined behaviour. Add `ORDER BY` on a stable column (often the PK).",
+          "Always include a WHERE clause on UPDATE and DELETE.",
       },
       {
         kind: "interview",
         question:
-          "How do you investigate a slow EF Core query?",
+          "Why should .NET developers know SQL even when they use EF Core?",
         options: [
-          "Rewrite it as raw SQL and hope.",
-          "Capture the generated SQL (e.g. via `ToQueryString()` or logging), run it against the database with a query plan, and decide whether the issue is missing indexes, wrong join order, or fetching too much data.",
-          "Restart the application.",
-          "Lower the log level.",
+          "They should not.",
+          "Because EF Core translates LINQ into SQL, debugging performance issues requires reading the generated SQL. Many production tasks also need direct SQL.",
+          "Because EF Core is being removed.",
+          "Because SQL is faster than LINQ.",
         ],
         correctAnswer:
-          "Capture the generated SQL (e.g. via `ToQueryString()` or logging), run it against the database with a query plan, and decide whether the issue is missing indexes, wrong join order, or fetching too much data.",
+          "Because EF Core translates LINQ into SQL, debugging performance issues requires reading the generated SQL. Many production tasks also need direct SQL.",
         explanation:
-          "Read the plan; the bottleneck is almost always visible there.",
+          "SQL is not optional in real .NET work, even with an ORM.",
       },
     ],
   },
 
   insert: {
     whyItMatters:
-      "INSERT is how data enters your database. Done badly, you write duplicates, lose audits, or block other writers; done well, you keep your data clean and your inserts fast.",
+      "INSERT is how new data enters the database. Every signup, every order, every audit log starts with an INSERT. Knowing how it works helps you understand what your application is really doing.",
     simpleExplanation:
-      "`INSERT INTO table (cols) VALUES (...)` adds a row. EF Core does this via `DbContext.Add` plus `SaveChanges`.",
+      "INSERT adds new rows to a table. You specify the table, the columns, and the values to insert.",
     deepExplanation:
-      "Two layers to keep in mind: the SQL itself (always list columns, always parameterise) and the transaction model (a single `SaveChanges` writes everything in one transaction by default). For bulk loads, consider `EF Core Bulk Extensions` or raw `SqlBulkCopy` — `DbContext.AddRange` issues one INSERT per row, which is slow at scale.",
+      "The basic form is INSERT INTO Table (Column1, Column2) VALUES (Value1, Value2). You can also insert multiple rows in one statement, or insert from the result of a SELECT. EF Core calls INSERT when you add an entity and call SaveChanges. The database fills in identity columns automatically, and constraints like NOT NULL and FOREIGN KEY are checked before the row is stored.",
     realWorldUsage:
-      "`POST /orders` issues `INSERT INTO Orders (Id, CustomerId, Status, Total, CreatedAt) VALUES (@p0, ...)`. EF Core then inserts each `OrderLine` in the same transaction.",
+      "An e-commerce API inserts a new row into Orders for every checkout. A registration flow inserts a new row into Users. A migration inserts seed data into lookup tables. A reporting job inserts summary rows into a daily totals table.",
     explainLikeBeginner:
-      "INSERT is filing a new row into the spreadsheet. You name every column you are setting.",
+      "INSERT is like adding a new entry to your address book. You write down the name and the phone number, and now the entry is there. The database does the same with rows in a table.",
     interviewAnswer:
-      "INSERT writes new rows. We always list columns explicitly, parameterise values, and group related inserts in one transaction (EF Core's `SaveChanges` by default). For bulk operations we step outside the ORM.",
+      "INSERT adds new rows to a table. You give the table, the columns, and the values. In .NET, EF Core generates an INSERT when you call SaveChanges after adding an entity. Constraints like NOT NULL and FOREIGN KEY are enforced by the database.",
     commonMistakes: [
-      "Letting EF Core run row-by-row inserts for thousands of records in one request.",
-      "Omitting the column list and relying on positional order — fragile to schema changes.",
-      "Inserting without a transaction so a partial failure leaves the database half-updated.",
+      "Forgetting required columns and getting a NOT NULL error.",
+      "Inserting wrong data types (a string into an int column).",
+      "Inserting without a related parent row, breaking foreign key constraints.",
     ],
     bestPractices: [
-      "List columns explicitly in handwritten SQL.",
-      "Use `SaveChanges` once per logical unit of work.",
-      "Reach for bulk libraries when row counts exceed a few hundred.",
+      "Always list the columns you are inserting into.",
+      "Use parameterized queries to avoid SQL injection.",
+      "Insert related parent rows before child rows.",
     ],
     summary: [
-      "INSERT writes rows; list columns; parameterise.",
-      "Group writes in one transaction.",
-      "Bulk insert needs a different tool than `DbContext.AddRange` at scale.",
+      "INSERT adds new rows.",
+      "Specify the table, the columns, and the values.",
+      "EF Core handles INSERT automatically through SaveChanges.",
     ],
     codeExample: {
-      title: "EF Core insert vs raw SQL",
-      code: `// EF Core (single transaction by default)
-var order = new Order(Guid.CreateVersion7(), customerId);
-order.AddLine("SKU-A", 1);
-_db.Orders.Add(order);
-await _db.SaveChangesAsync();
+      title: "Inserting a customer with both raw SQL and EF Core",
+      code: `-- Raw SQL
+INSERT INTO Customers (Name, Email, IsActive)
+VALUES ('Ali', 'ali@example.com', 1);
 
-// Raw, when you need it
-const string sql = @"INSERT INTO Orders (Id, CustomerId, Status, CreatedAt)
-                     VALUES (@id, @cid, 'Pending', SYSUTCDATETIME());";
-await _db.Database.ExecuteSqlInterpolatedAsync($"...");`,
-      output: "1 row inserted into Orders; n rows inserted into OrderLines (one round-trip via SaveChanges).",
+// EF Core
+var customer = new Customer { Name = "Ali", Email = "ali@example.com" };
+_db.Customers.Add(customer);
+await _db.SaveChangesAsync();
+// customer.Id is now set by the database`,
+      output: "A new row in Customers with the values provided.",
       walkthrough: [
-        "`SaveChanges` opens a transaction, writes parent and children, commits.",
-        "Raw SQL is parameterised — never concatenate.",
-        "Bulk loads use `EFCore.BulkExtensions` or `SqlBulkCopy`.",
+        "Raw SQL lists the columns and values explicitly.",
+        "EF Core adds the entity and SaveChanges generates the INSERT.",
+        "After SaveChanges, the entity's Id is set from the database.",
       ],
     },
     practice: {
       prompt:
-        "Write an `InsertManyAsync(IEnumerable<Customer>)` method. Use `AddRange` + `SaveChanges` for up to 1,000 rows; switch to a bulk extension for larger batches. Measure both.",
+        "Write an INSERT statement that adds a new product with Name = 'Laptop', Price = 1200, and CategoryId = 3. Then show the equivalent EF Core code.",
       expectedResult:
-        "You can see the latency cliff where row-by-row inserts stop being acceptable.",
+        "INSERT INTO Products (Name, Price, CategoryId) VALUES ('Laptop', 1200, 3) and the matching EF Core call.",
       hints: [
-        "Use `Stopwatch` for timing.",
-        "Try 10, 1,000, 100,000 rows.",
-        "Inspect the SQL with EF Core logging.",
+        "Use INSERT INTO with explicit column names.",
+        "Use _db.Products.Add(product) and await SaveChangesAsync().",
+        "Make sure CategoryId 3 exists in the parent table.",
       ],
       solution:
-        "Below a few hundred rows, EF Core is fine. Above that, a bulk path is dramatically faster. Pick the tool by row count, not by habit.",
+        "Write the INSERT statement with the three columns. In EF Core, create a Product object and add it through the DbSet, then SaveChangesAsync. EF Core generates the SQL automatically.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "What does `DbContext.SaveChangesAsync` do by default for a series of `Add` calls?",
+        question: "What does INSERT do?",
         options: [
-          "Issues each insert in its own transaction.",
-          "Writes everything in one transaction so the change is atomic.",
-          "Skips inserts that already exist.",
-          "Logs but does not write.",
+          "Reads rows.",
+          "Adds new rows to a table.",
+          "Deletes rows.",
+          "Joins tables.",
         ],
-        correctAnswer:
-          "Writes everything in one transaction so the change is atomic.",
+        correctAnswer: "Adds new rows to a table.",
         explanation:
-          "Atomicity is the default unless you configure otherwise.",
+          "INSERT is the command for creating new records.",
       },
       {
         kind: "code-reading",
         question:
-          "Why is the raw SQL example written with `ExecuteSqlInterpolatedAsync`?",
+          "What happens after this line in EF Core?\n```csharp\n_db.Customers.Add(customer); await _db.SaveChangesAsync();\n```",
         options: [
-          "Style.",
-          "It safely parameterises interpolated values; the SQL is sent with placeholders, not the user input concatenated.",
-          "It is faster.",
-          "It is required for `INSERT`.",
+          "Nothing.",
+          "The customer is sent to the database as an INSERT, and EF Core fills in the generated Id.",
+          "The customer is deleted.",
+          "A SELECT is sent.",
         ],
         correctAnswer:
-          "It safely parameterises interpolated values; the SQL is sent with placeholders, not the user input concatenated.",
+          "The customer is sent to the database as an INSERT, and EF Core fills in the generated Id.",
         explanation:
-          "Interpolated SQL helpers are safe by design; raw concatenation is the dangerous path.",
+          "Add and SaveChanges together produce the INSERT.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this loop?\n```csharp\nforeach (var c in customers) { _db.Customers.Add(c); await _db.SaveChangesAsync(); }\n```",
+          "Why does this fail?\n`INSERT INTO Orders (CustomerId, Total) VALUES (999, 99.5);` when CustomerId 999 does not exist.",
         options: [
           "Nothing.",
-          "It opens a new transaction per row, multiplying database round-trips and crippling throughput for large lists.",
-          "`Add` should be `AddAsync`.",
-          "`Customers` is not a `DbSet`.",
+          "The foreign key constraint fails because the parent customer does not exist.",
+          "The price is too high.",
+          "INSERT cannot have decimals.",
         ],
         correctAnswer:
-          "It opens a new transaction per row, multiplying database round-trips and crippling throughput for large lists.",
+          "The foreign key constraint fails because the parent customer does not exist.",
         explanation:
-          "Batch via `AddRange` + single `SaveChangesAsync`, or use a bulk extension for very large batches.",
+          "Foreign keys are enforced at INSERT time.",
       },
       {
         kind: "interview",
         question:
-          "When does EF Core's per-row INSERT stop being good enough?",
+          "Why is it a good idea to list the columns explicitly in an INSERT?",
         options: [
-          "Never; EF Core scales infinitely.",
-          "Around a few hundred to a few thousand rows depending on row size and network latency; beyond that, switch to `SqlBulkCopy` or an EF Core bulk extension.",
-          "Above ten rows.",
-          "Above one million rows.",
+          "It is not.",
+          "Listing columns protects the query from breaking when the table schema changes — for example, when a new nullable column is added.",
+          "It is shorter.",
+          "It is required.",
         ],
         correctAnswer:
-          "Around a few hundred to a few thousand rows depending on row size and network latency; beyond that, switch to `SqlBulkCopy` or an EF Core bulk extension.",
+          "Listing columns protects the query from breaking when the table schema changes — for example, when a new nullable column is added.",
         explanation:
-          "The exact threshold is workload-specific; measure it for your data and your network.",
+          "Explicit column lists are safer and easier to read.",
       },
     ],
   },
 
   update: {
     whyItMatters:
-      "Update is where concurrency bites: two requests change the same row at once, one wins, one loses, and your data is inconsistent. Getting update strategy right is a senior-level concern.",
+      "UPDATE is how existing data changes. Every profile change, every status update, every recalculated total goes through an UPDATE. Knowing how it works keeps your data safe from accidental mass updates.",
     simpleExplanation:
-      "`UPDATE table SET col = ... WHERE ...` modifies existing rows. EF Core does this via change tracking after `SaveChanges`.",
+      "UPDATE changes the values in existing rows. You specify the table, the new values, and a WHERE clause to choose which rows to change.",
     deepExplanation:
-      "Two strategies for concurrency. Optimistic: assume conflicts are rare, detect them with a `rowversion` (or timestamp) column, retry or fail explicitly. Pessimistic: take a lock so the row cannot change while you read and write — rare in web APIs, common in batch jobs. ASP.NET Core defaults to optimistic; configure a concurrency token in EF Core to enable it.",
+      "The basic form is UPDATE Table SET Column = Value WHERE Condition. The WHERE clause is critical — without it, every row in the table is updated. EF Core generates UPDATE statements when you modify a tracked entity and call SaveChanges. The framework tracks which properties changed and updates only those columns by default.",
     realWorldUsage:
-      "`PUT /orders/{id}` updates a row with `WHERE Id = @id AND RowVersion = @rv`. If no rows match, throw a 409 Conflict and let the client re-fetch and retry.",
+      "A customer updates their email. An order's status moves from Pending to Paid. A product's price is adjusted during a promotion. A user's password hash is changed after a reset. Every business action that changes existing data ends with an UPDATE.",
     explainLikeBeginner:
-      "Update is editing an existing row. The question is what happens when two people edit the same row at the same time.",
+      "UPDATE is like editing a contact in your phone. You find the contact (WHERE) and change one field (SET). The rest of the contacts stay the same.",
     interviewAnswer:
-      "Update modifies existing rows. In web APIs we usually use optimistic concurrency — a `rowversion` token detects conflicting writes — and translate conflicts into a 409 Conflict so the client can re-fetch and retry. Pessimistic locking is reserved for cases where conflicts are common and retries are expensive.",
+      "UPDATE changes the values of existing rows in a table. The WHERE clause picks which rows. In .NET, EF Core tracks changes on entities and generates UPDATE statements automatically when SaveChanges is called.",
     commonMistakes: [
-      "Updating without a `WHERE` clause — silently wiping every row.",
-      "Ignoring concurrency tokens and overwriting another writer's change.",
-      "Using `UPDATE ... SELECT` patterns that race with concurrent writers.",
+      "Running UPDATE without a WHERE clause, which changes every row.",
+      "Updating fields that should not be changed, like CreatedAt.",
+      "Forgetting to start a transaction when multiple updates must succeed together.",
     ],
     bestPractices: [
-      "Add a `rowversion` (or `RowVersion`) column to entities you update.",
-      "Wrap `SaveChanges` in a `try/catch (DbUpdateConcurrencyException)` and translate to 409.",
-      "Always include the PK in the `WHERE` clause.",
+      "Always include a WHERE clause.",
+      "Update only the fields that need to change.",
+      "Wrap related updates in a transaction.",
     ],
     summary: [
-      "Update needs a precise `WHERE`.",
-      "Use rowversion + optimistic concurrency for web APIs.",
-      "Translate conflicts to 409 Conflict for clients.",
+      "UPDATE changes existing rows.",
+      "The WHERE clause picks which rows.",
+      "EF Core handles UPDATE automatically when you modify tracked entities.",
     ],
     codeExample: {
-      title: "Optimistic concurrency in EF Core",
-      code: `public class Order
-{
-    public Guid Id { get; set; }
-    public string Status { get; set; } = "Pending";
-    [Timestamp] public byte[]? RowVersion { get; set; }
-}
+      title: "Updating a customer's email with raw SQL and EF Core",
+      code: `-- Raw SQL
+UPDATE Customers SET Email = 'new@example.com' WHERE Id = 5;
 
-try
+// EF Core
+var customer = await _db.Customers.FindAsync(5);
+if (customer != null)
 {
-    order.Status = "Confirmed";
+    customer.Email = "new@example.com";
     await _db.SaveChangesAsync();
-}
-catch (DbUpdateConcurrencyException)
-{
-    throw new ConflictException("Order changed concurrently. Reload and retry.");
 }`,
-      output: "On a concurrent update, ConflictException -> HTTP 409 with a retry hint.",
+      output: "Email column for customer 5 is updated.",
       walkthrough: [
-        "`[Timestamp]` makes EF Core include `RowVersion` in the `WHERE` clause and update its value on success.",
-        "If another writer changed the row, the `WHERE` matches zero rows and `DbUpdateConcurrencyException` is thrown.",
-        "The application translates that into a 409 the client knows how to handle.",
+        "Raw SQL changes only the Email column for customer 5.",
+        "EF Core loads the tracked entity, changes the property, and SaveChanges generates the UPDATE.",
+        "Only the changed column is included in the update statement.",
       ],
     },
     practice: {
       prompt:
-        "Add a `[Timestamp]` `RowVersion` to a `Product` entity. Simulate two concurrent updates and confirm one of them throws `DbUpdateConcurrencyException`.",
+        "Write an UPDATE statement that changes the Status of order 10 to 'Paid'. Then show the equivalent EF Core code.",
       expectedResult:
-        "The concurrency token detects the conflict deterministically.",
+        "UPDATE Orders SET Status = 'Paid' WHERE Id = 10 and a matching EF Core call.",
       hints: [
-        "Two `DbContext` instances simulate two clients.",
-        "Update one, then the other, then call `SaveChangesAsync` on each.",
-        "Catch and report.",
+        "Always include WHERE Id = 10.",
+        "Use FindAsync to load the tracked entity in EF Core.",
+        "Set the property and call SaveChangesAsync.",
       ],
       solution:
-        "Optimistic concurrency works as expected. You can return 409 from the API and let the client refresh and retry — a clean, atomic interaction.",
+        "Write UPDATE Orders SET Status = 'Paid' WHERE Id = 10. In EF Core, load the order, set order.Status = 'Paid', and await SaveChangesAsync().",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Which concurrency strategy does ASP.NET Core most commonly use for HTTP APIs?",
+        question: "What does UPDATE do?",
         options: [
-          "Pessimistic — take a row lock for the duration of the request.",
-          "Optimistic — detect conflicts on commit via a rowversion or timestamp column.",
-          "No concurrency control.",
-          "Two-phase commit.",
+          "Adds new rows.",
+          "Changes the values in existing rows that match the WHERE clause.",
+          "Deletes rows.",
+          "Creates tables.",
         ],
         correctAnswer:
-          "Optimistic — detect conflicts on commit via a rowversion or timestamp column.",
+          "Changes the values in existing rows that match the WHERE clause.",
         explanation:
-          "Web APIs are short-lived; optimistic concurrency keeps locks out of the request path.",
+          "UPDATE modifies existing data based on the WHERE clause.",
       },
       {
         kind: "code-reading",
         question:
-          "What does `[Timestamp]` change in the generated `UPDATE` statement?",
+          "What does this query do?\n`UPDATE Orders SET Status = 'Paid' WHERE Id = 10;`",
         options: [
-          "Adds `ORDER BY RowVersion`.",
-          "Adds `WHERE RowVersion = @oldRv` and updates `RowVersion` to a new value as part of the write.",
-          "Disables the update.",
-          "Nothing.",
+          "Inserts a new order.",
+          "Sets the Status of the order with Id 10 to 'Paid'.",
+          "Deletes order 10.",
+          "Creates the Orders table.",
         ],
         correctAnswer:
-          "Adds `WHERE RowVersion = @oldRv` and updates `RowVersion` to a new value as part of the write.",
+          "Sets the Status of the order with Id 10 to 'Paid'.",
         explanation:
-          "If the WHERE matches zero rows, EF Core knows someone else changed the row and throws.",
+          "UPDATE changes the Status column for the rows matching WHERE.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this code?\n```csharp\nawait _db.Database.ExecuteSqlInterpolatedAsync($\"UPDATE Orders SET Status = 'Confirmed'\");\n```",
+          "Why is this dangerous?\n`UPDATE Products SET Price = 0;`",
         options: [
           "Nothing.",
-          "No `WHERE` clause — every order in the table is updated to `Confirmed`.",
-          "`ExecuteSqlInterpolatedAsync` cannot run UPDATE.",
-          "It is missing `await`.",
+          "There is no WHERE clause, so every product in the table is set to a price of 0.",
+          "Price cannot be 0.",
+          "UPDATE cannot run.",
         ],
         correctAnswer:
-          "No `WHERE` clause — every order in the table is updated to `Confirmed`.",
+          "There is no WHERE clause, so every product in the table is set to a price of 0.",
         explanation:
-          "Forgetting the `WHERE` is the classic UPDATE disaster. Always include it; review every update SQL before merging.",
+          "Always include a WHERE clause to avoid mass updates.",
       },
       {
         kind: "interview",
         question:
-          "How would you handle a `DbUpdateConcurrencyException` in an HTTP API?",
+          "How does EF Core decide which columns to include in an UPDATE?",
         options: [
-          "Crash the application.",
-          "Translate it to a 409 Conflict response so the client can re-fetch the latest state and decide what to do (retry, prompt user, abort).",
-          "Ignore it.",
-          "Retry indefinitely.",
+          "It always updates every column.",
+          "By default, EF Core tracks which properties changed and only updates those columns. You can configure it for more or less granular updates.",
+          "It never updates anything.",
+          "Only static columns.",
         ],
         correctAnswer:
-          "Translate it to a 409 Conflict response so the client can re-fetch the latest state and decide what to do (retry, prompt user, abort).",
+          "By default, EF Core tracks which properties changed and only updates those columns. You can configure it for more or less granular updates.",
         explanation:
-          "409 is the standard signal for 'your version is stale'. Retries belong to the client, not the server.",
+          "Change tracking is one of the main features of EF Core.",
       },
     ],
   },
 
   delete: {
     whyItMatters:
-      "Delete is permanent — or is it? Soft deletes, cascades, and audit trails determine whether a wrong delete is recoverable or a Sunday-evening incident.",
+      "DELETE removes data from the database. A wrong DELETE can wipe out important records in seconds. Knowing the rules keeps your data safe and your team's trust in the system.",
     simpleExplanation:
-      "`DELETE FROM table WHERE ...` removes rows. EF Core does this via `Remove` + `SaveChanges`.",
+      "DELETE removes rows from a table. You specify the table and a WHERE clause to choose which rows to remove. Without the WHERE clause, every row is deleted.",
     deepExplanation:
-      "Two patterns dominate. Hard delete: the row is physically removed; cascades and foreign keys decide what happens to children. Soft delete: a `DeletedAt` column is set, the row remains, and a global query filter hides it from default queries. Soft delete is the safer default for user-facing data because it preserves history.",
+      "The basic form is DELETE FROM Table WHERE Condition. Foreign key constraints can stop the delete if other rows depend on this one, unless cascade delete is configured. EF Core generates DELETE statements when you Remove an entity and call SaveChanges. Many real applications prefer soft deletes — marking a row as inactive — to keep history and recover from mistakes.",
     realWorldUsage:
-      "`DELETE /orders/{id}` either physically removes the row (and cascades to lines) or sets `Order.DeletedAt = now` depending on the policy. Auditors love the soft-delete trail.",
+      "An admin deletes a test order. A scheduled job deletes expired sessions. A migration deletes obsolete lookup rows. A soft-delete flow sets IsDeleted = true instead of running a real DELETE so the data can be recovered.",
     explainLikeBeginner:
-      "Hard delete is throwing the file in the shredder. Soft delete is marking the folder 'archived' and moving it to a back room.",
+      "DELETE is like shredding a paper from your filing cabinet. You need to find the right paper first (WHERE), then shred it. If you skip the search, you shred every paper in the cabinet.",
     interviewAnswer:
-      "Delete removes rows. We default to soft delete for user-facing entities — a `DeletedAt` timestamp and a global query filter — because it preserves history and is forgiving of mistakes. Hard delete is reserved for cases where retention is forbidden.",
+      "DELETE removes rows from a table based on the WHERE clause. Without WHERE, the entire table is emptied. In .NET, EF Core generates DELETE statements through Remove and SaveChanges. Real applications often prefer soft deletes for safety and audit purposes.",
     commonMistakes: [
-      "Hard-deleting customer data without considering audit or compliance requirements.",
-      "Forgetting to filter out soft-deleted rows in custom queries, leaking deleted data.",
-      "Cascading deletes across relationships you did not intend to cascade.",
+      "Running DELETE without a WHERE clause.",
+      "Deleting parent rows before child rows, causing foreign key errors.",
+      "Hard deleting instead of soft deleting when history is important.",
     ],
     bestPractices: [
-      "Default to soft delete for user-facing entities.",
-      "Use EF Core query filters to hide soft-deleted rows globally.",
-      "Audit the delete: who, when, why.",
+      "Always include a WHERE clause.",
+      "Test the delete with a SELECT first to confirm the right rows match.",
+      "Use soft deletes for data that may need to be restored.",
     ],
     summary: [
-      "Soft delete preserves history; hard delete frees space.",
-      "Use query filters to hide soft-deleted rows.",
-      "Audit deletes — they are high-impact actions.",
+      "DELETE removes rows that match the WHERE clause.",
+      "Without WHERE, the entire table is emptied.",
+      "Real applications often prefer soft deletes.",
     ],
     codeExample: {
-      title: "Soft delete with global query filter",
-      code: `public class Customer
-{
-    public Guid Id { get; set; }
-    public string Name { get; set; } = "";
-    public DateTimeOffset? DeletedAt { get; set; }
-}
+      title: "Deleting a customer with raw SQL and EF Core",
+      code: `-- Raw SQL
+DELETE FROM Customers WHERE Id = 5;
 
-modelBuilder.Entity<Customer>()
-    .HasQueryFilter(c => c.DeletedAt == null);
-
-public async Task DeleteAsync(Guid id)
+// EF Core
+var customer = await _db.Customers.FindAsync(5);
+if (customer != null)
 {
-    var c = await _db.Customers.FindAsync(id)
-        ?? throw new NotFoundException();
-    c.DeletedAt = DateTimeOffset.UtcNow;
+    _db.Customers.Remove(customer);
     await _db.SaveChangesAsync();
 }`,
-      output: "After delete: customer hidden from queries; row still present with DeletedAt set.",
+      output: "Customer 5 is removed from the table.",
       walkthrough: [
-        "Adding a nullable `DeletedAt` is non-destructive.",
-        "Query filter hides soft-deleted rows from every query by default.",
-        "`IgnoreQueryFilters()` opts back in when an admin tool needs to see them.",
+        "Raw SQL deletes only the customer with Id 5.",
+        "EF Core loads the entity, marks it for removal, and SaveChanges generates the DELETE.",
+        "Foreign key constraints will reject the delete if other tables reference this customer.",
       ],
     },
     practice: {
       prompt:
-        "Convert a hard-delete `DELETE /orders/{id}` endpoint to a soft delete with `DeletedAt` and a global query filter. Add an admin endpoint that lists soft-deleted orders.",
+        "Write a DELETE statement that removes a single product by id, then show the EF Core equivalent. Add a comment explaining the danger of leaving out the WHERE clause.",
       expectedResult:
-        "Normal endpoints behave as before; the admin endpoint reveals soft-deleted rows.",
+        "DELETE FROM Products WHERE Id = 7; with a clear note that omitting WHERE deletes every product.",
       hints: [
-        "Use `HasQueryFilter` in the model config.",
-        "Use `IgnoreQueryFilters()` in the admin query.",
-        "Audit who performed the delete.",
+        "Always include WHERE Id = 7.",
+        "Use FindAsync, Remove, and SaveChangesAsync in EF Core.",
+        "Add a comment about the risk of missing WHERE.",
       ],
       solution:
-        "The soft-delete pattern adds resilience without breaking existing behaviour. Admin tooling can reveal deletes for recovery or audit.",
+        "Write the DELETE statement with WHERE. In EF Core, load the product, remove it, and call SaveChangesAsync. The comment reminds the reader that DELETE without WHERE is dangerous.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Which deletion strategy preserves history by default?",
+        question: "What happens if you run DELETE without a WHERE clause?",
         options: [
-          "Hard delete.",
-          "Soft delete via a `DeletedAt` flag and a global query filter.",
-          "Cascade delete.",
-          "Truncate.",
+          "Nothing.",
+          "Every row in the table is removed.",
+          "Only one row is deleted.",
+          "The table is dropped.",
         ],
         correctAnswer:
-          "Soft delete via a `DeletedAt` flag and a global query filter.",
+          "Every row in the table is removed.",
         explanation:
-          "Soft delete is recoverable and audit-friendly; hard delete is final.",
+          "Always include a WHERE clause to avoid mass deletes.",
       },
       {
         kind: "code-reading",
         question:
-          "What happens when you query `_db.Customers` after the example's delete?",
+          "What does this code do?\n```csharp\n_db.Customers.Remove(customer);\nawait _db.SaveChangesAsync();\n```",
         options: [
-          "The customer is returned as before.",
-          "The customer is excluded by the global query filter and does not appear in results.",
-          "EF Core throws.",
-          "All customers disappear.",
+          "Adds a new customer.",
+          "Generates a DELETE statement for that customer and sends it to the database.",
+          "Updates a customer.",
+          "Reads a customer.",
         ],
         correctAnswer:
-          "The customer is excluded by the global query filter and does not appear in results.",
+          "Generates a DELETE statement for that customer and sends it to the database.",
         explanation:
-          "Query filters silently constrain every LINQ query on the entity until `IgnoreQueryFilters()` is called.",
+          "Remove plus SaveChanges produces the DELETE.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is risky here?\n```csharp\nawait _db.Database.ExecuteSqlInterpolatedAsync($\"DELETE FROM Customers WHERE Id = {id}\");\n```",
+          "Why does this fail in some databases?\n`DELETE FROM Customers WHERE Id = 5;` when Orders has a row with CustomerId = 5.",
         options: [
           "Nothing.",
-          "It bypasses the soft-delete query filter and any audit logic that lives on `SaveChanges`, hard-deleting the row outside the application's normal flow.",
-          "It is illegal syntax.",
-          "`ExecuteSqlInterpolatedAsync` is unsafe.",
+          "The foreign key on Orders.CustomerId stops the delete because removing the customer would leave orphan orders.",
+          "Customers cannot be deleted.",
+          "Id is wrong.",
         ],
         correctAnswer:
-          "It bypasses the soft-delete query filter and any audit logic that lives on `SaveChanges`, hard-deleting the row outside the application's normal flow.",
+          "The foreign key on Orders.CustomerId stops the delete because removing the customer would leave orphan orders.",
         explanation:
-          "Raw SQL routes around all the safety nets the application carefully set up. Use it deliberately.",
+          "Either configure cascade delete, delete the children first, or use a soft delete.",
       },
       {
         kind: "interview",
         question:
-          "When is a hard delete the correct choice?",
+          "When would you prefer a soft delete over a hard delete?",
         options: [
-          "Always.",
-          "When the law requires removal (right-to-be-forgotten, retention limits) or when the data has no business value once deleted.",
           "Never.",
-          "When the row is small.",
+          "When you need to keep history, recover from mistakes, comply with audit rules, or maintain references in related tables.",
+          "Always.",
+          "Only in tests.",
         ],
         correctAnswer:
-          "When the law requires removal (right-to-be-forgotten, retention limits) or when the data has no business value once deleted.",
+          "When you need to keep history, recover from mistakes, comply with audit rules, or maintain references in related tables.",
         explanation:
-          "Compliance trumps recovery: GDPR-style requirements may mandate hard delete.",
+          "Soft deletes are the default in many real systems because data is precious.",
       },
     ],
   },
 
   select: {
     whyItMatters:
-      "Most queries are reads. Knowing how to project, join, and aggregate efficiently is what makes endpoints fast and dashboards practical.",
+      "SELECT is the most common SQL command. Every report, every API list endpoint, and every dashboard chart starts with a SELECT. Knowing how to write efficient ones is a core .NET skill.",
     simpleExplanation:
-      "`SELECT` reads rows from one or more tables. You choose the columns, the filter, the order, and the limit.",
+      "SELECT reads rows from one or more tables. You choose the columns, filter with WHERE, sort with ORDER BY, and limit the results.",
     deepExplanation:
-      "Three habits separate good reads from bad: project only the columns you need (`SELECT a.Id, a.Name` not `SELECT *`), filter at the database (`WHERE` clause) rather than in memory, and use joins or subqueries with intention. In EF Core, `Select` on a `LINQ` query controls projection — without it, EF materialises the full entity, which can fetch ten times more data than you need.",
+      "SELECT Column1, Column2 FROM Table is the basic form. You filter with WHERE, group with GROUP BY, aggregate with COUNT/SUM/AVG, sort with ORDER BY, and limit with TOP (SQL Server) or LIMIT (PostgreSQL/MySQL). You can combine tables with JOIN. EF Core converts LINQ queries into SELECT statements. Knowing what the generated SQL looks like helps you tune performance.",
     realWorldUsage:
-      "`_db.Orders.Where(o => o.Status == \"Confirmed\").Select(o => new OrderSummary(o.Id, o.Total)).ToList()` returns lean DTOs straight from the database.",
+      "A list endpoint reads paged customers with SELECT TOP. A daily report sums orders by date. A dashboard query joins Orders, Customers, and Products. A health check queries SELECT COUNT(*) FROM Sessions to detect activity.",
     explainLikeBeginner:
-      "SELECT is asking 'show me these columns where this is true'. Pick less, get less.",
+      "SELECT is like asking the librarian for specific books. You name the books, the topics, and the order you want them in. The librarian gives you the matching books.",
     interviewAnswer:
-      "`SELECT` reads rows. We project to the smallest shape the caller needs, filter at the database, and avoid materialising full entities when only a few fields are required. In EF Core that means using `Select(o => new SomeDto(...))` rather than fetching the entity.",
+      "SELECT reads data from one or more tables. You can choose columns, filter rows with WHERE, sort with ORDER BY, group, aggregate, and join. EF Core translates LINQ queries into SELECT statements, and reading the generated SQL is part of debugging performance.",
     commonMistakes: [
-      "`SELECT *` followed by mapping in C# — slower and noisier than projecting on the server.",
-      "Filtering in memory (`ToList().Where(...)`) instead of in SQL.",
-      "Forgetting to await `ToListAsync` and seeing it block synchronously.",
+      "Using SELECT * instead of listing the needed columns.",
+      "Forgetting WHERE on large tables, which loads everything into memory.",
+      "Sorting without an index, which slows the query.",
     ],
     bestPractices: [
-      "Project to DTOs in the LINQ query.",
-      "Compose filters as `IQueryable` before materialising.",
-      "Use `AsNoTracking()` for read-only queries to skip change tracking.",
+      "Select only the columns you need.",
+      "Use WHERE to limit the rows.",
+      "Add indexes for columns used in WHERE and ORDER BY.",
     ],
     summary: [
-      "Read narrowly: project the columns you need.",
-      "Filter at the database, not in memory.",
-      "`AsNoTracking()` for read-only paths.",
+      "SELECT reads rows from tables.",
+      "Use WHERE, ORDER BY, and aggregates to shape the result.",
+      "EF Core converts LINQ into SELECT.",
     ],
     codeExample: {
-      title: "EF Core projection to DTO",
-      code: `var summaries = await _db.Orders
-    .AsNoTracking()
-    .Where(o => o.Status == "Confirmed")
-    .OrderByDescending(o => o.CreatedAt)
-    .Take(20)
-    .Select(o => new OrderSummary(o.Id, o.CustomerId, o.Total))
+      title: "Reading customers with raw SQL and LINQ",
+      code: `-- Raw SQL
+SELECT TOP 10 Id, Name, Email
+FROM Customers
+WHERE IsActive = 1
+ORDER BY Name;
+
+// EF Core LINQ equivalent
+var customers = await _db.Customers
+    .Where(c => c.IsActive)
+    .OrderBy(c => c.Name)
+    .Take(10)
+    .Select(c => new { c.Id, c.Name, c.Email })
     .ToListAsync();`,
-      output: `Generated SQL: SELECT TOP 20 o.Id, o.CustomerId, o.Total
-FROM Orders o WHERE o.Status = N'Confirmed' ORDER BY o.CreatedAt DESC`,
+      output: "Up to 10 active customers sorted by name, with only the chosen columns.",
       walkthrough: [
-        "`AsNoTracking` skips EF Core change tracking — fewer allocations on reads.",
-        "`Select` projects to the small DTO; SQL Server reads only those columns.",
-        "`Take(20)` lands as `SELECT TOP 20` — paging at the database.",
+        "WHERE keeps only active customers.",
+        "ORDER BY sorts by name.",
+        "TOP 10 (or Take in LINQ) limits the result.",
       ],
     },
     practice: {
       prompt:
-        "Build a `GetCustomerOrdersSummary(customerId, pageSize)` method that projects to `OrderSummary(Id, Status, Total)` and returns the most recent N orders. Verify by inspecting the generated SQL.",
+        "Write a SELECT that returns the top 5 products by Price in descending order, showing only Id, Name, and Price. Also write the equivalent LINQ query.",
       expectedResult:
-        "The SQL projects only three columns and uses `TOP n`.",
+        "SELECT TOP 5 Id, Name, Price FROM Products ORDER BY Price DESC and the equivalent LINQ chain.",
       hints: [
-        "Use `Select(new OrderSummary(...))` in LINQ.",
-        "Use `AsNoTracking()`.",
-        "Inspect SQL with `.ToQueryString()`.",
+        "Use TOP 5 or LIMIT 5 depending on the database.",
+        "Use OrderByDescending(p => p.Price) in LINQ.",
+        "Use Select(p => new { p.Id, p.Name, p.Price }) to shape the result.",
       ],
       solution:
-        "Projection turns a 'fetch the entity' query into a 'fetch what we need' query. On wide tables the difference is dramatic.",
+        "Write SELECT TOP 5 Id, Name, Price FROM Products ORDER BY Price DESC. The LINQ version chains OrderByDescending, Take, and Select.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Why prefer `.Select(o => new OrderSummary(...))` over fetching the entity?",
+        question: "What does SELECT do?",
         options: [
-          "It is style.",
-          "It produces SQL that reads only the columns you need; less data over the wire, less memory used.",
-          "It is required for `ToList`.",
-          "There is no difference.",
+          "Adds rows.",
+          "Reads rows from one or more tables.",
+          "Deletes rows.",
+          "Creates tables.",
         ],
-        correctAnswer:
-          "It produces SQL that reads only the columns you need; less data over the wire, less memory used.",
+        correctAnswer: "Reads rows from one or more tables.",
         explanation:
-          "Projection turns a 'select *' into a 'select a, b, c'. The savings scale with table width.",
+          "SELECT is the SQL command for reading data.",
       },
       {
         kind: "code-reading",
         question:
-          "What does `AsNoTracking()` change about the example query?",
+          "What does this LINQ query produce?\n```csharp\n_db.Customers.Where(c => c.IsActive).OrderBy(c => c.Name).Take(10);\n```",
         options: [
-          "It hides the rows from other queries.",
-          "It tells EF Core not to track returned entities for change detection, reducing memory overhead on read-only paths.",
-          "It executes the query synchronously.",
-          "It disables filtering.",
+          "All customers.",
+          "Up to 10 active customers sorted by name.",
+          "Random customers.",
+          "An error.",
         ],
         correctAnswer:
-          "It tells EF Core not to track returned entities for change detection, reducing memory overhead on read-only paths.",
+          "Up to 10 active customers sorted by name.",
         explanation:
-          "Change tracking has a cost. If you do not intend to update the results, skip it.",
+          "Where filters, OrderBy sorts, and Take limits — the same shape as SQL.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "Why is this slow?\n```csharp\nvar orders = (await _db.Orders.ToListAsync())\n    .Where(o => o.Status == \"Confirmed\")\n    .ToList();\n```",
+          "Why is this query slow on a large table?\n`SELECT * FROM Orders ORDER BY CreatedAt DESC;`",
         options: [
           "Nothing.",
-          "`ToListAsync()` pulls every row into memory; the `Where` then runs in C# — the database does no filtering.",
-          "`ToList()` cannot follow `ToListAsync()`.",
-          "`Status` is not a column.",
+          "It selects every column and sorts the entire table. Without a WHERE clause and an index on CreatedAt, the database scans and sorts everything.",
+          "ORDER BY is not allowed.",
+          "DESC is invalid.",
         ],
         correctAnswer:
-          "`ToListAsync()` pulls every row into memory; the `Where` then runs in C# — the database does no filtering.",
+          "It selects every column and sorts the entire table. Without a WHERE clause and an index on CreatedAt, the database scans and sorts everything.",
         explanation:
-          "Compose filters on `IQueryable` before materialising. The example fetches the whole table to find a few rows.",
+          "Always limit columns, rows, and add indexes for sorts.",
       },
       {
         kind: "interview",
         question:
-          "When would you NOT use `AsNoTracking()`?",
+          "How would you optimize a slow SELECT in a .NET application?",
         options: [
-          "When the query is read-only.",
-          "When you intend to mutate the returned entities and save them — without tracking, EF Core does not detect changes.",
-          "Always.",
-          "Never.",
+          "Always rewrite it in raw SQL.",
+          "Look at the generated SQL, check the execution plan, add indexes for WHERE and ORDER BY columns, select only needed columns, and avoid loading unrelated data.",
+          "Disable EF Core.",
+          "Increase the database size.",
         ],
         correctAnswer:
-          "When you intend to mutate the returned entities and save them — without tracking, EF Core does not detect changes.",
+          "Look at the generated SQL, check the execution plan, add indexes for WHERE and ORDER BY columns, select only needed columns, and avoid loading unrelated data.",
         explanation:
-          "No-tracking is for reads only. Updates need the change tracker.",
+          "This is the standard query-tuning approach in real .NET work.",
       },
     ],
   },
 
   "ef-core-basics": {
     whyItMatters:
-      "EF Core is the default ORM in .NET. Understanding the change tracker, query translation, and migrations is the daily toolkit for backend developers.",
+      "EF Core is the most common ORM in .NET. It lets you read and write data using C# classes and LINQ instead of raw SQL. Knowing it well means most data work becomes a few lines of clear code.",
     simpleExplanation:
-      "EF Core maps C# classes to database tables and translates LINQ queries into SQL.",
+      "Entity Framework Core, or EF Core, is the data access library used in most modern .NET applications. It maps C# classes (entities) to database tables and lets you query data with LINQ.",
     deepExplanation:
-      "Three pillars to internalise. The `DbContext` is your unit of work; it holds the change tracker and the connection. `DbSet<T>` represents a table; LINQ over it composes into SQL. Migrations capture schema changes as code, applied in order via `dotnet ef database update`. Configure entities with conventions, attributes, or fluent API (`OnModelCreating`) — fluent is the most powerful and the recommended default at scale.",
+      "EF Core has three main parts: entities (your classes), the DbContext (the connection to the database), and DbSet<T> properties (one per entity, like a virtual table). You query with LINQ, and EF Core translates it into SQL. You modify entities and call SaveChanges, and EF Core generates INSERT, UPDATE, and DELETE statements. Migrations let you evolve the schema as the model changes.",
     realWorldUsage:
-      "An `AppDbContext` exposes `DbSet<Order>` and `DbSet<Customer>`. Services inject the context, query and mutate, then call `SaveChangesAsync` once per request.",
+      "An OrderService uses _db.Orders.Where(o => o.CustomerId == customerId).ToListAsync() to load a customer's orders. A repository uses _db.Customers.FindAsync(id) to load by primary key. A reporting query uses Include and Select to project DTOs directly. Almost every modern .NET application uses EF Core for data access.",
     explainLikeBeginner:
-      "EF Core is the translator between your C# objects and SQL tables. You write `db.Orders.Where(...)` and it speaks SQL underneath.",
+      "EF Core is like a smart translator. You speak C# (LINQ), and it speaks SQL to the database. You do not need to write SQL by hand for most queries, but you can if you need to.",
     interviewAnswer:
-      "EF Core is Microsoft's ORM: it maps C# entities to tables, translates LINQ to SQL, tracks changes, and manages schema with migrations. We configure it via the fluent API, keep the `DbContext` scoped per request, and call `SaveChanges` once per logical unit of work.",
+      "EF Core is the .NET ORM that maps C# classes to database tables and lets you query data with LINQ. It supports change tracking, migrations, and async APIs. EF Core is the default data access tool in most modern .NET applications.",
     commonMistakes: [
-      "Using the `DbContext` as a singleton — it is not thread-safe and is meant to be scoped per request.",
-      "Mixing change-tracking queries with `AsNoTracking()` queries without thinking about which is which.",
-      "Forgetting to apply migrations and being surprised the schema is stale.",
+      "Loading too much data by not using Where or Select.",
+      "Forgetting to use AsNoTracking for read-only queries.",
+      "Calling sync methods in async code, which can deadlock the application.",
     ],
     bestPractices: [
-      "Register `DbContext` with `AddDbContext` so it is scoped per request.",
-      "Configure entities in `OnModelCreating` with the fluent API.",
-      "Run `dotnet ef migrations add` for every schema change; never hand-edit the database.",
+      "Use async methods (ToListAsync, FindAsync, SaveChangesAsync).",
+      "Use Select to project DTOs directly in queries.",
+      "Use AsNoTracking for read-only queries to save memory.",
     ],
     summary: [
-      "DbContext = unit of work; scoped per request.",
-      "LINQ → SQL via translation.",
-      "Migrations are versioned schema changes.",
+      "EF Core is the main .NET ORM.",
+      "It maps entities to tables and translates LINQ to SQL.",
+      "It supports change tracking, migrations, and async APIs.",
     ],
     codeExample: {
-      title: "Minimal DbContext + service usage",
+      title: "Reading and saving with EF Core",
       code: `public class AppDbContext : DbContext
 {
-    public DbSet<Order> Orders => Set<Order>();
-    public AppDbContext(DbContextOptions<AppDbContext> o) : base(o) { }
+    public DbSet<Customer> Customers => Set<Customer>();
 
-    protected override void OnModelCreating(ModelBuilder b)
+    protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
-        b.Entity<Order>().HasKey(o => o.Id);
-        b.Entity<Order>().Property(o => o.Status).HasMaxLength(20).IsRequired();
+        options.UseSqlServer("Server=.;Database=Shop;Trusted_Connection=True;");
     }
 }
 
-// Program.cs
-builder.Services.AddDbContext<AppDbContext>(opts =>
-    opts.UseSqlServer(builder.Configuration.GetConnectionString("Default")));`,
-      output: "DbContext resolved per request from DI; queries and writes go through it.",
+// Reading
+using var db = new AppDbContext();
+var activeCustomers = await db.Customers
+    .Where(c => c.IsActive)
+    .ToListAsync();
+
+// Writing
+db.Customers.Add(new Customer { Name = "Ali", Email = "ali@example.com" });
+await db.SaveChangesAsync();`,
+      output: "Loaded active customers and inserted a new one.",
       walkthrough: [
-        "`AppDbContext` exposes the tables and configures the model.",
-        "`AddDbContext` registers it with scoped lifetime — one per request.",
-        "Services inject `AppDbContext` via constructor.",
+        "AppDbContext defines the connection and the DbSet<Customer>.",
+        "Where + ToListAsync is the LINQ way to filter and load.",
+        "Add + SaveChangesAsync inserts a new row.",
       ],
     },
     practice: {
       prompt:
-        "Set up an EF Core context for `Product`. Add a migration, apply it, and seed three rows. Verify the inserted data via `SELECT *` (or LINQ).",
+        "Define an AppDbContext with two DbSets: Customers and Orders. Write a method GetCustomerWithOrders(int id) that loads one customer and includes their orders, then returns it.",
       expectedResult:
-        "Migration runs cleanly; rows appear; you can query them back via LINQ.",
+        "The method loads the customer with the given id including the related orders, or returns null when the customer does not exist.",
       hints: [
-        "Use `dotnet ef migrations add Initial`.",
-        "Use `dotnet ef database update`.",
-        "Seed via `OnModelCreating` `HasData` or a startup hook.",
+        "Use _db.Customers.Include(c => c.Orders).",
+        "Use FirstOrDefaultAsync(c => c.Id == id).",
+        "Return null when nothing is found.",
       ],
       solution:
-        "Now you have the full loop: code change → migration → apply → query. The same cycle scales to production.",
+        "Write _db.Customers.Include(c => c.Orders).FirstOrDefaultAsync(c => c.Id == id). EF Core builds a SQL join and returns the customer with their orders.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "What lifetime should `DbContext` typically have in an ASP.NET Core app?",
+        question: "What is EF Core?",
         options: [
-          "Singleton.",
-          "Scoped — one instance per HTTP request.",
-          "Transient — one per call.",
-          "It does not matter.",
+          "A unit testing framework.",
+          "An ORM that maps C# classes to database tables and translates LINQ into SQL.",
+          "A web server.",
+          "A logging library.",
         ],
         correctAnswer:
-          "Scoped — one instance per HTTP request.",
+          "An ORM that maps C# classes to database tables and translates LINQ into SQL.",
         explanation:
-          "`AddDbContext` registers as scoped by default. Singletons are unsafe; transients defeat the change tracker.",
+          "EF Core is the standard data access library in modern .NET.",
       },
       {
         kind: "code-reading",
         question:
-          "What does `b.Entity<Order>().Property(o => o.Status).HasMaxLength(20).IsRequired()` produce in SQL?",
+          "What does this code do?\n```csharp\nvar list = await _db.Orders.Where(o => o.Total > 100).ToListAsync();\n```",
         options: [
-          "`Status nvarchar(20) NOT NULL`.",
-          "`Status nvarchar(max) NULL`.",
-          "`Status text`.",
-          "Nothing — fluent config is C# only.",
+          "Deletes orders.",
+          "Loads all orders with Total greater than 100 as a list, asynchronously.",
+          "Updates orders.",
+          "Creates orders.",
         ],
-        correctAnswer: "`Status nvarchar(20) NOT NULL`.",
+        correctAnswer:
+          "Loads all orders with Total greater than 100 as a list, asynchronously.",
         explanation:
-          "Fluent configuration drives the generated DDL.",
+          "Where + ToListAsync is the standard async read pattern.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What problem is this?\n```csharp\nbuilder.Services.AddSingleton<AppDbContext>(); // not AddDbContext\n```",
+          "Why is this code slow?\n```csharp\nvar all = await _db.Customers.ToListAsync();\nvar active = all.Where(c => c.IsActive).ToList();\n```",
         options: [
           "Nothing.",
-          "`DbContext` is not thread-safe and is designed to be scoped; making it a singleton causes concurrent-access bugs.",
-          "`AddSingleton` does not exist.",
-          "It is the same as `AddDbContext`.",
+          "It loads every customer into memory first, then filters in C#. The Where should run inside the EF Core query so SQL does the filtering.",
+          "It needs async.",
+          "Where is not supported.",
         ],
         correctAnswer:
-          "`DbContext` is not thread-safe and is designed to be scoped; making it a singleton causes concurrent-access bugs.",
+          "It loads every customer into memory first, then filters in C#. The Where should run inside the EF Core query so SQL does the filtering.",
         explanation:
-          "Use `AddDbContext` for scoped lifetime and pooled connections.",
+          "Filter as early as possible, inside the query, to keep the result small.",
       },
       {
         kind: "interview",
         question:
-          "How would you investigate the SQL EF Core generates for a query?",
+          "What is AsNoTracking and when should you use it?",
         options: [
-          "Read the code very carefully.",
-          "Call `.ToQueryString()` on the `IQueryable`, or enable EF Core logging with parameter values to see the actual SQL on the wire.",
-          "Profile the application.",
-          "Restart the database.",
+          "It is unrelated.",
+          "AsNoTracking tells EF Core to skip change tracking. Use it for read-only queries to save memory and CPU.",
+          "It deletes data.",
+          "It disables async.",
         ],
         correctAnswer:
-          "Call `.ToQueryString()` on the `IQueryable`, or enable EF Core logging with parameter values to see the actual SQL on the wire.",
+          "AsNoTracking tells EF Core to skip change tracking. Use it for read-only queries to save memory and CPU.",
         explanation:
-          "Reading the generated SQL is how you confirm assumptions and diagnose performance.",
+          "AsNoTracking is one of the simplest EF Core performance wins.",
       },
     ],
   },
 
   dbcontext: {
     whyItMatters:
-      "DbContext is the unit-of-work in EF Core. Mis-handling its lifetime, concurrency, or transaction scope is the source of most EF Core bugs.",
+      "DbContext is the bridge between your application and the database. Every EF Core query, save, and migration goes through it. Knowing how to use it correctly is one of the most important .NET skills.",
     simpleExplanation:
-      "A `DbContext` represents a session with the database: it holds the change tracker, the connection, and your `DbSet<T>` properties.",
+      "DbContext is the EF Core class that represents a session with the database. It holds the connection, the DbSet properties for each entity, and the change tracker.",
     deepExplanation:
-      "Three rules of thumb. (1) Scope it per request — `AddDbContext` does this. (2) Treat it as a unit of work — accumulate changes, call `SaveChangesAsync` once. (3) Do not pass it across threads. For background work, prefer `IDbContextFactory<TContext>` to create a fresh context per operation.",
+      "A DbContext is usually registered with dependency injection as scoped, meaning one instance per HTTP request. Inside, it tracks the entities you load, knows which ones have changed, and generates the right SQL when you call SaveChanges. The DbContext also configures conventions through OnModelCreating, where you can customize names, relationships, and constraints with the Fluent API.",
     realWorldUsage:
-      "A controller injects `AppDbContext`; the action loads, mutates, and calls `SaveChangesAsync` once before returning. A background `IHostedService` uses an `IDbContextFactory` because there is no request scope.",
+      "An AppDbContext has DbSet<Customer>, DbSet<Order>, and DbSet<Product>. A service receives the DbContext through its constructor. The service uses LINQ on the DbSets to read and write data. Every request gets its own DbContext instance through dependency injection.",
     explainLikeBeginner:
-      "DbContext is the open notebook on the database. You write a few changes, save once, and close it.",
+      "DbContext is like a notebook for the database. You write in it, EF Core reads what you wrote, and when you say 'save', it sends everything to the database in one trip.",
     interviewAnswer:
-      "`DbContext` is EF Core's unit of work and session boundary. We scope it per HTTP request, accumulate changes via the change tracker, and persist them with a single `SaveChangesAsync`. For background work we use `IDbContextFactory` to avoid sharing a context across threads.",
+      "DbContext is the EF Core class that represents a session with the database. It holds DbSet properties, tracks changes, and generates SQL. We register it as scoped in dependency injection so each HTTP request has its own instance.",
     commonMistakes: [
-      "Sharing a `DbContext` across `await` points that move between threads (rare in ASP.NET Core but possible).",
-      "Calling `SaveChangesAsync` inside a loop — multiplying round-trips.",
-      "Holding the same `DbContext` for the lifetime of a background service.",
+      "Using one DbContext instance across multiple threads.",
+      "Creating a new DbContext manually instead of receiving it through DI.",
+      "Holding the DbContext open for too long, which keeps memory and connections busy.",
     ],
     bestPractices: [
-      "One `DbContext` per request, scoped via DI.",
-      "One `SaveChangesAsync` per logical unit of work.",
-      "Use `IDbContextFactory` for background jobs.",
+      "Register the DbContext as scoped in dependency injection.",
+      "Use one DbContext per HTTP request.",
+      "Keep operations short — load, change, save, and let the request end.",
     ],
     summary: [
-      "DbContext = session + unit of work.",
-      "Scoped per request.",
-      "Background jobs need a factory, not the scoped instance.",
+      "DbContext is the EF Core session with the database.",
+      "It holds DbSets and tracks changes.",
+      "Register it as scoped in dependency injection.",
     ],
     codeExample: {
-      title: "Factory for background work",
-      code: `// Program.cs
-builder.Services.AddDbContextFactory<AppDbContext>(opts =>
-    opts.UseSqlServer(connectionString));
-
-public class OrderArchiver : BackgroundService
+      title: "A DbContext registered with dependency injection",
+      code: `public class AppDbContext : DbContext
 {
-    private readonly IDbContextFactory<AppDbContext> _factory;
-    public OrderArchiver(IDbContextFactory<AppDbContext> f) => _factory = f;
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    protected override async Task ExecuteAsync(CancellationToken ct)
-    {
-        while (!ct.IsCancellationRequested)
-        {
-            using var db = _factory.CreateDbContext();
-            // ... do work, SaveChanges, dispose ...
-            await Task.Delay(TimeSpan.FromMinutes(5), ct);
-        }
-    }
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Order> Orders => Set<Order>();
+}
+
+// Program.cs
+builder.Services.AddDbContext<AppDbContext>(opts =>
+    opts.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+
+// A service receives the DbContext
+public class CustomerService
+{
+    private readonly AppDbContext _db;
+    public CustomerService(AppDbContext db) => _db = db;
+
+    public Task<Customer?> GetByIdAsync(int id) => _db.Customers.FindAsync(id).AsTask();
 }`,
-      output: "Background work uses its own DbContext per iteration, never shares the scoped one.",
+      output: "The service uses the DbContext provided through DI.",
       walkthrough: [
-        "`AddDbContextFactory` registers a thread-safe factory.",
-        "Background services resolve a context per iteration.",
-        "`using` ensures it is disposed promptly.",
+        "AppDbContext takes options through its constructor for configuration.",
+        "AddDbContext registers it as scoped.",
+        "CustomerService receives an AppDbContext per HTTP request.",
       ],
     },
     practice: {
       prompt:
-        "Write a `BackgroundService` that wakes up every minute, queries pending orders, and marks them as processed. Use `IDbContextFactory` rather than injecting `AppDbContext` directly.",
+        "Define an AppDbContext with DbSet<Product> and DbSet<Category>. Register it in Program.cs and inject it into a ProductService that loads a product by id.",
       expectedResult:
-        "The service runs without lifetime mismatches and never leaks a context.",
+        "The ProductService.GetByIdAsync method returns the product with the given id or null when not found.",
       hints: [
-        "Inject `IDbContextFactory<AppDbContext>`.",
-        "Create and dispose per iteration.",
-        "Honour the cancellation token in the loop.",
+        "Use DbContextOptions<AppDbContext> in the constructor.",
+        "Register with AddDbContext in Program.cs.",
+        "Inject AppDbContext into the service and use FindAsync.",
       ],
       solution:
-        "Background services and request-scoped contexts are different beasts. The factory pattern keeps them apart cleanly.",
+        "Define AppDbContext with the constructor and two DbSets. Register with AddDbContext. Inject AppDbContext into ProductService and use _db.Products.FindAsync(id) to load one product.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "What pattern does EF Core's `DbContext` model directly?",
+        question: "What is DbContext?",
         options: [
-          "Singleton.",
-          "Unit of work — accumulate changes, commit atomically.",
-          "Strategy.",
-          "Adapter.",
+          "A web controller.",
+          "An EF Core class that represents a session with the database and holds DbSet properties for each entity.",
+          "A type of DTO.",
+          "A logging service.",
         ],
         correctAnswer:
-          "Unit of work — accumulate changes, commit atomically.",
+          "An EF Core class that represents a session with the database and holds DbSet properties for each entity.",
         explanation:
-          "The change tracker queues changes; `SaveChanges` flushes them in one transaction.",
+          "DbContext is the heart of EF Core's data access model.",
       },
       {
         kind: "code-reading",
         question:
-          "Why does `OrderArchiver` use `IDbContextFactory` instead of injecting `AppDbContext` directly?",
+          "What does AddDbContext do?\n```csharp\nbuilder.Services.AddDbContext<AppDbContext>(opts => opts.UseSqlServer(connectionString));\n```",
         options: [
-          "Style.",
-          "A `BackgroundService` is a singleton; the scoped `DbContext` lifetime would mismatch and the same instance would be shared across iterations.",
-          "It is required by `BackgroundService`.",
-          "Factories are faster.",
+          "Adds a controller.",
+          "Registers AppDbContext as a scoped service and configures it to use SQL Server with the given connection string.",
+          "Opens a database connection immediately.",
+          "Disables EF Core.",
         ],
         correctAnswer:
-          "A `BackgroundService` is a singleton; the scoped `DbContext` lifetime would mismatch and the same instance would be shared across iterations.",
+          "Registers AppDbContext as a scoped service and configures it to use SQL Server with the given connection string.",
         explanation:
-          "Lifetime mismatch is the canonical reason to reach for the factory.",
+          "AddDbContext is the standard way to register a DbContext.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong here?\n```csharp\nforeach (var c in customers) { c.Status = \"X\"; await _db.SaveChangesAsync(); }\n```",
+          "Why is this design risky?\n```csharp\npublic static class Db\n{\n    public static AppDbContext Context = new AppDbContext();\n}\n```",
         options: [
           "Nothing.",
-          "It calls `SaveChangesAsync` per row, opening a transaction each time; batch the change-tracker writes by calling `SaveChangesAsync` once outside the loop.",
-          "`SaveChangesAsync` cannot be inside a loop.",
-          "`c.Status` is read-only.",
+          "DbContext is not thread-safe and not designed to live for the whole application. It should be scoped per request through DI.",
+          "It needs await.",
+          "Static is required.",
         ],
         correctAnswer:
-          "It calls `SaveChangesAsync` per row, opening a transaction each time; batch the change-tracker writes by calling `SaveChangesAsync` once outside the loop.",
+          "DbContext is not thread-safe and not designed to live for the whole application. It should be scoped per request through DI.",
         explanation:
-          "Save once at the end. The change tracker already batches the updates.",
+          "Always use DI to get a fresh DbContext per request.",
       },
       {
         kind: "interview",
         question:
-          "What does it mean to say `DbContext` is 'not thread-safe'?",
+          "Why is DbContext registered as scoped?",
         options: [
-          "It cannot be used in async code.",
-          "Concurrent access from multiple threads can corrupt the internal state of the change tracker; one logical operation must run on one thread at a time.",
-          "It uses too much memory.",
-          "It cannot be disposed.",
+          "Because it is faster.",
+          "Because a scoped lifetime means one instance per HTTP request, which matches how change tracking and unit-of-work are designed to work.",
+          "Because singleton is not allowed.",
+          "Because it has no constructor.",
         ],
         correctAnswer:
-          "Concurrent access from multiple threads can corrupt the internal state of the change tracker; one logical operation must run on one thread at a time.",
+          "Because a scoped lifetime means one instance per HTTP request, which matches how change tracking and unit-of-work are designed to work.",
         explanation:
-          "Use one context per operation, dispose promptly, and never share across parallel work.",
+          "Scoped is the right lifetime for DbContext in almost every web application.",
       },
     ],
   },
 
   migrations: {
     whyItMatters:
-      "Migrations are version control for your schema. Without them, every environment drifts and 'works on my machine' becomes a way of life.",
+      "Migrations let you change the database schema in a safe, repeatable way. They are how you keep the database in sync with your code as the application evolves. Every real .NET project uses them.",
     simpleExplanation:
-      "A migration is a code file describing how to change the schema (add a column, create a table). Running migrations applies those changes in order.",
+      "A migration is a file that describes a change to the database schema. EF Core generates the file based on changes to your entities, and you apply it to update the database.",
     deepExplanation:
-      "Each migration has `Up` (apply) and `Down` (revert) methods generated from your model changes. Migrations are checked into source control with their snapshot of the model. The flow: change the entity → `dotnet ef migrations add Name` → review the generated SQL → `dotnet ef database update` (or apply at startup). Never edit applied migrations — add a new one.",
+      "When you change an entity — add a property, remove a column, rename a table — EF Core compares the new model to the old model and generates a migration file with the differences as code. The Up method applies the change. The Down method reverts it. You run dotnet ef migrations add to create one and dotnet ef database update to apply it. In production, migrations are usually applied through a deploy script or a startup hook.",
     realWorldUsage:
-      "`dotnet ef migrations add AddCustomerEmailIndex` then `dotnet ef database update` adds a unique index on `Customers.Email` in every environment as part of deployment.",
+      "A team adds a new column to Customers — EF Core generates a migration. A column is renamed — another migration. A new table for AuditLog is added — another migration. Each migration is reviewed in pull requests and applied automatically during deployment.",
     explainLikeBeginner:
-      "Migrations are a list of changes the database has agreed to. You ship them with the code so every environment ends up identical.",
+      "A migration is like a recipe for the database. Each recipe describes one change — add this column, rename that table. When you cook the recipe (apply the migration), the database changes accordingly.",
     interviewAnswer:
-      "Migrations are version-controlled descriptions of schema changes. We add one per logical change, review the generated SQL, commit it, and apply it in CI/CD so every environment moves through the same sequence of states.",
+      "Migrations are EF Core's way of evolving the database schema over time. You change your entities, EF Core generates a migration, and you apply it with dotnet ef database update. Migrations are version-controlled and applied during deployment so every environment ends up with the same schema.",
     commonMistakes: [
-      "Editing an applied migration — different environments now have different histories.",
-      "Skipping the review step and pushing a migration that includes accidental drops.",
-      "Running `dotnet ef database update` against production from a developer machine.",
+      "Editing migrations after they have been applied to other environments.",
+      "Skipping the review of generated migrations.",
+      "Running migrations manually in production without a script.",
     ],
     bestPractices: [
-      "One migration per logical change with a descriptive name.",
-      "Review the generated SQL before committing.",
-      "Apply migrations from the deployment pipeline, not from local machines, in production.",
+      "Add migrations with clear names like AddCustomerEmailColumn.",
+      "Review the generated SQL before applying it.",
+      "Apply migrations as part of the deployment pipeline.",
     ],
     summary: [
-      "Migrations version your schema.",
-      "Add → review → commit → apply.",
-      "Never edit an applied migration.",
+      "Migrations describe schema changes in code.",
+      "Use dotnet ef migrations add to create one and dotnet ef database update to apply it.",
+      "Every real .NET project uses migrations to keep the database in sync.",
     ],
     codeExample: {
-      title: "A small migration",
-      code: `dotnet ef migrations add AddCustomerEmailIndex
-dotnet ef database update
-
-// generated migration
-public partial class AddCustomerEmailIndex : Migration
+      title: "Adding a migration and updating the database",
+      code: `# Add a new column to Customer in the entity
+public class Customer
 {
-    protected override void Up(MigrationBuilder mb) =>
-        mb.CreateIndex("IX_Customers_Email", "Customers", "Email", unique: true);
-    protected override void Down(MigrationBuilder mb) =>
-        mb.DropIndex("IX_Customers_Email", "Customers");
-}`,
-      output: "Index applied: IX_Customers_Email; reversible via Down.",
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // new
+}
+
+# Create a migration from the model change
+dotnet ef migrations add AddCustomerCreatedAt
+
+# Apply it to the database
+dotnet ef database update`,
+      output: "A new migration file is created and the database is updated.",
       walkthrough: [
-        "`add` generates the migration; `update` applies it.",
-        "Both `Up` and `Down` are explicit, making rollback possible.",
-        "The migration file is checked into source control.",
+        "The entity change is the source of truth.",
+        "dotnet ef migrations add generates the migration file.",
+        "dotnet ef database update applies the change to the database.",
       ],
     },
     practice: {
       prompt:
-        "Add a `IsArchived` boolean to `Product`, generate a migration, review it, and apply it. Then write a follow-up migration that backfills `IsArchived = 0` for existing rows.",
+        "Add an IsActive boolean property to a Customer entity. Create a migration named AddCustomerIsActive and apply it. Then write down the dotnet ef commands you used.",
       expectedResult:
-        "Two migrations applied in sequence; the schema is consistent and the data is non-null.",
+        "A new migration file appears in the project, and the Customers table has an IsActive column after the update.",
       hints: [
-        "Use a default value to avoid `NOT NULL` violation on existing rows.",
-        "Inspect the generated SQL.",
-        "Test the `Down` migration in a scratch database.",
+        "Update the entity first.",
+        "Run dotnet ef migrations add AddCustomerIsActive.",
+        "Run dotnet ef database update to apply the migration.",
       ],
       solution:
-        "Migrations + a small data-fix migration is the safe pattern for non-trivial column additions.",
+        "Add the property to Customer. Run the two dotnet ef commands. The migration file appears under Migrations/, and the database is updated.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Why must you never edit an applied migration?",
+        question: "What is a migration?",
         options: [
-          "Editing is forbidden by the compiler.",
-          "Once a migration is applied in any environment, changing its `Up` method makes other environments diverge — apply a new migration instead.",
-          "Editing is encouraged.",
-          "Migrations are not files.",
+          "A new feature in C#.",
+          "A file that describes a change to the database schema based on differences in the entity model.",
+          "A type of DTO.",
+          "A test framework.",
         ],
         correctAnswer:
-          "Once a migration is applied in any environment, changing its `Up` method makes other environments diverge — apply a new migration instead.",
+          "A file that describes a change to the database schema based on differences in the entity model.",
         explanation:
-          "Migrations are a forward-only history; corrections come as new entries.",
+          "Migrations are how EF Core evolves the database schema over time.",
       },
       {
         kind: "code-reading",
         question:
-          "What does `mb.CreateIndex(..., unique: true)` produce in the schema?",
+          "What does this command do?\n`dotnet ef database update`",
         options: [
-          "A column.",
-          "A unique index that prevents duplicate `Email` values at the database level.",
-          "A foreign key.",
-          "Nothing.",
+          "Creates a migration.",
+          "Applies pending migrations to the database.",
+          "Deletes the database.",
+          "Inserts data.",
         ],
         correctAnswer:
-          "A unique index that prevents duplicate `Email` values at the database level.",
+          "Applies pending migrations to the database.",
         explanation:
-          "Unique indexes are enforced by the database; the application cannot bypass them by accident.",
+          "It runs the Up methods of each pending migration in order.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this deployment step?\n```\ndotnet ef database update --connection \"...\" -- on a developer machine, against prod\n```",
+          "Why is editing an applied migration risky?",
         options: [
-          "Nothing.",
-          "Running ad-hoc updates against production from a developer machine bypasses CI/CD, leaves no audit trail, and is prone to running outdated migrations.",
-          "`update` does not exist.",
-          "Migrations cannot target prod.",
+          "It is not.",
+          "Other environments have already applied the original migration. Editing it leads to inconsistent schemas and broken deployments.",
+          "Migrations are immutable.",
+          "It deletes the project.",
         ],
         correctAnswer:
-          "Running ad-hoc updates against production from a developer machine bypasses CI/CD, leaves no audit trail, and is prone to running outdated migrations.",
+          "Other environments have already applied the original migration. Editing it leads to inconsistent schemas and broken deployments.",
         explanation:
-          "Apply migrations from a deployment pipeline that is reviewed, repeatable, and logged.",
+          "Instead of editing an applied migration, add a new one with the correction.",
       },
       {
         kind: "interview",
         question:
-          "How would you handle a migration that needs to add a non-nullable column to an existing table?",
+          "How are migrations usually applied in production?",
         options: [
-          "Add it directly and hope.",
-          "Add the column as nullable with a default first, backfill the data in a follow-up step, then make it non-nullable in a third migration — to keep each step reversible.",
-          "Drop the table and recreate it.",
-          "Skip the migration.",
+          "Manually by developers.",
+          "Through the deployment pipeline, often by running dotnet ef database update or executing the generated SQL script as part of the release process.",
+          "They are not applied in production.",
+          "They are applied by the database engine alone.",
         ],
         correctAnswer:
-          "Add the column as nullable with a default first, backfill the data in a follow-up step, then make it non-nullable in a third migration — to keep each step reversible.",
+          "Through the deployment pipeline, often by running dotnet ef database update or executing the generated SQL script as part of the release process.",
         explanation:
-          "Multi-step migrations let you keep production safe through the change.",
+          "Automation makes migrations reliable and repeatable.",
       },
     ],
   },
 
   "repository-pattern-with-database": {
     whyItMatters:
-      "A repository wraps EF Core so services can be tested without spinning up a database. It also acts as the seam where you can swap or supplement persistence.",
+      "The repository pattern keeps your data access clean and your services testable. It hides EF Core behind an interface so the rest of the code only talks to a clear contract. This is how most real .NET projects organize the data layer.",
     simpleExplanation:
-      "A repository is an interface plus an implementation that exposes domain-shaped methods (`GetByIdAsync`, `SaveAsync`) and hides the ORM.",
+      "A repository is a class that hides data access behind a clean interface. Services depend on the interface, not on EF Core directly. This makes the service easier to test and the data access easier to change.",
     deepExplanation:
-      "The pattern earns its keep when (1) you want to fake persistence in unit tests, (2) you need to swap or add a second store, or (3) you want to centralise query shapes. The argument against it is duplication of `DbContext` — that is fair for tiny apps. For anything beyond a single feature, the repository abstraction usually pays back.",
+      "An IRepository<T> describes the operations available — GetByIdAsync, AddAsync, ListAsync, RemoveAsync. The implementation uses the DbContext to do the work. Services depend on the interface and stay focused on business logic. In tests, the repository can be replaced with a fake. There is debate about whether EF Core itself is already a repository, but most teams still keep a thin repository for the test and design benefits.",
     realWorldUsage:
-      "`IOrderRepository` exposes `Task<Order?> FindAsync(Guid id)` and `Task SaveAsync(Order order)`. The EF implementation uses `DbContext`; the test implementation uses a dictionary.",
+      "ICustomerRepository hides EF Core calls for customers. IOrderRepository handles orders. The OrderService depends on IOrderRepository, not on AppDbContext. Unit tests use a fake IOrderRepository to test business logic without a real database.",
     explainLikeBeginner:
-      "A repository is the librarian. You ask 'do you have book X?'; they go find it. You do not walk into the stacks yourself.",
+      "A repository is like a librarian. You do not search the shelves yourself. You tell the librarian which book you want, and they bring it back. The shelves (database) can be reorganized without changing how you ask.",
     interviewAnswer:
-      "The repository pattern wraps a persistence mechanism behind a domain-shaped interface. We use it to keep services depending on domain language and to enable in-memory fakes for unit tests, while EF Core handles the real implementation.",
+      "The repository pattern hides data access behind an interface. Services depend on the interface instead of on EF Core directly, which makes them easier to test and the data access easier to change. The implementation uses the DbContext to do the work.",
     commonMistakes: [
-      "Building a generic repository (`IRepository<T>`) that mirrors EF Core — adds indirection without abstracting anything.",
-      "Leaking `IQueryable<T>` out of the repository, exposing the ORM through the abstraction.",
-      "Skipping the repository because the project is 'small enough' and finding tests impossible later.",
+      "Building a generic repository that adds no value over the DbSet.",
+      "Mixing business logic into the repository.",
+      "Skipping interfaces, which couples services to EF Core.",
     ],
     bestPractices: [
-      "Build one repository per aggregate or entity, with methods named after the operation.",
-      "Return materialised types (entities, DTOs), not `IQueryable`.",
-      "Provide a memory-backed implementation for tests.",
+      "Keep repositories focused on data access only.",
+      "Define interfaces that match the business needs, not the database.",
+      "Use the repository to expose async, narrow methods.",
     ],
     summary: [
-      "Repositories are seams between services and persistence.",
-      "Domain-shaped methods, not CRUD primitives.",
-      "Memory fakes power fast unit tests.",
+      "Repositories hide EF Core behind an interface.",
+      "Services depend on the interface, not the DbContext.",
+      "This pattern keeps data access testable and replaceable.",
     ],
     codeExample: {
-      title: "Repository + EF Core + in-memory fake",
-      code: `public interface IOrderRepository
+      title: "A simple repository for Customer",
+      code: `public interface ICustomerRepository
 {
-    Task<Order?> FindAsync(Guid id);
-    Task SaveAsync(Order order);
+    Task<Customer?> GetByIdAsync(int id);
+    Task<IReadOnlyList<Customer>> ListActiveAsync();
+    Task AddAsync(Customer customer);
 }
 
-public sealed class EfOrderRepository(AppDbContext db) : IOrderRepository
+public class CustomerRepository : ICustomerRepository
 {
-    public Task<Order?> FindAsync(Guid id) =>
-        db.Orders.FirstOrDefaultAsync(o => o.Id == id);
+    private readonly AppDbContext _db;
+    public CustomerRepository(AppDbContext db) => _db = db;
 
-    public async Task SaveAsync(Order order)
+    public Task<Customer?> GetByIdAsync(int id) =>
+        _db.Customers.FirstOrDefaultAsync(c => c.Id == id);
+
+    public async Task<IReadOnlyList<Customer>> ListActiveAsync() =>
+        await _db.Customers.Where(c => c.IsActive).ToListAsync();
+
+    public async Task AddAsync(Customer customer)
     {
-        db.Orders.Update(order);
-        await db.SaveChangesAsync();
+        _db.Customers.Add(customer);
+        await _db.SaveChangesAsync();
     }
-}
-
-// Test double
-public sealed class InMemoryOrderRepository : IOrderRepository
-{
-    private readonly Dictionary<Guid, Order> _store = new();
-    public Task<Order?> FindAsync(Guid id) => Task.FromResult(_store.GetValueOrDefault(id));
-    public Task SaveAsync(Order order) { _store[order.Id] = order; return Task.CompletedTask; }
 }`,
-      output: "Service depends on IOrderRepository; production uses EF, tests use the dictionary.",
+      output: "A clean repository that hides EF Core and exposes a clear contract.",
       walkthrough: [
-        "The interface speaks the domain, not SQL.",
-        "EF implementation handles real persistence.",
-        "In-memory implementation makes service unit tests cheap.",
+        "The interface describes the operations the rest of the code needs.",
+        "The implementation uses the DbContext to do the work.",
+        "Services depend on the interface, not on AppDbContext.",
       ],
     },
     practice: {
       prompt:
-        "Wrap an EF Core `Product` table behind `IProductRepository` with `FindAsync`, `ListAsync(filter)`, `SaveAsync`. Write a service that depends only on the interface; cover it with unit tests using an in-memory implementation.",
+        "Define an IOrderRepository with GetByIdAsync, ListForCustomerAsync, and AddAsync. Implement it using AppDbContext. Then write a small OrderService that depends on IOrderRepository and adds a new order.",
       expectedResult:
-        "Service tests run in milliseconds without a database.",
+        "OrderService uses IOrderRepository to load and save orders, with no direct dependency on AppDbContext.",
       hints: [
-        "Keep methods coarse — `ListAsync(filter)` instead of leaking `IQueryable`.",
-        "Use the in-memory implementation in the test project only.",
-        "Verify the EF implementation with an integration test.",
+        "Define the interface with three async methods.",
+        "Implement OrderRepository using the DbContext.",
+        "Inject IOrderRepository into OrderService.",
       ],
       solution:
-        "Two implementations of one interface. The service is now testable in milliseconds; the integration test confirms the EF wiring works end-to-end.",
+        "Define IOrderRepository with the three methods. Implement OrderRepository using AppDbContext. OrderService receives IOrderRepository through its constructor and uses it for all data access.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What is the main pay-off of the repository pattern in .NET?",
+        question: "What does a repository do?",
         options: [
-          "Faster runtime queries.",
-          "A seam where services depend on a domain-shaped interface, enabling in-memory fakes for tests and isolating the choice of ORM.",
-          "Smaller deployment size.",
-          "Required by EF Core.",
+          "It runs HTTP requests.",
+          "It hides data access behind an interface so services can depend on the interface instead of EF Core directly.",
+          "It manages dependency injection.",
+          "It replaces the controller.",
         ],
         correctAnswer:
-          "A seam where services depend on a domain-shaped interface, enabling in-memory fakes for tests and isolating the choice of ORM.",
+          "It hides data access behind an interface so services can depend on the interface instead of EF Core directly.",
         explanation:
-          "Testability and isolation are the genuine benefits — performance is unaffected.",
+          "This separation is what makes the service easier to test and the data access easier to change.",
       },
       {
         kind: "code-reading",
         question:
-          "Why does `IOrderRepository` return `Order?` instead of `IQueryable<Order>`?",
+          "Why does this repository expose IReadOnlyList<Customer> instead of List<Customer>?\n```csharp\nTask<IReadOnlyList<Customer>> ListActiveAsync();\n```",
         options: [
-          "Style.",
-          "Returning `IQueryable` would leak the ORM through the abstraction, letting consumers build queries that bypass the repository's intent.",
-          "`IQueryable` is illegal in interfaces.",
-          "Performance.",
+          "It does not matter.",
+          "IReadOnlyList signals that the caller should not modify the list, which keeps the contract clean and prevents unexpected side effects.",
+          "List is forbidden.",
+          "IReadOnlyList is required by EF Core.",
         ],
         correctAnswer:
-          "Returning `IQueryable` would leak the ORM through the abstraction, letting consumers build queries that bypass the repository's intent.",
+          "IReadOnlyList signals that the caller should not modify the list, which keeps the contract clean and prevents unexpected side effects.",
         explanation:
-          "Materialise at the boundary; expose intent-bearing methods.",
+          "Returning read-only collections is a small habit that pays off in larger projects.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this design?\n```csharp\npublic interface IRepository<T>\n{\n    IQueryable<T> Query();\n    void Add(T entity);\n    void Save();\n}\n```",
+          "What is wrong with this repository?\n```csharp\npublic class OrderRepository\n{\n    public bool CanCustomerPlaceOrder(Customer c) { return c.IsActive && c.HasCredit; }\n}\n```",
         options: [
           "Nothing.",
-          "It mirrors EF Core 1:1 with `IQueryable` — adding ceremony but no abstraction. Consumers still need ORM knowledge to use it.",
-          "Generics are illegal here.",
-          "`Save` should be async.",
+          "Business logic does not belong in a repository. Repositories should only handle data access. This method should live in a service.",
+          "The method should be async.",
+          "It needs more parameters.",
         ],
         correctAnswer:
-          "It mirrors EF Core 1:1 with `IQueryable` — adding ceremony but no abstraction. Consumers still need ORM knowledge to use it.",
+          "Business logic does not belong in a repository. Repositories should only handle data access. This method should live in a service.",
         explanation:
-          "Build one repository per aggregate with domain-named methods; generic CRUD repositories are usually the wrong granularity.",
+          "Keep each layer focused on its job.",
       },
       {
         kind: "interview",
         question:
-          "When is the repository pattern overkill?",
+          "Why introduce a repository when EF Core already abstracts the database?",
         options: [
-          "Never.",
-          "In a tiny single-service application with one feature, where the abstraction has no test or swap to justify it.",
-          "Always.",
-          "When the database is large.",
+          "It does not — always use DbContext directly.",
+          "A repository gives a domain-shaped abstraction that services can depend on, makes services easy to test with fakes, and isolates the choice of EF Core so it can be replaced or extended later.",
+          "It is faster than EF Core.",
+          "It is required by C#.",
         ],
         correctAnswer:
-          "In a tiny single-service application with one feature, where the abstraction has no test or swap to justify it.",
+          "A repository gives a domain-shaped abstraction that services can depend on, makes services easy to test with fakes, and isolates the choice of EF Core so it can be replaced or extended later.",
         explanation:
-          "Use it when you have at least two implementations (real + test) or a real plan to swap storage.",
+          "Repositories add value through cleaner contracts and easier testing, not by being faster.",
       },
     ],
   },

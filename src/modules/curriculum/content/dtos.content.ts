@@ -3,1023 +3,1067 @@ import type { ModuleContent } from "./types";
 export const dtosContent: ModuleContent = {
   "what-is-dto": {
     whyItMatters:
-      "Returning a raw EF Core entity from an API leaks your database schema to every consumer and couples your wire format to internal naming. DTOs are the inexpensive fix.",
+      "DTOs matter because they let you control exactly what your API sends and receives. Without them, you would expose your database entities directly, which leaks sensitive fields like passwords and ties your API to your database schema. DTOs keep your API safe, stable, and predictable.",
     simpleExplanation:
-      "A DTO is a plain shape used to move data across a boundary — typically between your API and a client. It carries data and nothing else.",
+      "A DTO, or Data Transfer Object, is a simple class that holds only the data you want to send or receive through an API. It has properties but no behavior. Think of it as the shape of a request or a response.",
     deepExplanation:
-      "Entities are tied to your persistence model: navigation properties, foreign keys, computed columns. DTOs are tied to the contract you want to publish. Mixing them means every database rename becomes a public API change. Keep two shapes — `CreateOrderRequest`, `OrderResponse` — and map between them in one place. The mapping itself becomes the only file that changes when storage and API evolve at different speeds.",
+      "A DTO is a plain object with properties only. It does not contain business logic or database details. In a .NET application, you usually have one set of classes for the database (entities) and another set for the API (DTOs). The service layer maps between them. This separation lets you change the database schema without breaking the API, and lets you hide internal fields from external callers.",
     realWorldUsage:
-      "`POST /orders` accepts `CreateOrderRequest`, the service translates that to an `Order` entity, persists it, and returns `OrderResponse`. Database migrations no longer break the client.",
+      "CreateOrderRequest is a DTO the API receives when creating an order. OrderResponse is a DTO returned to the client. The internal Order entity stays inside the application. UserDto might expose only Name and Email, while the User entity stores PasswordHash and other private fields.",
     explainLikeBeginner:
-      "Think of a DTO as the envelope you mail. The letter inside (your entity) stays in your house; only what fits in the envelope gets sent.",
+      "A DTO is like a menu in a restaurant. The kitchen has many ingredients and tools, but the menu only shows what the customer can order. The menu is clean, simple, and safe to share. A DTO is the same — it only shows what your API exposes.",
     interviewAnswer:
-      "A DTO is a Data Transfer Object — a class whose only job is to move data across a boundary. In a .NET API we use DTOs to decouple the wire format from the persistence model so each can evolve without breaking the other.",
+      "A DTO is a simple class used to carry data between layers, especially between the API and the client. We use DTOs to control exactly what data is exposed and to keep the API stable when the database changes. In .NET, DTOs separate the API contract from the entity model.",
     commonMistakes: [
-      "Returning EF Core entities directly from controllers, exposing internal columns and forcing JSON serialiser quirks.",
-      "Reusing one DTO for both request and response when their needed fields are different.",
-      "Letting DTOs carry behaviour — they should be data-only.",
+      "Returning database entities directly from controllers, which leaks internal fields.",
+      "Building one giant DTO used for every endpoint instead of small, focused ones.",
+      "Adding business logic into DTOs — DTOs should only carry data.",
     ],
     bestPractices: [
-      "Separate request and response DTOs even when fields overlap; their lifecycles differ.",
-      "Use `record` for immutable DTOs — they get value equality and concise syntax.",
-      "Centralise mapping in a `Mapper` or extension method rather than scattering it.",
+      "Create one DTO per request or response shape, not one DTO for everything.",
+      "Name DTOs clearly, such as CreateOrderRequest, OrderResponse, or CustomerDto.",
+      "Map between DTOs and entities in the service layer.",
     ],
     summary: [
-      "DTOs decouple wire format from persistence.",
-      "Keep request and response DTOs separate.",
-      "Use records for safe, value-equal data carriers.",
+      "A DTO is a simple class that carries data in and out of the API.",
+      "DTOs separate the API shape from the database shape.",
+      "They protect sensitive fields and keep the API stable.",
     ],
     codeExample: {
-      title: "Request and response DTOs",
-      code: `public record CreateOrderRequest(string CustomerEmail, List<OrderLineRequest> Lines);
-public record OrderLineRequest(string Sku, int Quantity);
-
-public record OrderResponse(Guid Id, string Status, decimal Total);
-
-[HttpPost]
-public async Task<ActionResult<OrderResponse>> Create(CreateOrderRequest req)
+      title: "A simple CustomerDto used in an API response",
+      code: `public class CustomerDto
 {
-    var id = await _orders.CreateAsync(req);
-    var response = await _orders.GetAsync(id);
-    return CreatedAtAction(nameof(Get), new { id }, response);
-}`,
-      output: `HTTP/1.1 201 Created
-Location: /orders/8f3...
-{"id":"8f3...","status":"Pending","total":42.50}`,
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+}
+
+var dto = new CustomerDto
+{
+    Id = 1,
+    Name = "Ali",
+    Email = "ali@example.com"
+};
+
+Console.WriteLine($"{dto.Id}: {dto.Name} ({dto.Email})");`,
+      output: "1: Ali (ali@example.com)",
       walkthrough: [
-        "Request DTO captures only the input — no entity Id, no timestamps.",
-        "Response DTO publishes what the client needs — no navigation properties.",
-        "Controller stays thin: parse, call service, map, return.",
+        "CustomerDto has only the fields the API needs.",
+        "It does not include internal fields like PasswordHash or CreatedAt.",
+        "It has no behavior — just properties to carry data.",
       ],
     },
     practice: {
       prompt:
-        "Build a `CreateCustomerRequest(string Name, string Email)` and a `CustomerResponse(Guid Id, string Name, string Email, DateTimeOffset CreatedAt)`. Wire them through a `CustomersController.Create` endpoint that returns `201 Created` with the response body.",
+        "Create a ProductDto class with Id, Name, and Price properties. Use it to return product data from an API. The DTO should not include any internal fields like CostPrice or SupplierId.",
       expectedResult:
-        "The wire format is explicit, validation can be added to the request, and the response never exposes internal fields.",
+        "A ProductDto object can be created with Id = 1, Name = \"Laptop\", Price = 1200, and used as the return value of an API method.",
       hints: [
-        "Use `record` for both types.",
-        "Return `CreatedAtAction(nameof(Get), new { id }, response)`.",
-        "Map inside the service, not the controller.",
+        "Keep the DTO small and focused.",
+        "Do not expose internal pricing or supplier details.",
+        "Use simple types like int, string, and decimal.",
       ],
       solution:
-        "Request and response are immutable records with focused fields. The service performs the mapping; the controller is purely an adapter that returns the right HTTP status code.",
+        "Create a class ProductDto with public Id, Name, and Price properties. Use it as the return type of a controller action. Map the Product entity to ProductDto in the service layer before returning.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Which best describes the role of a DTO?",
+        question: "What is a DTO?",
         options: [
-          "A class that contains business rules for a domain concept.",
-          "A data-only carrier used to move state across a boundary such as HTTP.",
-          "A persistence model managed by EF Core.",
-          "A helper for dependency injection.",
+          "A class that contains business logic.",
+          "A simple class used to carry data between the API and other layers.",
+          "A type of database table.",
+          "A method that processes payments.",
         ],
         correctAnswer:
-          "A data-only carrier used to move state across a boundary such as HTTP.",
+          "A simple class used to carry data between the API and other layers.",
         explanation:
-          "DTOs hold data and nothing else; rules belong to entities or services, and persistence is a separate concern.",
+          "A DTO is a plain class with properties only. It carries data, not behavior.",
       },
       {
         kind: "code-reading",
         question:
-          "What does this DTO declaration give you in C#?\n```csharp\npublic record OrderResponse(Guid Id, string Status, decimal Total);\n```",
+          "What kind of fields should a CustomerDto have?\n```csharp\npublic class CustomerDto\n{\n    public int Id { get; set; }\n    public string Name { get; set; }\n    public string PasswordHash { get; set; }\n}\n```",
         options: [
-          "Mutable properties with setters.",
-          "An immutable type with value equality, deconstruction, and a concise constructor.",
-          "A class that EF Core will treat as an entity.",
-          "Nothing — records require explicit properties.",
+          "All fields are fine.",
+          "PasswordHash should not be in a DTO returned to the client. Only safe, public fields belong in a response DTO.",
+          "Id should be removed.",
+          "Name should be a method.",
         ],
         correctAnswer:
-          "An immutable type with value equality, deconstruction, and a concise constructor.",
+          "PasswordHash should not be in a DTO returned to the client. Only safe, public fields belong in a response DTO.",
         explanation:
-          "Positional records generate read-only properties, `Equals`/`GetHashCode`, and `Deconstruct`. Perfect for DTOs.",
+          "Sensitive fields like password hashes must never appear in DTOs returned by the API.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this endpoint?\n```csharp\n[HttpGet(\"{id:guid}\")]\npublic async Task<Order> Get(Guid id) => await _db.Orders.Include(o => o.Customer).FirstAsync(o => o.Id == id);\n```",
+          "Why is returning the User entity directly from a controller a bad idea?",
         options: [
-          "Nothing — returning entities is recommended.",
-          "It returns an EF Core entity with navigation properties, leaking the schema and risking circular JSON serialisation.",
-          "`FirstAsync` is not async.",
-          "`Include` requires an explicit `using`.",
+          "It is faster than DTOs.",
+          "It can leak internal fields like PasswordHash, and it ties the API contract to the database schema.",
+          "It compiles slower.",
+          "It is required by REST.",
         ],
         correctAnswer:
-          "It returns an EF Core entity with navigation properties, leaking the schema and risking circular JSON serialisation.",
+          "It can leak internal fields like PasswordHash, and it ties the API contract to the database schema.",
         explanation:
-          "Return an `OrderResponse` DTO with only the fields clients need. Entities are an implementation detail.",
+          "Returning entities exposes internal data and makes the API fragile when the database changes.",
       },
       {
         kind: "interview",
         question:
-          "An interviewer asks: 'Why not use the same class for both requests and responses?'",
+          "How would you explain DTOs in an interview?",
         options: [
-          "There is no reason.",
-          "Their fields, validation rules, and lifecycles differ — one carries client input, the other carries server-computed state.",
-          "C# does not allow it.",
-          "Performance.",
+          "They are required by C#.",
+          "A DTO is a simple class used to carry data through the API. It keeps internal fields hidden and makes the API contract stable even when the database changes.",
+          "They are the same as entities.",
+          "They make code faster.",
         ],
         correctAnswer:
-          "Their fields, validation rules, and lifecycles differ — one carries client input, the other carries server-computed state.",
+          "A DTO is a simple class used to carry data through the API. It keeps internal fields hidden and makes the API contract stable even when the database changes.",
         explanation:
-          "Sharing one DTO usually means either the request accepts fields it should not, or the response omits fields it should expose.",
+          "This answer covers both the definition and the main benefit.",
       },
     ],
   },
 
   "why-dtos-are-used": {
     whyItMatters:
-      "Junior developers often resist DTOs as 'extra plumbing'. Knowing the concrete reasons saves a painful refactor when the database changes and every consumer breaks.",
+      "Using DTOs is one of the simplest ways to keep your .NET application safe and maintainable. Without DTOs, every database change can break your API contract, and you risk leaking sensitive data to the client. With DTOs, your API is stable, predictable, and easy to evolve.",
     simpleExplanation:
-      "DTOs exist to decouple your API contract from your database, control what is exposed, and let validation live at the boundary.",
+      "DTOs are used to control what your API exposes. They protect internal fields, keep the API stable, and make request and response shapes clear and focused.",
     deepExplanation:
-      "Three forces push you toward DTOs. (1) Security: entities often carry fields you do not want to expose (`PasswordHash`, `IsAdmin`). (2) Stability: when your schema changes, the wire format should not silently change with it. (3) Validation: request DTOs are the natural home for `[Required]`, `[Range]`, and FluentValidation rules — close to where the data enters the system.",
+      "DTOs solve four common problems. First, they protect sensitive fields like passwords, internal IDs, and audit data. Second, they keep the API contract stable when the database schema changes. Third, they let you shape data exactly for the client — combining fields, renaming them, or hiding them. Fourth, they make validation easier because each request DTO can have its own rules. Together, these benefits make DTOs almost mandatory in real .NET projects.",
     realWorldUsage:
-      "A login endpoint accepts `LoginRequest(Email, Password)` and returns `LoginResponse(AccessToken, ExpiresAt)`. The `User` entity — with hashed password and roles — never leaves the service.",
+      "An e-commerce API uses OrderRequest for incoming data, OrderResponse for outgoing data, and the Order entity inside the database. A user registration endpoint takes a RegisterUserRequest DTO with only Email, Password, and Name — never the full User entity. Each DTO is designed for one specific use case.",
     explainLikeBeginner:
-      "DTOs are the security gate at the airport: they decide what is allowed through in either direction and protect what is inside.",
+      "Think of DTOs like envelopes. You do not give someone the entire filing cabinet — you put only the right papers into a clean envelope and send it. The envelope is the DTO. The filing cabinet is the database.",
     interviewAnswer:
-      "We use DTOs to decouple the public API from the persistence model, to control exactly which fields are exposed, and to attach input validation right where data enters the service.",
+      "DTOs are used to protect internal data, keep the API contract stable, shape data for the client, and make validation cleaner. In real .NET projects, every external request and response goes through a DTO instead of the entity.",
     commonMistakes: [
-      "Treating DTOs as ceremony and skipping them — then leaking `PasswordHash` in a hot fix.",
-      "Adding `[JsonIgnore]` on entities to 'fix' exposure — fragile and easy to forget on new properties.",
-      "Letting controllers do the mapping inline, scattering it across the codebase.",
+      "Skipping DTOs to save time and exposing entities directly.",
+      "Reusing the same DTO for both input and output even when the shapes differ.",
+      "Forgetting that DTOs should not contain business logic or database details.",
     ],
     bestPractices: [
-      "Default to DTOs at every public endpoint, even when fields match the entity 1:1.",
-      "Put validation attributes on request DTOs, not on entities.",
-      "Make response DTOs immutable; clients should not assume they can mutate them.",
+      "Have separate DTOs for requests and responses when they differ.",
+      "Validate request DTOs at the API boundary.",
+      "Keep each DTO focused on one use case.",
     ],
     summary: [
-      "DTOs protect what is exposed, decouple schema from contract, and host validation.",
-      "Use them at every API boundary by default.",
-      "Skipping them creates a future migration headache.",
+      "DTOs protect internal data from being exposed.",
+      "They keep the API stable when the database changes.",
+      "They make validation and mapping cleaner.",
     ],
     codeExample: {
-      title: "Login DTO pair",
-      code: `public record LoginRequest([Required, EmailAddress] string Email,
-                           [Required, MinLength(8)] string Password);
-
-public record LoginResponse(string AccessToken, DateTimeOffset ExpiresAt);
-
-[HttpPost("login")]
-public async Task<ActionResult<LoginResponse>> Login(LoginRequest req)
+      title: "Separate request and response DTOs for an order endpoint",
+      code: `public class CreateOrderRequest
 {
-    if (!ModelState.IsValid) return ValidationProblem();
-    return await _auth.IssueAsync(req);
+    public int CustomerId { get; set; }
+    public List<OrderItemDto> Items { get; set; } = new();
+}
+
+public class OrderResponse
+{
+    public int Id { get; set; }
+    public string Status { get; set; } = "Pending";
+    public decimal Total { get; set; }
+}
+
+public class OrderItemDto
+{
+    public string Sku { get; set; } = string.Empty;
+    public int Quantity { get; set; }
 }`,
-      output: `HTTP/1.1 200 OK
-{"accessToken":"eyJhbGc...","expiresAt":"2025-05-12T14:00:00Z"}`,
+      output: "Two clean DTOs: one for input, one for output.",
       walkthrough: [
-        "Request DTO carries validation attributes for free `ModelState` integration.",
-        "Response DTO exposes only what the client needs; `User` never appears.",
-        "Mapping happens inside `_auth.IssueAsync`, hidden from the controller.",
+        "CreateOrderRequest holds only what the client sends.",
+        "OrderResponse holds only what the client should see.",
+        "Both are simple and focused on one job.",
       ],
     },
     practice: {
       prompt:
-        "Take an existing endpoint that returns a `User` entity and split it into `UserResponse` (Id, Name, Email) plus a service-level mapper. Confirm that `PasswordHash` no longer appears in the JSON response.",
+        "Design two DTOs for a user registration endpoint: RegisterUserRequest (with Email, Password, and Name) and UserResponse (with Id, Email, and Name — no password).",
       expectedResult:
-        "Network inspector shows only Id, Name, Email; the password hash is invisible to clients.",
+        "RegisterUserRequest contains Password. UserResponse never returns Password, only safe fields.",
       hints: [
-        "Add a `ToResponse(this User user)` extension method.",
-        "Update the controller to call `user.ToResponse()`.",
-        "Write an integration test asserting no `passwordHash` key in the JSON.",
+        "Use string for all three text fields.",
+        "Keep the Password field only in the request, not in the response.",
+        "Add an Id property to UserResponse.",
       ],
       solution:
-        "After the split, all paths from controller to client go through `UserResponse`. Adding a new internal field on `User` cannot accidentally leak — the DTO is the gate.",
+        "Create RegisterUserRequest with Email, Password, Name. Create UserResponse with Id, Email, Name. The API receives the request DTO, creates the user, and returns the response DTO without the password.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Which is NOT a reason to use DTOs?",
+        question: "Which is a real reason to use DTOs?",
         options: [
-          "Decoupling the API contract from the database schema.",
-          "Hiding sensitive fields like password hashes from responses.",
-          "Speeding up garbage collection at runtime.",
-          "Hosting request validation in one place.",
+          "DTOs make the application faster.",
+          "DTOs protect internal data, keep the API stable, and shape data for the client.",
+          "DTOs are required by C#.",
+          "DTOs replace controllers.",
         ],
-        correctAnswer: "Speeding up garbage collection at runtime.",
+        correctAnswer:
+          "DTOs protect internal data, keep the API stable, and shape data for the client.",
         explanation:
-          "Performance is not the driver — design and security are. The other three are the textbook reasons.",
+          "These are the main benefits of using DTOs in a .NET application.",
       },
       {
         kind: "code-reading",
         question:
-          "What does the `[Required, EmailAddress]` pair do on the DTO record?",
+          "Why is having both CreateOrderRequest and OrderResponse better than one OrderDto?",
         options: [
-          "Tells EF Core to create a unique index.",
-          "Drives ASP.NET Core model validation so invalid requests fail with a 400 before reaching the action body.",
-          "Encrypts the email at rest.",
-          "Generates a SQL constraint.",
+          "It is not — one DTO is always enough.",
+          "Input and output usually have different shapes. Separate DTOs make each endpoint clear and prevent leaking fields the client should not send or see.",
+          "It makes the code shorter.",
+          "It speeds up the database.",
         ],
         correctAnswer:
-          "Drives ASP.NET Core model validation so invalid requests fail with a 400 before reaching the action body.",
+          "Input and output usually have different shapes. Separate DTOs make each endpoint clear and prevent leaking fields the client should not send or see.",
         explanation:
-          "Validation attributes on the request DTO are checked during model binding; `ModelState.IsValid` reflects the result.",
+          "Different use cases deserve different DTOs. It keeps each one small and focused.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What risk does this controller carry?\n```csharp\n[HttpGet]\npublic ActionResult<User> Me() => _users.Current();\n```\n(`User` includes `PasswordHash`.)",
+          "What is wrong with this DTO?\n```csharp\npublic class UserDto\n{\n    public string Email { get; set; }\n    public string PasswordHash { get; set; }\n    public bool IsAdmin { get; set; }\n}\n```",
         options: [
-          "None.",
-          "It serialises `PasswordHash` to the client because there is no DTO between the entity and the response.",
-          "`ActionResult<User>` is not valid C#.",
-          "`_users.Current()` cannot be synchronous.",
+          "Nothing.",
+          "PasswordHash and IsAdmin are internal fields. They should not be returned to the client.",
+          "Email should be removed.",
+          "DTOs should be sealed.",
         ],
         correctAnswer:
-          "It serialises `PasswordHash` to the client because there is no DTO between the entity and the response.",
+          "PasswordHash and IsAdmin are internal fields. They should not be returned to the client.",
         explanation:
-          "`[JsonIgnore]` on `PasswordHash` would patch this, but a `UserResponse` DTO is the safer default.",
+          "Response DTOs must expose only safe fields. Internal flags and security data stay inside the application.",
       },
       {
         kind: "interview",
         question:
-          "What single benefit of DTOs would you mention first to a sceptical teammate?",
+          "What are the main benefits of using DTOs?",
         options: [
-          "They reduce the number of files in the project.",
-          "They let the database and the API evolve independently, which is the main source of pain when they share types.",
-          "They make the code shorter overall.",
-          "They are required by ASP.NET Core.",
+          "Faster builds.",
+          "Smaller binaries.",
+          "Cleaner API contracts, safer data, easier validation, and stable behavior when the database changes.",
+          "They are required by EF Core.",
         ],
         correctAnswer:
-          "They let the database and the API evolve independently, which is the main source of pain when they share types.",
+          "Cleaner API contracts, safer data, easier validation, and stable behavior when the database changes.",
         explanation:
-          "Independent evolution is the practical win — most other benefits follow from this.",
+          "This covers protection, stability, and clarity — the main reasons DTOs are used.",
       },
     ],
   },
 
   "request-dto": {
     whyItMatters:
-      "Request DTOs are your input boundary. Every validation rule and every shape constraint should live here so the rest of the service can trust its inputs.",
+      "A request DTO defines exactly what your API accepts. It makes the contract clear, makes validation easy, and protects the application from invalid or malicious input. Without it, your controllers become messy and unsafe.",
     simpleExplanation:
-      "A request DTO defines exactly what fields the API accepts from a client and the rules each must satisfy.",
+      "A request DTO is the class your API uses to receive data. It defines the shape of the incoming request — the fields, types, and validation rules.",
     deepExplanation:
-      "Keep request DTOs minimal — only fields the client supplies. Do not include `Id` on create requests; the server generates it. Use validation attributes (or FluentValidation rules) so model binding rejects malformed input automatically. Return `400 Bad Request` with a `ProblemDetails` body when validation fails — that is the standard contract ASP.NET Core gives you for free.",
+      "When a client sends a request, ASP.NET Core deserializes the JSON body into a request DTO. The DTO acts as a contract: it tells the framework which fields to read and which to ignore. With data annotations like [Required] and [Range], the framework can validate the input automatically and return a 400 Bad Request when something is wrong. This keeps the controller code clean and focused on the business logic.",
     realWorldUsage:
-      "`POST /customers` accepts `CreateCustomerRequest(Name, Email)`. Invalid email returns 400 with `{ errors: { email: [\"valid email required\"] } }`.",
+      "CreateOrderRequest carries CustomerId and a list of items. RegisterUserRequest carries Email, Password, and Name. UpdateAddressRequest carries the new street, city, and country. Each request DTO matches one specific endpoint, and each one has its own validation rules.",
     explainLikeBeginner:
-      "A form on a website: only the boxes you fill in are sent. The form is your request DTO.",
+      "A request DTO is like a form on a website. The form lists the exact fields the user must fill in. The website only accepts those fields and ignores everything else. The DTO is the same — only the listed fields are accepted.",
     interviewAnswer:
-      "A request DTO is a shape the API binds incoming data into. It carries only the fields the client should supply and the validation rules each must satisfy, so the service layer never sees invalid input.",
+      "A request DTO is the class used to receive data from the client. It defines the shape and the validation rules for the incoming request. In ASP.NET Core, the framework deserializes JSON into the DTO and validates it automatically using data annotations.",
     commonMistakes: [
-      "Including server-generated fields (`Id`, `CreatedAt`) on create requests — clients can spoof them.",
-      "Validating inside the service instead of on the request DTO, duplicating logic across endpoints.",
-      "Returning vague `400 Bad Request` without details — clients cannot fix what they cannot see.",
+      "Using the entity as the request DTO and accepting unwanted fields.",
+      "Skipping validation rules on the request DTO.",
+      "Making the request DTO too large by including fields the endpoint does not use.",
     ],
     bestPractices: [
-      "Include only the fields the client genuinely supplies.",
-      "Attach validation attributes and use `ApiController` so `400` is automatic.",
-      "Return `ProblemDetails` with per-field errors.",
+      "Keep request DTOs small and specific to one endpoint.",
+      "Add validation rules with [Required], [Range], [EmailAddress], or FluentValidation.",
+      "Never use the entity directly as the request DTO.",
     ],
     summary: [
-      "Request DTOs define inputs precisely.",
-      "Validation belongs on the DTO, not in the service.",
-      "ASP.NET Core handles the 400 + ProblemDetails plumbing.",
+      "A request DTO defines the shape of incoming data.",
+      "It carries validation rules for the input.",
+      "It keeps the controller focused and safe.",
     ],
     codeExample: {
-      title: "Create-customer request DTO",
-      code: `public record CreateCustomerRequest(
-    [Required, MaxLength(100)] string Name,
-    [Required, EmailAddress] string Email);
+      title: "A request DTO for creating a customer",
+      code: `using System.ComponentModel.DataAnnotations;
 
-[ApiController, Route("customers")]
-public class CustomersController : ControllerBase
+public class CreateCustomerRequest
 {
-    private readonly ICustomerService _customers;
-    public CustomersController(ICustomerService c) => _customers = c;
+    [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
 
-    [HttpPost]
-    public async Task<IActionResult> Create(CreateCustomerRequest req)
-    {
-        var id = await _customers.CreateAsync(req);
-        return CreatedAtAction(nameof(Get), new { id }, null);
-    }
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+}
+
+[HttpPost]
+public IActionResult Create(CreateCustomerRequest request)
+{
+    if (!ModelState.IsValid) return BadRequest(ModelState);
+    return Ok($"Customer {request.Name} created");
 }`,
-      output: `HTTP/1.1 400 Bad Request
-{"errors":{"email":["The Email field is not a valid e-mail address."]}}`,
+      output: "Customer Ali created",
       walkthrough: [
-        "Validation attributes guard each field.",
-        "`[ApiController]` auto-returns 400 + ProblemDetails when binding fails.",
-        "Inside the action, the DTO is guaranteed valid.",
+        "CreateCustomerRequest defines the shape of the input.",
+        "Validation attributes describe what counts as valid data.",
+        "ASP.NET Core checks the rules automatically and returns 400 when they fail.",
       ],
     },
     practice: {
       prompt:
-        "Write a `CreateProductRequest` with `Name` (required, max 80 chars), `Price` (range 0.01 to 1,000,000), and `Sku` (required, regex `^[A-Z]{3}-\\d{3}$`). Verify that invalid payloads return 400 with per-field errors.",
+        "Create a request DTO called CreateProductRequest with Name (required, max 200 chars), Price (required, must be positive), and an optional Description. Add validation attributes so invalid input returns 400 Bad Request.",
       expectedResult:
-        "Posting `{ \"name\": \"\", \"price\": -1, \"sku\": \"bad\" }` returns 400 with three field-level error entries.",
+        "A valid request returns 200 with the created product. A request with missing Name or negative Price returns 400 with validation errors.",
       hints: [
-        "Use `[RegularExpression]` for SKU.",
-        "Use `[Range(0.01, 1_000_000)]` for price.",
-        "Annotate the controller with `[ApiController]` to get automatic ProblemDetails.",
+        "Use [Required] and [MaxLength(200)] on Name.",
+        "Use [Range(0.01, double.MaxValue)] on Price.",
+        "Description has no validation since it is optional.",
       ],
       solution:
-        "All three fields validated declaratively. The action body is reached only with valid input, so service logic stays focused on the rule, not on defensive checks.",
+        "Define CreateProductRequest with Name, Price, and Description. Add [Required] and [MaxLength] on Name, and [Range] on Price. The controller checks ModelState.IsValid and returns BadRequest if not.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Why omit `Id` from a create-request DTO?",
+        question: "What is a request DTO?",
         options: [
-          "It would not fit in JSON.",
-          "The server assigns the identifier, so accepting it from clients invites spoofing and breaks idempotency assumptions.",
-          "EF Core does not support it.",
-          "There is no reason.",
+          "The entity stored in the database.",
+          "The class used to receive data from the client.",
+          "A type of database table.",
+          "A controller action.",
         ],
         correctAnswer:
-          "The server assigns the identifier, so accepting it from clients invites spoofing and breaks idempotency assumptions.",
+          "The class used to receive data from the client.",
         explanation:
-          "Identity is server-controlled. Use route parameters for updates, never an `Id` field inside the request body.",
+          "A request DTO defines the shape of the incoming request.",
       },
       {
         kind: "code-reading",
         question:
-          "Given `[ApiController]` on the controller, what happens when binding `CreateCustomerRequest` fails validation?",
+          "What happens when the client sends a request with an empty Name to this endpoint?\n```csharp\npublic class CreateCustomerRequest\n{\n    [Required] public string Name { get; set; } = string.Empty;\n}\n```",
         options: [
-          "The action body runs and decides what to do.",
-          "ASP.NET Core short-circuits with `400 Bad Request` and a `ProblemDetails` body — the action never executes.",
-          "The request silently succeeds.",
-          "A `500 Internal Server Error` is returned.",
+          "The request is accepted.",
+          "ModelState.IsValid is false, and the framework returns 400 Bad Request.",
+          "The request throws a 500 error.",
+          "The Name is replaced with a default value.",
         ],
         correctAnswer:
-          "ASP.NET Core short-circuits with `400 Bad Request` and a `ProblemDetails` body — the action never executes.",
+          "ModelState.IsValid is false, and the framework returns 400 Bad Request.",
         explanation:
-          "`[ApiController]` adds the automatic 400 + ProblemDetails behaviour; without it, you would have to check `ModelState.IsValid` yourself.",
+          "The [Required] attribute triggers a model validation error, which results in a 400 response.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is the risk?\n```csharp\npublic record CreateOrderRequest(Guid Id, Guid CustomerId, decimal Total);\n```",
+          "Why is this controller action risky?\n```csharp\n[HttpPost]\npublic IActionResult Create(User user)\n{\n    _db.Users.Add(user);\n    _db.SaveChanges();\n    return Ok();\n}\n```",
         options: [
-          "It will not compile.",
-          "Accepting `Id` and `Total` from the client lets them set the order id and bypass server-side total calculation.",
-          "`Guid` cannot be a record parameter.",
-          "`decimal` should be `double`.",
+          "Nothing is wrong.",
+          "It uses the User entity as the request DTO. A client could send fields like IsAdmin or PasswordHash and modify them directly.",
+          "The method is missing await.",
+          "User must be sealed.",
         ],
         correctAnswer:
-          "Accepting `Id` and `Total` from the client lets them set the order id and bypass server-side total calculation.",
+          "It uses the User entity as the request DTO. A client could send fields like IsAdmin or PasswordHash and modify them directly.",
         explanation:
-          "Identity and computed values must originate on the server. Request DTOs should carry only client-supplied input.",
+          "Always use a dedicated request DTO with only the fields the endpoint should accept.",
       },
       {
         kind: "interview",
         question:
-          "Where should validation live for an incoming POST body?",
+          "How would you describe a request DTO to another .NET developer?",
         options: [
-          "Scattered across services and repositories.",
-          "On the request DTO via attributes (or FluentValidation), so model binding rejects bad input automatically.",
-          "Inside the database constraints only.",
-          "Validation is unnecessary if the client is your own.",
+          "It is the same as the entity.",
+          "It is the class that defines the shape of the incoming request, including validation rules, so the controller stays clean and safe.",
+          "It is a database table.",
+          "It is required by EF Core.",
         ],
         correctAnswer:
-          "On the request DTO via attributes (or FluentValidation), so model binding rejects bad input automatically.",
+          "It is the class that defines the shape of the incoming request, including validation rules, so the controller stays clean and safe.",
         explanation:
-          "Validation at the boundary keeps services pure and aligns errors with the field clients can fix.",
+          "This explains both the role and the value of a request DTO.",
       },
     ],
   },
 
   "response-dto": {
     whyItMatters:
-      "Whatever you return becomes a contract. Once a client depends on a field, you cannot change it. Response DTOs let you publish a deliberate shape rather than whatever your entity happens to look like.",
+      "A response DTO controls exactly what your API returns to the client. It prevents leaking internal fields, keeps the response shape stable, and makes the API easier to consume from frontend or partner applications.",
     simpleExplanation:
-      "A response DTO is a shape you control, sent back to the client, with only the fields they need.",
+      "A response DTO is the class your API uses to send data back to the client. It contains only the fields the client should see.",
     deepExplanation:
-      "Two questions to ask before returning anything: who is the audience, and what will they break if you change this? Response DTOs let you answer both deliberately. They also let you adapt the same entity to multiple consumers (a public partner API, an internal admin UI) with different fields exposed.",
+      "When a request is processed, the service maps the result into a response DTO and returns it. The DTO is serialized to JSON by ASP.NET Core. Because the DTO is separate from the entity, you can hide internal fields, rename fields for the client, or combine data from multiple sources into a single response. This makes your API stable even when the underlying data changes.",
     realWorldUsage:
-      "`GET /orders/{id}` returns `OrderResponse(Id, Status, Total, Lines)`. The internal admin endpoint returns `OrderAdminResponse(..., InternalNotes, AuditTrail)`. Same entity, two contracts.",
+      "OrderResponse contains Id, Status, and Total. CustomerResponse contains Id, Name, and Email — never PasswordHash or internal flags. InvoiceResponse can combine Invoice and Customer fields into one clean shape for the client. Each response DTO is designed for a specific endpoint.",
     explainLikeBeginner:
-      "A response DTO is what is printed on the receipt: only the customer-facing details, not the inventory codes.",
+      "A response DTO is like a printed receipt. It shows only the information the customer needs — total, items, date. It does not show the cost price, the supplier, or the storage room number. The receipt is the response. The internal data stays in the store.",
     interviewAnswer:
-      "A response DTO is a server-controlled shape returned to clients. We design it deliberately so the API contract evolves independently of the persistence model and so each consumer sees only the fields it should.",
+      "A response DTO is the class used to return data from the API. It controls what the client sees and protects internal fields. We use it to keep the API contract stable and to shape the response exactly for the client.",
     commonMistakes: [
-      "Returning entities directly, then being unable to rename a column without breaking clients.",
-      "Including `null`-heavy navigation properties that cause cycles in JSON serialisation.",
-      "Versioning the API by adding fields to one DTO until it carries every variant.",
+      "Returning the database entity directly and exposing internal fields.",
+      "Reusing the request DTO as the response DTO when the shapes are different.",
+      "Including too many fields the client does not need.",
     ],
     bestPractices: [
-      "Make response DTOs immutable (records).",
-      "Use `null` deliberately: missing means missing, not 'we forgot to map this'.",
-      "When the contract changes meaningfully, version the DTO (`OrderResponseV2`) rather than mutate the original.",
+      "Map entities to response DTOs in the service layer.",
+      "Keep response DTOs focused on one endpoint.",
+      "Hide sensitive fields like password hashes, internal IDs, and audit data.",
     ],
     summary: [
-      "Response DTOs publish a deliberate API shape.",
-      "Use records to make them immutable.",
-      "Version them when the contract changes meaningfully.",
+      "A response DTO defines the shape of outgoing data.",
+      "It hides internal fields from the client.",
+      "It keeps the API contract stable when the database changes.",
     ],
     codeExample: {
-      title: "Two response DTOs for one entity",
-      code: `public record OrderResponse(Guid Id, string Status, decimal Total);
-public record OrderAdminResponse(Guid Id, string Status, decimal Total,
-    string? InternalNotes, DateTimeOffset CreatedAt);
+      title: "A response DTO returned from a GET endpoint",
+      code: `public class OrderResponse
+{
+    public int Id { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public decimal Total { get; set; }
+}
 
-[HttpGet("{id:guid}")]
-public async Task<ActionResult<OrderResponse>> Get(Guid id)
-    => Ok(await _orders.GetAsync(id));
+[HttpGet("{id}")]
+public ActionResult<OrderResponse> GetById(int id)
+{
+    var order = _orders.GetById(id);
+    if (order == null) return NotFound();
 
-[HttpGet("admin/{id:guid}"), Authorize(Roles = "Admin")]
-public async Task<ActionResult<OrderAdminResponse>> GetForAdmin(Guid id)
-    => Ok(await _orders.GetForAdminAsync(id));`,
-      output: `GET /orders/8f3...    -> {"id":"8f3...","status":"Confirmed","total":42.5}
-GET /orders/admin/... -> {"id":"8f3...","status":"Confirmed","total":42.5,"internalNotes":"VIP","createdAt":"..."}`,
+    return Ok(new OrderResponse
+    {
+        Id = order.Id,
+        Status = order.Status,
+        Total = order.Lines.Sum(l => l.Price * l.Quantity)
+    });
+}`,
+      output: "{ \"id\": 1, \"status\": \"Confirmed\", \"total\": 99.50 }",
       walkthrough: [
-        "Two consumers, two response DTOs.",
-        "Authorisation is enforced at the endpoint; the DTO shape reflects what each audience may see.",
-        "Same underlying `Order` entity.",
+        "OrderResponse contains only the fields the client should see.",
+        "The controller maps the Order entity to OrderResponse before returning.",
+        "Internal fields like CreatedBy or InternalNotes never leave the application.",
       ],
     },
     practice: {
       prompt:
-        "Add a `ProductPublicResponse` (Id, Name, Price) and `ProductInternalResponse` (Id, Name, Price, Cost, Margin) for the same `Product` entity. Expose them on `/products/{id}` and `/admin/products/{id}` respectively.",
+        "Create a CustomerResponse DTO with Id, Name, and Email. Build a GET endpoint that loads a customer entity and returns the response DTO. Make sure the Password field is never returned.",
       expectedResult:
-        "Public clients never see `Cost` or `Margin`; admin endpoints do.",
+        "Calling GET /api/customers/1 returns a JSON body with Id, Name, and Email only.",
       hints: [
-        "Use `[Authorize]` on the admin endpoint.",
-        "Project to each DTO in the service, not in the controller.",
-        "Add a test asserting `Cost` is absent in the public JSON.",
+        "Define CustomerResponse with three properties.",
+        "Map the Customer entity to CustomerResponse inside the controller or service.",
+        "Never include Password or other sensitive fields in the response DTO.",
       ],
       solution:
-        "The service exposes `GetPublicAsync` and `GetInternalAsync`, each returning the corresponding DTO. The contract for each audience is explicit and enforced by the endpoint.",
+        "Define CustomerResponse with Id, Name, Email. Load the customer entity, map it into a new CustomerResponse, and return Ok(response). Password stays inside the entity and is never included.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Why prefer multiple response DTOs over one fat DTO with nullable fields?",
+        question: "What is the main purpose of a response DTO?",
         options: [
-          "It uses less memory.",
-          "Each consumer sees a contract scoped to its needs, and changing one does not silently affect the others.",
-          "C# does not allow nullable record fields.",
-          "There is no reason.",
+          "To replace the database.",
+          "To define the exact shape of what the API returns to the client.",
+          "To make the application faster.",
+          "To validate incoming data.",
         ],
         correctAnswer:
-          "Each consumer sees a contract scoped to its needs, and changing one does not silently affect the others.",
+          "To define the exact shape of what the API returns to the client.",
         explanation:
-          "Fat DTOs blur audiences and make it unclear which fields are safe to remove or rename.",
+          "Response DTOs control what the client sees and protect internal fields.",
       },
       {
         kind: "code-reading",
         question:
-          "Why is `OrderAdminResponse` separated from `OrderResponse`?",
+          "Why does this code map the entity into an OrderResponse before returning?\n```csharp\nreturn Ok(new OrderResponse { Id = order.Id, Status = order.Status });\n```",
         options: [
-          "EF Core requires it.",
-          "Admins see additional fields (`InternalNotes`, `CreatedAt`) that should not be in the public contract.",
-          "Records cannot be combined.",
-          "Performance.",
+          "To make the code longer.",
+          "To control what the client sees and avoid leaking internal fields from the Order entity.",
+          "It is required by C#.",
+          "To improve performance.",
         ],
         correctAnswer:
-          "Admins see additional fields (`InternalNotes`, `CreatedAt`) that should not be in the public contract.",
+          "To control what the client sees and avoid leaking internal fields from the Order entity.",
         explanation:
-          "Different audiences, different contracts. Keeping them as separate DTOs prevents accidental leaks.",
+          "Mapping to a response DTO is what protects the API from exposing internal data.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "Spot the problem:\n```csharp\n[HttpGet]\npublic ActionResult<List<Order>> List() => Ok(_db.Orders.Include(o => o.Customer).ToList());\n```",
+          "Why is this controller risky?\n```csharp\n[HttpGet(\"{id}\")]\npublic ActionResult<User> Get(int id) => _db.Users.Find(id);\n```",
         options: [
-          "Returns entities with eager-loaded navigation properties, leaking the schema and risking serialisation cycles between `Order` and `Customer`.",
-          "Nothing — it is idiomatic.",
-          "`List<Order>` cannot be returned from an action.",
-          "`Include` is not allowed.",
+          "Nothing is wrong.",
+          "It returns the User entity directly, which can leak fields like PasswordHash and InternalNotes.",
+          "It needs await.",
+          "It needs a try-catch.",
         ],
         correctAnswer:
-          "Returns entities with eager-loaded navigation properties, leaking the schema and risking serialisation cycles between `Order` and `Customer`.",
+          "It returns the User entity directly, which can leak fields like PasswordHash and InternalNotes.",
         explanation:
-          "Project to a response DTO. `Include` is fine for queries but never for outbound JSON.",
+          "Always return a response DTO that exposes only the safe fields.",
       },
       {
         kind: "interview",
         question:
-          "How do you handle a breaking change in an existing response DTO?",
+          "How does a response DTO help when the database schema changes?",
         options: [
-          "Mutate the DTO and tell clients to upgrade.",
-          "Introduce `OrderResponseV2` on a new versioned route while keeping the original until clients migrate.",
-          "Delete the old endpoint.",
-          "Add the new field as nullable and hope.",
+          "It does not.",
+          "The DTO keeps the API contract stable. You can change the entity without changing the response, as long as the mapping still produces the same shape.",
+          "It blocks schema changes.",
+          "It is unrelated.",
         ],
         correctAnswer:
-          "Introduce `OrderResponseV2` on a new versioned route while keeping the original until clients migrate.",
+          "The DTO keeps the API contract stable. You can change the entity without changing the response, as long as the mapping still produces the same shape.",
         explanation:
-          "API versioning preserves backward compatibility while giving you room to evolve the contract.",
+          "Decoupling the API from the database is one of the main reasons we use response DTOs.",
       },
     ],
   },
 
   "entity-vs-dto": {
     whyItMatters:
-      "Confusing the two is how production schemas leak into public APIs. The job titles are different, even when the field lists overlap by 90%.",
+      "Knowing the difference between an entity and a DTO is one of the most important habits in .NET. Mixing them up leaks data, ties your API to your database, and makes the project hard to change later.",
     simpleExplanation:
-      "An entity is your persistence model — what is stored. A DTO is your transfer model — what is sent over the wire.",
+      "An entity is the class that represents a database table. A DTO is the class that represents data sent or received through the API. They look similar but serve different jobs.",
     deepExplanation:
-      "Entities live close to the database: they may have navigation properties, change tracking, lazy-loading, attributes for EF Core. DTOs live close to the wire: they are immutable, validated, and shaped to a consumer. They look similar because they describe the same domain, but they answer different questions ('how do I store an order?' vs 'how do I send an order to a client?'). Keep them separate even when it feels like duplication; their evolution rates differ.",
+      "The entity is part of the data layer. It usually has database attributes, navigation properties, and audit fields. It is tracked by EF Core. The DTO is part of the API layer. It is simple, focused, and has no database knowledge. The service layer maps between them. Keeping these two separate is what allows the database and the API to change independently.",
     realWorldUsage:
-      "`Order` entity has `OrderLines` (EF navigation), `Customer` (FK + navigation), `RowVersion` for concurrency. `OrderResponse` DTO has only `Id, Status, Total, Lines` — none of the EF concerns.",
+      "Order is an entity with Id, CreatedAt, CustomerId, and a navigation property to OrderLines. OrderResponse is a DTO with Id, Status, and Total. The service layer loads the entity and maps it into the DTO before returning. The entity stays inside the application, and the DTO travels to the client.",
     explainLikeBeginner:
-      "The entity is the cabinet where you store the file. The DTO is the photocopy you give to someone outside.",
+      "An entity is like the original document stored in a filing cabinet. A DTO is the photocopy with only the important parts highlighted that you send to someone else. The original stays safe. The copy is shared.",
     interviewAnswer:
-      "An entity is the persistence model — close to the database, owned by EF Core. A DTO is the transfer model — close to the API, owned by the contract. They look similar because they describe the same domain but have different responsibilities.",
+      "An entity represents a row in the database. It is used by EF Core and contains all the fields stored. A DTO represents the shape of data carried through the API. We separate them so the database schema and the API contract can evolve independently.",
     commonMistakes: [
-      "Skipping the DTO and exposing the entity, then dealing with serialisation cycles and accidental field leaks.",
-      "Adding `[JsonIgnore]` to entities to 'fix' API leaks — fragile.",
-      "Putting validation attributes on entities so EF Core constraints and API rules tangle.",
+      "Using the entity as the API request or response.",
+      "Adding API-specific fields to the entity, which pollutes the data model.",
+      "Adding database attributes to a DTO, which leaks data concerns into the API layer.",
     ],
     bestPractices: [
-      "Keep entities free of API concerns (no `[JsonIgnore]`, no `[Required]`).",
-      "Project to DTOs at the boundary, ideally in the service layer.",
-      "Use AutoMapper or a hand-written mapper — whichever is clearer for your team.",
+      "Keep entities focused on the database. Keep DTOs focused on the API.",
+      "Map between them in the service layer.",
+      "Never expose entities directly through controllers.",
     ],
     summary: [
-      "Entity = stored, DTO = sent.",
-      "Their evolution rates differ.",
-      "Keep API concerns off entities.",
+      "Entity = database shape.",
+      "DTO = API shape.",
+      "Keep them separate so each layer can change on its own.",
     ],
     codeExample: {
-      title: "Entity vs DTO, side by side",
-      code: `public class Order
+      title: "Order entity vs OrderResponse DTO",
+      code: `// Entity (database)
+public class Order
 {
-    public Guid Id { get; set; }
-    public Guid CustomerId { get; set; }
-    public Customer Customer { get; set; } = null!;
-    public List<OrderLine> Lines { get; set; } = new();
+    public int Id { get; set; }
+    public int CustomerId { get; set; }
     public string Status { get; set; } = "Pending";
-    [Timestamp] public byte[]? RowVersion { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string? InternalNotes { get; set; }
+    public List<OrderLine> Lines { get; set; } = new();
 }
 
-public record OrderResponse(Guid Id, string Status, decimal Total,
-    IReadOnlyList<OrderLineResponse> Lines);
-public record OrderLineResponse(string Sku, int Quantity);`,
-      output: "(no runtime output — illustrates two shapes for the same domain)",
+// DTO (API)
+public class OrderResponse
+{
+    public int Id { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public decimal Total { get; set; }
+}`,
+      output: "Two classes — one for storage, one for the API.",
       walkthrough: [
-        "`Order` entity carries EF concerns: navigation properties, `RowVersion`.",
-        "`OrderResponse` DTO is a flat shape for the wire.",
-        "A mapper translates between the two; nothing else needs to know about both worlds.",
+        "Order has database details like CreatedAt and InternalNotes.",
+        "OrderResponse exposes only what the client needs.",
+        "The two evolve independently — the database can change without breaking the API.",
       ],
     },
     practice: {
       prompt:
-        "Take a `Customer` entity with `Id`, `Name`, `Email`, `PasswordHash`, `ICollection<Order> Orders` and write a `CustomerResponse(Id, Name, Email)`. Add a `ToResponse` extension method and use it in the controller.",
+        "Define a Customer entity with Id, Name, Email, PasswordHash, and CreatedAt. Then define a CustomerResponse DTO with only Id, Name, and Email. Write a method that maps a Customer to a CustomerResponse.",
       expectedResult:
-        "`PasswordHash` and `Orders` no longer leak in JSON responses; the mapping is one method, easy to test.",
+        "Given a Customer { Id = 1, Name = \"Ali\", Email = \"ali@example.com\", PasswordHash = \"x\", CreatedAt = now }, the mapping returns a CustomerResponse with Id, Name, and Email only.",
       hints: [
-        "Place the extension method in a `Mapping` static class.",
-        "Use it in every controller path that returns a customer.",
-        "Add a test asserting the JSON has only three keys.",
+        "Customer has all five fields.",
+        "CustomerResponse has only three fields.",
+        "The mapping method creates a new CustomerResponse and copies only the safe fields.",
       ],
       solution:
-        "Extension method centralises the projection. The controller returns `customer.ToResponse()` and the contract is explicit.",
+        "Define Customer and CustomerResponse as separate classes. Add a method static CustomerResponse ToDto(Customer c) that returns new CustomerResponse { Id = c.Id, Name = c.Name, Email = c.Email }.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Which statement is correct?",
+        question: "What is the difference between an entity and a DTO?",
         options: [
-          "Entities and DTOs are interchangeable.",
-          "Entities are persistence-focused; DTOs are transfer-focused. They describe the same domain but have different responsibilities.",
-          "DTOs replace entities entirely.",
-          "Only DTOs are used by EF Core.",
+          "They are the same thing.",
+          "Entity = database shape, DTO = API shape. They serve different jobs and live in different layers.",
+          "An entity is faster.",
+          "A DTO replaces the entity.",
         ],
         correctAnswer:
-          "Entities are persistence-focused; DTOs are transfer-focused. They describe the same domain but have different responsibilities.",
+          "Entity = database shape, DTO = API shape. They serve different jobs and live in different layers.",
         explanation:
-          "Two shapes, two jobs. They overlap in fields but not in concerns.",
+          "Entities belong to the data layer; DTOs belong to the API layer.",
       },
       {
         kind: "code-reading",
         question:
-          "Why is `[Timestamp] byte[]? RowVersion` on the entity but not on the DTO?",
+          "Why does OrderResponse not include InternalNotes from the Order entity?",
         options: [
-          "Because DTOs cannot have byte arrays.",
-          "Because `RowVersion` is an EF Core concurrency token — a persistence detail clients have no reason to see.",
-          "Because records cannot have nullable fields.",
-          "Performance.",
+          "It is not used.",
+          "InternalNotes is an internal field. Response DTOs only expose what the client should see.",
+          "It would not compile.",
+          "It is a database column.",
         ],
         correctAnswer:
-          "Because `RowVersion` is an EF Core concurrency token — a persistence detail clients have no reason to see.",
+          "InternalNotes is an internal field. Response DTOs only expose what the client should see.",
         explanation:
-          "Concurrency control belongs in the persistence layer; it has no place in the public API.",
+          "Hiding internal fields is one of the main reasons we use DTOs.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What rule does this break?\n```csharp\npublic class Customer\n{\n    [Required, EmailAddress, JsonIgnore]\n    public string Email { get; set; } = \"\";\n}\n```",
+          "What is wrong with this design?\n```csharp\npublic class Order\n{\n    [JsonPropertyName(\"order_id\")]\n    public int Id { get; set; }\n    [Key]\n    public int DbId { get; set; }\n}\n```",
         options: [
           "Nothing.",
-          "It tangles persistence (`Customer` is an entity), API validation (`[Required, EmailAddress]`), and serialisation (`[JsonIgnore]`) on one type — making each harder to evolve independently.",
-          "`[Required]` cannot coexist with `[JsonIgnore]`.",
-          "`string Email` should be `Email?`.",
+          "It mixes API serialization attributes and database key attributes in one class. The entity and the DTO should be separate.",
+          "It needs a constructor.",
+          "It will not compile.",
         ],
         correctAnswer:
-          "It tangles persistence (`Customer` is an entity), API validation (`[Required, EmailAddress]`), and serialisation (`[JsonIgnore]`) on one type — making each harder to evolve independently.",
+          "It mixes API serialization attributes and database key attributes in one class. The entity and the DTO should be separate.",
         explanation:
-          "Move validation to the request DTO and serialisation choices to the response DTO. The entity stays focused on storage.",
+          "Mixing concerns in one class makes both the API and the database harder to change later.",
       },
       {
         kind: "interview",
         question:
-          "An interviewer asks: 'My entity has every field my DTO needs. Why not just return the entity?'",
+          "How would you explain entity vs DTO in an interview?",
         options: [
-          "It is fine to do so.",
-          "Because that couples your wire contract to your schema; the next database refactor will silently change the API and the field-level decisions stop being explicit.",
-          "Because entities do not serialise to JSON.",
-          "Because EF Core forbids it.",
+          "They are interchangeable.",
+          "An entity represents a database row and lives in the data layer. A DTO represents data carried through the API and lives in the API layer. We map between them to keep each layer focused.",
+          "DTOs replace entities in EF Core.",
+          "Entities are slower than DTOs.",
         ],
         correctAnswer:
-          "Because that couples your wire contract to your schema; the next database refactor will silently change the API and the field-level decisions stop being explicit.",
+          "An entity represents a database row and lives in the data layer. A DTO represents data carried through the API and lives in the API layer. We map between them to keep each layer focused.",
         explanation:
-          "Today's accidental match becomes tomorrow's broken contract. Keep the boundary explicit.",
+          "This is the clean separation that real .NET projects rely on.",
       },
     ],
   },
 
   "mapping-dto-to-entity": {
     whyItMatters:
-      "Mapping is where the two shapes meet. Done well, it lives in one place; done poorly, it spreads across every controller and breaks every time the schema changes.",
+      "Mapping connects your API and your database. Done well, it keeps the two layers independent and easy to change. Done badly, it leaks data, duplicates work, and creates hidden bugs that show up months later.",
     simpleExplanation:
-      "Mapping is the function that translates a DTO to an entity (or back). It is plain code, even if libraries exist to generate it.",
+      "Mapping means converting between an entity and a DTO. You take the fields from one and copy them into the other. You can do this by hand or with a library like AutoMapper.",
     deepExplanation:
-      "Two approaches dominate. Hand-written: an extension method or a dedicated `IMapper` class. It is explicit, debuggable, and refactor-safe. Auto-generated: AutoMapper or Mapperly. Less typing, but failures are harder to trace and field renames silently break runtime mappings. Either way, centralise mapping logic. A junior reader should be able to find every place an `Order` is mapped to an `OrderResponse` in seconds.",
+      "There are two common approaches. Manual mapping is simple, explicit, and easy to read — you write a method that creates a DTO from an entity, or an entity from a DTO. AutoMapper or Mapster is faster to write for large objects but adds a library and some indirection. Both are valid. The mapping always happens in the service layer, never inside the controller or the entity itself.",
     realWorldUsage:
-      "`OrderService.GetAsync(id)` loads the entity, calls `order.ToResponse()`, returns the DTO. The mapping is one file; if `Total` calculation changes, you change it in one place.",
+      "An OrderService loads an Order entity, then maps it to an OrderResponse using a static method or AutoMapper. A CreateOrderRequest from the client is mapped to a new Order entity inside the service before being saved. A CustomerService updates a Customer entity from an UpdateCustomerRequest, only changing the fields that are present.",
     explainLikeBeginner:
-      "Mapping is the translator at a meeting: the speaker (entity) talks, the translator turns it into the other language (DTO) for the listener.",
+      "Mapping is like packing a suitcase for a trip. The closet has all your clothes (the entity). You pack only the right ones (the DTO) and zip it up. You do not bring the whole closet.",
     interviewAnswer:
-      "Mapping translates between entities and DTOs at the boundary. We prefer to centralise it — either in hand-written extension methods or in a tool like Mapperly — so each shape has exactly one place that knows how to turn it into the other.",
+      "Mapping is the process of converting between an entity and a DTO. In .NET, we do this in the service layer either manually or with libraries like AutoMapper. Mapping keeps the entity and the DTO independent and makes it easy to change either side without breaking the other.",
     commonMistakes: [
-      "Inlining mapping in controllers, so the same `Order -> OrderResponse` translation lives in three actions and drifts.",
-      "Using AutoMapper with implicit conventions and discovering at runtime that a field silently mapped to the wrong value.",
-      "Mapping forwards in the service and backwards in the controller — inconsistent direction.",
+      "Mapping inside the controller instead of the service layer.",
+      "Mapping every field even when some should be hidden.",
+      "Relying on AutoMapper for complex logic that should live in the service.",
     ],
     bestPractices: [
-      "One file per pair of shapes, with `ToResponse` and `ToEntity` methods.",
-      "Prefer explicit field-by-field mapping for small projects.",
-      "Add a unit test that exercises every field of the mapping.",
+      "Do mapping in the service layer.",
+      "Start with manual mapping for small projects. Use AutoMapper for large object graphs.",
+      "Test the mapping logic with simple unit tests.",
     ],
     summary: [
-      "Centralise mapping in one place per shape pair.",
-      "Hand-written is explicit; tools are concise — pick deliberately.",
-      "Test mapping: it is plain code and easy to cover.",
+      "Mapping converts between entities and DTOs.",
+      "Manual mapping is clear. AutoMapper saves time for large objects.",
+      "Mapping belongs in the service layer.",
     ],
     codeExample: {
-      title: "Hand-written mapping",
-      code: `public static class OrderMapping
+      title: "Manual mapping between Customer entity and CustomerDto",
+      code: `public class Customer
 {
-    public static OrderResponse ToResponse(this Order order) => new(
-        Id: order.Id,
-        Status: order.Status,
-        Total: order.Lines.Sum(l => l.Quantity * l.UnitPrice),
-        Lines: order.Lines.Select(l => new OrderLineResponse(l.Sku, l.Quantity)).ToList());
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string PasswordHash { get; set; } = string.Empty;
+}
 
-    public static Order ToEntity(this CreateOrderRequest req) => new()
+public class CustomerDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+}
+
+public static class CustomerMappings
+{
+    public static CustomerDto ToDto(this Customer c) => new()
     {
-        Id = Guid.NewGuid(),
-        CustomerId = req.CustomerId,
-        Lines = req.Lines.Select(l => new OrderLine(l.Sku, l.Quantity, 0m)).ToList(),
+        Id = c.Id,
+        Name = c.Name,
+        Email = c.Email
     };
 }`,
-      output: "(static mapper called inside services / controllers)",
+      output: "A clean, explicit mapping method that hides PasswordHash.",
       walkthrough: [
-        "Explicit field-by-field mapping makes intent obvious.",
-        "Computed values (`Total`) live in the mapper, not in the entity or the DTO.",
-        "A single unit test can exercise every field for both directions.",
+        "The Customer entity has all the database fields.",
+        "CustomerDto exposes only safe fields.",
+        "The ToDto extension method copies the safe fields and ignores the rest.",
       ],
     },
     practice: {
       prompt:
-        "Write `CustomerMapping` with `ToResponse(this Customer)` and `ToEntity(this CreateCustomerRequest)`. Cover every field. Add a test asserting that round-tripping a customer through both directions preserves all client-supplied data.",
+        "Write a mapping method that converts a CreateOrderRequest (with CustomerId and a list of OrderItemDto) into a new Order entity. The Order should start with Status = \"Pending\" and CreatedAt = DateTime.UtcNow.",
       expectedResult:
-        "Mapping is centralised; controllers and services use the extension methods only.",
+        "Given a CreateOrderRequest with CustomerId = 1 and one item, the method returns an Order with the same CustomerId, Status = \"Pending\", CreatedAt set to now, and one OrderLine.",
       hints: [
-        "Place the mapper in `Application/Mapping/CustomerMapping.cs`.",
-        "Make `ToEntity` set server-generated values (`Id`, `CreatedAt`).",
-        "Test direction-by-direction.",
+        "Create a new Order, copy CustomerId, and set Status and CreatedAt.",
+        "Loop through the request items and map each one to an OrderLine.",
+        "Return the new Order.",
       ],
       solution:
-        "After the refactor, searching for `new CustomerResponse(` returns one hit — the mapper. Any future change to fields touches that file only.",
+        "Write a static method ToEntity(CreateOrderRequest request) that returns a new Order with CustomerId copied, Status set to Pending, CreatedAt set to UtcNow, and Lines mapped from the request items.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Where should DTO ↔ entity mapping logic live?",
+        question: "Where should mapping between DTOs and entities happen?",
         options: [
-          "Wherever you happen to need it — inline in controllers is fine.",
-          "In one centralised file per shape pair so the translation is explicit and easy to test.",
-          "In the entity itself.",
-          "In the database via stored procedures.",
+          "Inside the entity.",
+          "Inside the controller.",
+          "Inside the service or a dedicated mapping class.",
+          "Inside the database.",
         ],
         correctAnswer:
-          "In one centralised file per shape pair so the translation is explicit and easy to test.",
+          "Inside the service or a dedicated mapping class.",
         explanation:
-          "Centralised mapping prevents drift across endpoints and gives you one place to update when fields change.",
+          "Mapping belongs in the service layer to keep the controller thin and the entity clean.",
       },
       {
         kind: "code-reading",
         question:
-          "What does this mapping do?\n```csharp\nTotal: order.Lines.Sum(l => l.Quantity * l.UnitPrice)\n```",
+          "What does this extension method do?\n```csharp\npublic static CustomerDto ToDto(this Customer c) => new() { Id = c.Id, Name = c.Name, Email = c.Email };\n```",
         options: [
-          "Reads `Total` from the entity.",
-          "Computes the total on the fly from the line items, so the DTO always reflects the current state of the order.",
-          "Calls the database.",
-          "Caches the value statically.",
+          "It deletes a customer.",
+          "It maps a Customer entity to a CustomerDto by copying the safe fields.",
+          "It saves a customer.",
+          "It updates the database.",
         ],
         correctAnswer:
-          "Computes the total on the fly from the line items, so the DTO always reflects the current state of the order.",
+          "It maps a Customer entity to a CustomerDto by copying the safe fields.",
         explanation:
-          "Computing in the mapper avoids stale fields on the entity and makes the rule visible.",
+          "Manual mapping methods are simple, explicit, and easy to test.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is the risk of this AutoMapper configuration?\n```csharp\nCreateMap<Order, OrderResponse>(); // convention-based\n```",
+          "What is wrong with this mapping?\n```csharp\nvar dto = new CustomerDto\n{\n    Id = c.Id,\n    Name = c.Name,\n    PasswordHash = c.PasswordHash\n};\n```",
         options: [
-          "It will not compile.",
-          "Field renames or removed properties become silent runtime bugs because there is no compile-time check that every DTO field has a source.",
-          "AutoMapper does not support records.",
-          "Nothing — it is recommended.",
+          "Nothing.",
+          "PasswordHash is being copied into a DTO that will be returned to the client. Internal data should never appear in a response DTO.",
+          "It needs a try-catch.",
+          "It needs async.",
         ],
         correctAnswer:
-          "Field renames or removed properties become silent runtime bugs because there is no compile-time check that every DTO field has a source.",
+          "PasswordHash is being copied into a DTO that will be returned to the client. Internal data should never appear in a response DTO.",
         explanation:
-          "Convention-based mapping looks clean until a refactor breaks it silently. Use `AssertConfigurationIsValid` in tests, or prefer explicit mapping.",
+          "Always check that mapping copies only the fields the client should see.",
       },
       {
         kind: "interview",
         question:
-          "How would you defend a hand-written mapper in a code review against 'just use AutoMapper'?",
+          "Manual mapping or AutoMapper — which is better?",
         options: [
-          "It is faster at runtime by a wide margin.",
-          "Explicit code is debuggable and refactor-safe: 'Find usages' actually finds them, and a renamed field is a compile error rather than a runtime null.",
-          "AutoMapper does not work in .NET.",
-          "There is no good reason; AutoMapper is always right.",
+          "Manual mapping is always better.",
+          "AutoMapper is always better.",
+          "Both are valid. Manual mapping is clear and explicit for small projects. AutoMapper saves time for large object graphs but adds a library and some indirection.",
+          "Neither is needed.",
         ],
         correctAnswer:
-          "Explicit code is debuggable and refactor-safe: 'Find usages' actually finds them, and a renamed field is a compile error rather than a runtime null.",
+          "Both are valid. Manual mapping is clear and explicit for small projects. AutoMapper saves time for large object graphs but adds a library and some indirection.",
         explanation:
-          "Both approaches are valid; pick the one with the failure mode your team handles best.",
+          "The choice depends on the size of the project and the team's preference.",
       },
     ],
   },
 
   "simple-api-with-dtos": {
     whyItMatters:
-      "Wiring request DTO → service → entity → response DTO end-to-end is the building block of every CRUD endpoint you will write. Doing it once correctly templates the next ten.",
+      "Putting it all together with DTOs is what real .NET APIs look like. A clean controller, a service that handles the work, and DTOs at the edges — this is the pattern you will use every day. Knowing how to build it from scratch gives you the foundation for any feature.",
     simpleExplanation:
-      "A 'simple API with DTOs' means: controller accepts a request DTO, validates it, hands it to a service, the service touches entities, and returns a response DTO.",
+      "A simple API with DTOs has three pieces: a request DTO for the input, a response DTO for the output, and a controller method that calls a service. The service does the work and uses entities internally.",
     deepExplanation:
-      "Aim for thin controllers, explicit mapping, and a service that exposes intent. The controller's job is to translate HTTP into a method call; everything else is the service's. Persist via a repository so the rule layer can be tested without a real database. Use `CreatedAtAction` for `POST`, `Ok` for `GET`, `NoContent` for `DELETE`/`PUT`. That consistency is what makes an API feel professional.",
+      "The controller is thin. It receives a request DTO, asks the service to do the work, and returns a response DTO. The service uses entities internally. It maps from the request DTO into a new entity, saves it through a repository or DbContext, then maps the entity back into a response DTO. This pattern keeps every layer focused on one job, which makes the code easy to read, test, and change.",
     realWorldUsage:
-      "A `/customers` resource with `POST` (create), `GET /{id}` (read), `PUT /{id}` (update), `DELETE /{id}` (delete) — each routes through a DTO at the boundary.",
+      "An e-commerce API has a CartController that takes an AddItemRequest and returns a CartResponse. A user service has a UsersController with RegisterUserRequest and UserResponse. A reporting service has a ReportsController with GenerateReportRequest and ReportResponse. The shape is the same in every case.",
     explainLikeBeginner:
-      "Build the assembly line: paperwork comes in (request), the worker (service) acts on the product (entity), and a receipt (response) goes back out.",
+      "A simple API with DTOs is like ordering food. The waiter takes your order on a form (request DTO), the kitchen prepares your meal (service), and the waiter brings back your dish with a receipt (response DTO). You never see the kitchen, and the kitchen never talks to you directly.",
     interviewAnswer:
-      "I structure CRUD endpoints with request DTOs at the boundary, a service that calls into a repository, and response DTOs on the way out. Controllers are thin adapters; mapping is centralised; HTTP status codes follow REST conventions.",
+      "A simple API with DTOs uses a request DTO for input, a service to handle the work, and a response DTO for output. The controller stays thin, the service contains the logic, and the entity stays inside the application. This pattern is used in almost every modern .NET API.",
     commonMistakes: [
-      "Returning `200 OK` for everything — `201` for create, `204` for delete carry information.",
-      "Inlining mapping and validation in the controller.",
-      "Skipping the service layer 'for simplicity' and hitting `DbContext` directly.",
+      "Putting business logic inside the controller.",
+      "Returning entities directly instead of mapping to a response DTO.",
+      "Skipping validation on the request DTO.",
     ],
     bestPractices: [
-      "Keep controllers two-to-five lines per action.",
-      "Use `ActionResult<T>` for typed responses.",
-      "Centralise mapping; centralise repository interfaces.",
+      "Keep controllers thin — they only handle HTTP and call services.",
+      "Keep services focused on the business logic.",
+      "Validate the request DTO before processing.",
     ],
     summary: [
-      "Controller → service → repository → entity.",
-      "Request DTO and response DTO bookend the flow.",
-      "HTTP status codes are part of the contract.",
+      "Request DTO in. Response DTO out.",
+      "Controller is thin. Service does the work.",
+      "Entities stay inside the application.",
     ],
     codeExample: {
-      title: "Full CRUD slice",
-      code: `[ApiController, Route("customers")]
+      title: "A complete create-customer endpoint with DTOs",
+      code: `public class CreateCustomerRequest
+{
+    [Required] public string Name { get; set; } = string.Empty;
+    [Required, EmailAddress] public string Email { get; set; } = string.Empty;
+}
+
+public class CustomerResponse
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+}
+
+[ApiController]
+[Route("api/customers")]
 public class CustomersController : ControllerBase
 {
-    private readonly ICustomerService _customers;
-    public CustomersController(ICustomerService c) => _customers = c;
-
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<CustomerResponse>> Get(Guid id) =>
-        Ok(await _customers.GetAsync(id));
+    private readonly ICustomerService _service;
+    public CustomersController(ICustomerService service) => _service = service;
 
     [HttpPost]
-    public async Task<ActionResult<CustomerResponse>> Create(CreateCustomerRequest req)
+    public async Task<ActionResult<CustomerResponse>> Create(CreateCustomerRequest request)
     {
-        var created = await _customers.CreateAsync(req);
-        return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
-    }
-
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
-    {
-        await _customers.DeleteAsync(id);
-        return NoContent();
+        var created = await _service.CreateAsync(request);
+        return Ok(created);
     }
 }`,
-      output: `POST /customers   201 Created  Location: /customers/8f3...
-GET  /customers/8f3...  200 OK  {"id":"8f3...","name":"Ada","email":"ada@x.com"}
-DELETE /customers/8f3...  204 No Content`,
+      output: "200 OK with { id, name, email } in the response body",
       walkthrough: [
-        "Each action is two-to-five lines; logic lives in the service.",
-        "DTOs at boundary; entities never reach the controller.",
-        "Status codes follow REST conventions.",
+        "The controller accepts a CreateCustomerRequest as input.",
+        "It calls the service, which handles the real work.",
+        "The service returns a CustomerResponse, which is sent back to the client.",
       ],
     },
     practice: {
       prompt:
-        "Build a `/products` resource with create, read-by-id, list, and delete. Use `ProductRequest` and `ProductResponse`. Persist via an `IProductRepository` (in-memory is fine).",
+        "Build a complete POST endpoint for creating an Order. Define CreateOrderRequest (CustomerId, list of items), OrderResponse (Id, Status, Total), an OrdersController, and an IOrderService that handles the logic.",
       expectedResult:
-        "Four endpoints with proper status codes, DTOs at the boundary, and a service that is independently testable.",
+        "POST /api/orders with a valid request body returns 200 OK with an OrderResponse JSON containing the new order's Id, Status = \"Pending\", and the total.",
       hints: [
-        "Use `CreatedAtAction` for create.",
-        "Return `404 Not Found` (via exception or `Problem`) when the id is unknown.",
-        "Test the service with an in-memory repository fake.",
+        "Validate the request DTO with attributes like [Required] and [Range].",
+        "Inject IOrderService through the controller's constructor.",
+        "Map the request to an Order entity inside the service, save it, and map back to OrderResponse.",
       ],
       solution:
-        "Endpoints are thin; the service has the rules; the repository is the only place that talks to storage. Three layers, each testable in isolation.",
+        "Define CreateOrderRequest, OrderResponse, IOrderService with CreateAsync, an OrderService implementation that maps and saves, and an OrdersController with a [HttpPost] action that calls the service and returns the response DTO.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What status code should a successful `POST /customers` return?",
-        options: ["200 OK", "201 Created", "204 No Content", "202 Accepted"],
-        correctAnswer: "201 Created",
+        question: "What should a controller do in a clean .NET API?",
+        options: [
+          "Handle HTTP, run business logic, and call the database directly.",
+          "Stay thin: handle HTTP, validate input, call a service, and return a response DTO.",
+          "Replace the service.",
+          "Map directly to the database.",
+        ],
+        correctAnswer:
+          "Stay thin: handle HTTP, validate input, call a service, and return a response DTO.",
         explanation:
-          "`201 Created` with a `Location` header is the REST convention for resource creation. ASP.NET Core's `CreatedAtAction` produces both for free.",
+          "A thin controller is easier to read, test, and maintain.",
       },
       {
         kind: "code-reading",
         question:
-          "What does `CreatedAtAction(nameof(Get), new { id }, created)` produce?",
+          "In this controller, what is the role of CreateCustomerRequest?\n```csharp\npublic async Task<ActionResult<CustomerResponse>> Create(CreateCustomerRequest request)\n```",
         options: [
-          "A 200 OK with no body.",
-          "A 204 No Content.",
-          "A 201 Created with a Location header pointing at the `Get` action for the new id, and the created DTO in the body.",
-          "A 302 redirect.",
+          "It is the database entity.",
+          "It is the request DTO that defines the shape of the incoming data.",
+          "It is the response DTO.",
+          "It is a configuration class.",
         ],
         correctAnswer:
-          "A 201 Created with a Location header pointing at the `Get` action for the new id, and the created DTO in the body.",
+          "It is the request DTO that defines the shape of the incoming data.",
         explanation:
-          "`CreatedAtAction` is the canonical helper for `POST` responses — status code, location, body all wired up.",
+          "The controller receives a request DTO, which the framework deserializes from the JSON body.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this controller?\n```csharp\n[HttpPost]\npublic async Task<IActionResult> Create(CreateCustomerRequest req)\n{\n    var c = new Customer { Name = req.Name, Email = req.Email };\n    _db.Customers.Add(c);\n    await _db.SaveChangesAsync();\n    return Ok(c);\n}\n```",
+          "What is the problem here?\n```csharp\n[HttpPost]\npublic IActionResult Create(CreateOrderRequest request)\n{\n    var order = new Order { CustomerId = request.CustomerId };\n    _db.Orders.Add(order);\n    _db.SaveChanges();\n    return Ok(order);\n}\n```",
         options: [
-          "Nothing — it works.",
-          "It puts persistence and entity construction directly in the controller, returns the entity (not a DTO), and uses 200 instead of 201.",
-          "`_db.Customers.Add` is not async.",
-          "`req.Name` should be `req.NameValue`.",
+          "Nothing.",
+          "The controller talks to the database directly, contains business logic, and returns the entity. The work should be in a service, and the response should be a DTO.",
+          "It needs to be async.",
+          "It is missing a return type.",
         ],
         correctAnswer:
-          "It puts persistence and entity construction directly in the controller, returns the entity (not a DTO), and uses 200 instead of 201.",
+          "The controller talks to the database directly, contains business logic, and returns the entity. The work should be in a service, and the response should be a DTO.",
         explanation:
-          "Three violations: leaked persistence, leaked entity, wrong status code. Refactor through a service and DTO mapping.",
+          "A clean .NET API delegates the work to a service and never returns entities directly.",
       },
       {
         kind: "interview",
-        question: "What does a 'thin controller' look like in practice?",
+        question:
+          "Describe the flow of a simple API with DTOs.",
         options: [
-          "A class with many private helpers.",
-          "An adapter whose actions parse the route and request, delegate to a service, and translate the result to an HTTP response — typically two-to-five lines per action.",
-          "A controller without any DI.",
-          "A controller with no `[HttpGet]` attributes.",
+          "Controller → database → response.",
+          "Request DTO → controller → service → entity → repository → entity → service → response DTO.",
+          "Controller does everything.",
+          "DTOs handle the database.",
         ],
         correctAnswer:
-          "An adapter whose actions parse the route and request, delegate to a service, and translate the result to an HTTP response — typically two-to-five lines per action.",
+          "Request DTO → controller → service → entity → repository → entity → service → response DTO.",
         explanation:
-          "Thin controllers are the deliberate goal: they make the service the seam where rules live and tests run.",
+          "Each layer has a clear job. DTOs sit at the API edge; entities stay inside.",
       },
     ],
   },
 
   "validation-basics": {
     whyItMatters:
-      "Most production bugs are bad input passing as good. Validation at the boundary stops the rest of your service from being a defensive minefield.",
+      "Validation is what keeps your API safe. Without it, bad data flows into your services and your database, and bugs become very hard to track down later. Good validation rejects invalid input at the edge, before it can cause problems.",
     simpleExplanation:
-      "Validation rejects invalid input as close to the boundary as possible — before it can corrupt your domain.",
+      "Validation means checking that incoming data is correct before the application uses it. In .NET, you can validate request DTOs with data annotations or with FluentValidation.",
     deepExplanation:
-      "Two layers work together. Declarative validation on the request DTO catches the shape (required fields, ranges, regex). Domain validation on the entity catches the rules (an order with no lines cannot be confirmed). Together they give defence in depth without leaking either concern into the other layer. Use ASP.NET Core's `ModelState` (auto-handled by `[ApiController]`) for the first, and exceptions on the entity for the second.",
+      "Validation happens at the API boundary. When the client sends a request, ASP.NET Core deserializes the body into the request DTO and checks the validation rules. If anything is invalid, the framework returns 400 Bad Request automatically with a list of errors. Data annotations like [Required], [Range], [MaxLength], and [EmailAddress] cover most simple rules. FluentValidation is better for complex rules or cross-field checks.",
     realWorldUsage:
-      "`POST /orders` rejects an empty payload with 400 + ProblemDetails. Even if a malformed call slips through, `order.Confirm()` throws because the entity refuses to confirm zero-line orders.",
+      "A user registration endpoint validates Email format and Password length. A create-order endpoint validates that Quantity is positive and the item list is not empty. An update-profile endpoint validates that Name is between 1 and 100 characters. The framework returns 400 with clear error messages so the client can fix the input.",
     explainLikeBeginner:
-      "Two security guards. The first checks your ID at the door (shape). The second checks you have a ticket inside (rules).",
+      "Validation is like a security check at an airport. Bags are scanned before the flight, not after. If something is wrong, the bag is stopped at the entrance. Your API works the same way — invalid data is rejected before anything else runs.",
     interviewAnswer:
-      "We validate at two layers. Request DTOs use attributes or FluentValidation for shape and bound checks, automatically returning 400 with ProblemDetails. Entities enforce domain invariants by throwing on invalid operations. The boundary catches the easy errors, the entity guarantees correctness.",
+      "Validation checks that incoming data is correct before the business logic runs. In ASP.NET Core, we use data annotations like [Required] and [Range] or FluentValidation for more complex rules. The framework returns 400 Bad Request automatically when validation fails, so the rest of the code can trust the input.",
     commonMistakes: [
-      "Skipping shape validation and writing manual `if (req.Name == null) ...` in every action.",
-      "Putting business rules on the DTO with `[Required]`, conflating shape with domain.",
-      "Returning `500 Internal Server Error` for invalid input — that is a 400.",
+      "Skipping validation and trusting the client to send correct data.",
+      "Putting validation logic inside the service or the controller instead of on the DTO.",
+      "Mixing validation rules with business rules — they should stay separate.",
     ],
     bestPractices: [
-      "Use `[ApiController]` so 400 + ProblemDetails is automatic.",
-      "Layer shape validation on the DTO, domain validation on the entity.",
-      "For complex rules, switch to FluentValidation rather than overload attributes.",
+      "Always validate request DTOs at the API boundary.",
+      "Use data annotations for simple rules and FluentValidation for complex ones.",
+      "Return clear error messages with field names and reasons.",
     ],
     summary: [
-      "Shape validation on the DTO; domain validation on the entity.",
-      "ASP.NET Core gives you the 400 + ProblemDetails plumbing.",
-      "Two layers, two concerns, both cheap to add early.",
+      "Validation rejects invalid input before processing.",
+      "Use data annotations or FluentValidation.",
+      "Validate at the API boundary, not deeper in the code.",
     ],
     codeExample: {
-      title: "Shape and domain validation working together",
-      code: `public record CreateOrderRequest(
-    [Required] Guid CustomerId,
-    [MinLength(1)] List<OrderLineRequest> Lines);
+      title: "Validation on a request DTO with data annotations",
+      code: `using System.ComponentModel.DataAnnotations;
 
-public sealed class Order
+public class CreateCustomerRequest
 {
-    private readonly List<OrderLine> _lines = new();
-    public IReadOnlyList<OrderLine> Lines => _lines;
-    public void Confirm()
-    {
-        if (_lines.Count == 0)
-            throw new InvalidOperationException("Cannot confirm an empty order.");
-        // ...
-    }
+    [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Range(18, 120)]
+    public int Age { get; set; }
+}
+
+[HttpPost]
+public IActionResult Create(CreateCustomerRequest request)
+{
+    // ASP.NET Core has already validated the request.
+    return Ok($"Customer {request.Name} created");
 }`,
-      output: `POST /orders   400 Bad Request  (DTO: Lines requires at least 1)
-order.Confirm()  InvalidOperationException: Cannot confirm an empty order.`,
+      output: "If the request is invalid: 400 Bad Request with field errors. If valid: 200 OK.",
       walkthrough: [
-        "DTO catches the easy case: empty list rejected at binding.",
-        "Even if the DTO check is bypassed, the entity refuses to confirm.",
-        "Two layers of defence; neither alone is enough.",
+        "[Required] makes sure Name and Email are provided.",
+        "[EmailAddress] checks the format of Email.",
+        "[Range(18, 120)] keeps Age inside a valid range.",
       ],
     },
     practice: {
       prompt:
-        "On `CreateProductRequest`, validate that `Name` is non-empty and `Price` is positive. On the `Product` entity, refuse to publish a product whose `Price` is below `MinimumPrice`. Verify with two tests: invalid request → 400; published below minimum → exception.",
+        "Add validation to a CreateProductRequest DTO with Name (required, max 200), Price (required, must be greater than 0), and Stock (must be 0 or more). Make sure the API returns 400 with clear errors when the rules fail.",
       expectedResult:
-        "Both layers reject their respective failures; the API behaviour is predictable.",
+        "A request with empty Name returns 400 with a 'Name is required' error. A request with negative Price returns 400 with a range error. A valid request returns 200.",
       hints: [
-        "`[Required]` and `[Range(0.01, double.MaxValue)]` on the DTO.",
-        "`InvalidOperationException` on the entity.",
-        "Test each layer in isolation.",
+        "Use [Required] and [MaxLength(200)] on Name.",
+        "Use [Range(0.01, double.MaxValue)] on Price.",
+        "Use [Range(0, int.MaxValue)] on Stock.",
       ],
       solution:
-        "The DTO test posts a bad payload and asserts 400. The entity test calls `Publish` with a price below minimum and asserts the exception. Each layer's contract is explicit.",
+        "Add the attributes to each property. ASP.NET Core checks them automatically when the request arrives. The framework returns 400 with a list of validation errors when any rule fails.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Where should domain invariants like 'an order cannot be confirmed without items' live?",
+        question: "Where should validation happen?",
         options: [
-          "On the request DTO.",
-          "On the entity, enforced by the method that performs the operation.",
-          "In the database constraints only.",
-          "On the controller.",
+          "Inside the database only.",
+          "At the API boundary, on the request DTO, before the business logic runs.",
+          "In the response DTO.",
+          "Inside the entity class.",
         ],
         correctAnswer:
-          "On the entity, enforced by the method that performs the operation.",
+          "At the API boundary, on the request DTO, before the business logic runs.",
         explanation:
-          "Domain rules belong to the type that owns the invariant. The DTO catches shape; the entity guards meaning.",
+          "Catching invalid input early protects the rest of the application.",
       },
       {
         kind: "code-reading",
         question:
-          "Given `[ApiController]`, what does posting `{ \"customerId\": null, \"lines\": [] }` to the endpoint produce?",
+          "What happens when this request arrives with an empty Email?\n```csharp\npublic class RegisterRequest\n{\n    [Required, EmailAddress] public string Email { get; set; } = string.Empty;\n}\n```",
         options: [
-          "200 OK with an empty order.",
-          "400 Bad Request with a ProblemDetails body listing the failing fields.",
-          "500 Internal Server Error.",
-          "204 No Content.",
+          "The request is accepted.",
+          "ASP.NET Core returns 400 Bad Request automatically with an Email validation error.",
+          "It throws a 500 error.",
+          "Email is set to a default value.",
         ],
         correctAnswer:
-          "400 Bad Request with a ProblemDetails body listing the failing fields.",
+          "ASP.NET Core returns 400 Bad Request automatically with an Email validation error.",
         explanation:
-          "`[ApiController]` short-circuits invalid model binding into a standardised 400 response — no manual `ModelState.IsValid` check needed.",
+          "The framework checks the validation attributes and returns a 400 response when they fail.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this validation strategy?\n```csharp\npublic async Task<IActionResult> Create(CreateOrderRequest req)\n{\n    if (req.Lines.Count == 0)\n        throw new Exception(\"No lines\");\n    // ...\n}\n```",
+          "Why is this design weak?\n```csharp\n[HttpPost]\npublic IActionResult Create(CreateUserRequest request)\n{\n    if (string.IsNullOrEmpty(request.Email)) return BadRequest();\n    if (!request.Email.Contains('@')) return BadRequest();\n}\n```",
         options: [
           "Nothing.",
-          "Manual shape validation duplicates what attributes would do; throwing `Exception` produces a 500 instead of the correct 400.",
-          "`req.Lines.Count` should be `req.Lines.Size`.",
-          "`async` is unnecessary.",
+          "The validation is hand-rolled inside the controller. It should be moved to the DTO using attributes like [Required] and [EmailAddress].",
+          "It needs async.",
+          "It returns wrong status codes.",
         ],
         correctAnswer:
-          "Manual shape validation duplicates what attributes would do; throwing `Exception` produces a 500 instead of the correct 400.",
+          "The validation is hand-rolled inside the controller. It should be moved to the DTO using attributes like [Required] and [EmailAddress].",
         explanation:
-          "Use `[MinLength(1)]` on the DTO; the framework returns 400 with the right shape automatically.",
+          "Validation rules belong on the DTO, not scattered inside controllers.",
       },
       {
         kind: "interview",
         question:
-          "When would you prefer FluentValidation over data annotations?",
+          "How would you describe validation in a real .NET API?",
         options: [
-          "When you have complex rules — cross-field comparisons, async checks, conditional validation — that are awkward to express as attributes.",
-          "Always; attributes are deprecated.",
-          "Never; attributes cover everything.",
-          "Only in console applications.",
+          "Validation is only for security.",
+          "It is the first line of defense at the API boundary. We use data annotations or FluentValidation to reject invalid input before the business logic runs, and the framework returns 400 with clear errors.",
+          "Validation slows the API down.",
+          "It is optional in production.",
         ],
         correctAnswer:
-          "When you have complex rules — cross-field comparisons, async checks, conditional validation — that are awkward to express as attributes.",
+          "It is the first line of defense at the API boundary. We use data annotations or FluentValidation to reject invalid input before the business logic runs, and the framework returns 400 with clear errors.",
         explanation:
-          "Attributes are great for simple shape checks; FluentValidation shines when the rule set grows.",
+          "This is the standard approach in real .NET projects.",
       },
     ],
   },

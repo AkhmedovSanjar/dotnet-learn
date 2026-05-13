@@ -3,994 +3,1107 @@ import type { ModuleContent } from "./types";
 export const frameworkContent: ModuleContent = {
   "console-application-basics": {
     whyItMatters:
-      "Every .NET service starts as a `Main` method. Understanding the console entry point demystifies how the framework actually starts.",
+      "Console applications are the simplest way to learn .NET. They run in the terminal, have no UI, and let you focus on the language and the framework. Many real tools — data importers, schedulers, migration runners — are also console applications.",
     simpleExplanation:
-      "A console app has a single entry point — `Main` (or top-level statements). It runs to completion and exits with a status code.",
+      "A console application is a .NET program that runs in the terminal. It starts at the Main method (or a top-level Program.cs file) and runs from top to bottom.",
     deepExplanation:
-      "Modern .NET supports top-level statements: `Program.cs` can be a few lines without an explicit `Main`. Under the hood the compiler still generates a `Main` method. Use `args` for command-line input, `Environment.Exit` (or returning an int) for the exit code, and `Console.WriteLine` for output. Async `Main` lets you await tasks directly at the entry point.",
+      "When you run dotnet new console, .NET creates a small project with one file, Program.cs. With top-level statements you can start writing code right away — no class or Main method needed. The program reads from the console, writes to the console, and exits when the code finishes. You can add NuGet packages, classes, and services as the project grows.",
     realWorldUsage:
-      "A small CLI tool that processes a CSV file: `dotnet run -- input.csv` invokes `Main(string[] args)` with the file path, the tool processes the file, and exits 0 on success or 1 on failure.",
+      "A console app can run a one-off data migration, import a CSV file into a database, send a batch of emails, or test a piece of business logic before moving it into a Web API. Many internal tools at real companies start as small console applications.",
     explainLikeBeginner:
-      "A console app is a program that runs once: starts, does its thing, prints to the terminal, and stops.",
+      "A console application is like a small kitchen recipe. You open it, follow the steps in order, and when the steps are done, the recipe is finished. There is no website, no buttons — only the steps you wrote.",
     interviewAnswer:
-      "A console application starts at `Main` (or a top-level statements file), processes inputs via `args`, prints to `Console`, and returns an exit code. It is the simplest .NET program shape and the foundation for both CLI tools and long-running services.",
+      "A console application is a .NET program that runs in the terminal. It is the simplest way to learn the framework and to build small tools. It uses Program.cs as the entry point and can grow into a more complex application as needed.",
     commonMistakes: [
-      "Forgetting to return a non-zero exit code on failure, breaking shell pipelines.",
-      "Reading `args[0]` without checking length and crashing on missing arguments.",
-      "Mixing console output with structured logging in production CLI tools.",
+      "Mixing too much logic in Program.cs instead of using classes.",
+      "Forgetting to handle null or invalid input from the console.",
+      "Hard-coding configuration instead of using appsettings.json.",
     ],
     bestPractices: [
-      "Use `System.CommandLine` or `CommandLineParser` for non-trivial CLI tools.",
-      "Return clear exit codes: 0 success, non-zero failure with a message.",
-      "Honour cancellation tokens for long-running CLI work.",
+      "Use top-level statements for small programs.",
+      "Move logic into classes once the program grows beyond a few lines.",
+      "Use IHost and dependency injection when the program needs services and configuration.",
     ],
     summary: [
-      "Console apps start at `Main`.",
-      "Top-level statements modernise the shape.",
-      "Exit codes are the contract with the shell.",
+      "A console application runs in the terminal.",
+      "Program.cs is the entry point.",
+      "It is great for small tools, scripts, and learning .NET.",
     ],
     codeExample: {
-      title: "Top-level statements",
+      title: "A simple console application that greets a user",
       code: `// Program.cs
-if (args.Length < 1)
+Console.Write("Enter your name: ");
+var name = Console.ReadLine();
+
+if (string.IsNullOrWhiteSpace(name))
 {
-    Console.Error.WriteLine("Usage: tool <path>");
-    return 1;
+    Console.WriteLine("No name provided");
+    return;
 }
 
-var path = args[0];
-Console.WriteLine($"Processing {path}...");
-return 0;`,
-      output: `> dotnet run -- input.csv
-Processing input.csv...
-(exit code 0)`,
+Console.WriteLine($"Welcome, {name}!");`,
+      output: "Enter your name: Ali\nWelcome, Ali!",
       walkthrough: [
-        "Top-level statements compile to a generated `Main`.",
-        "Returning an integer sets the process exit code.",
-        "`Console.Error` keeps usage/errors on stderr, separate from stdout.",
+        "Console.Write asks for input without a new line.",
+        "Console.ReadLine reads what the user types.",
+        "The program prints a friendly message and ends.",
       ],
     },
     practice: {
       prompt:
-        "Build a CLI that reads a file path from `args`, counts the lines, and prints the result. Exit non-zero if the file is missing.",
+        "Build a console app that asks for two numbers and prints their sum. If the input is not a number, print 'Invalid input' and exit.",
       expectedResult:
-        "`dotnet run -- file.txt` prints the count; `dotnet run -- missing.txt` exits 1 with an error.",
+        "Entering 3 and 4 prints 'Sum: 7'. Entering 'abc' prints 'Invalid input'.",
       hints: [
-        "Use `File.Exists` before reading.",
-        "Use `File.ReadLines` for memory efficiency.",
-        "Write the error to `Console.Error`.",
+        "Use Console.ReadLine to read input.",
+        "Use int.TryParse to safely convert the input.",
+        "Print the sum only when both inputs are valid.",
       ],
       solution:
-        "A tiny CLI that respects shell conventions — stdout for data, stderr for errors, exit codes for status.",
+        "Read both inputs with Console.ReadLine. Use int.TryParse to convert each one. If either fails, print 'Invalid input' and return. Otherwise, print the sum.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What does returning a non-zero exit code from `Main` communicate?",
+        question: "Where does a console application start?",
         options: [
-          "Nothing.",
-          "Failure — shell scripts and CI systems read the exit code to decide what to do next.",
-          "Memory usage.",
-          "The build mode.",
+          "In Startup.cs.",
+          "In Program.cs, either at the Main method or with top-level statements.",
+          "In appsettings.json.",
+          "In a controller.",
         ],
         correctAnswer:
-          "Failure — shell scripts and CI systems read the exit code to decide what to do next.",
-        explanation: "0 = success, non-zero = something went wrong. It is the universal Unix-style contract.",
+          "In Program.cs, either at the Main method or with top-level statements.",
+        explanation:
+          "Program.cs is the entry point for every .NET program.",
       },
       {
         kind: "code-reading",
         question:
-          "Why does the example use `Console.Error.WriteLine` instead of `Console.WriteLine` for the usage message?",
+          "What does this code do?\n```csharp\nvar name = Console.ReadLine();\nConsole.WriteLine($\"Hello, {name}!\");\n```",
         options: [
-          "Style.",
-          "It sends the message to stderr, keeping stdout clean for data so shell pipelines work correctly.",
-          "It is faster.",
-          "Stderr is the only option for errors in C#.",
+          "Reads a name from the console and prints a greeting.",
+          "Writes to a file.",
+          "Sends an email.",
+          "Starts a web server.",
         ],
         correctAnswer:
-          "It sends the message to stderr, keeping stdout clean for data so shell pipelines work correctly.",
-        explanation: "Separating streams is what makes Unix-style composition possible.",
+          "Reads a name from the console and prints a greeting.",
+        explanation:
+          "ReadLine reads input, WriteLine prints output to the console.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong?\n```csharp\nvar path = args[0];\n// crashes if args is empty\n```",
+          "What is wrong here?\n```csharp\nvar name = Console.ReadLine();\nConsole.WriteLine($\"Hello, {name.ToUpper()}!\");\n```",
         options: [
           "Nothing.",
-          "Reading `args[0]` without checking `args.Length` throws `IndexOutOfRangeException` when no argument is supplied.",
-          "`args` is read-only.",
-          "Variables cannot be assigned from `args`.",
+          "ReadLine can return null. Calling ToUpper on null will throw a NullReferenceException.",
+          "WriteLine needs a return value.",
+          "The string is too long.",
         ],
         correctAnswer:
-          "Reading `args[0]` without checking `args.Length` throws `IndexOutOfRangeException` when no argument is supplied.",
-        explanation: "Guard against missing input and surface a clear usage message.",
+          "ReadLine can return null. Calling ToUpper on null will throw a NullReferenceException.",
+        explanation:
+          "Always check the input before calling methods on it.",
       },
       {
         kind: "interview",
-        question: "When would you reach for `System.CommandLine` instead of parsing `args` by hand?",
+        question:
+          "Why are console apps useful in real .NET work?",
         options: [
-          "Never — manual parsing is preferred.",
-          "When the CLI has more than a couple of flags or sub-commands; the library handles parsing, help text, validation, and tab-completion uniformly.",
-          "Always.",
-          "Only for GUI apps.",
+          "They are required for every project.",
+          "They are great for small tools, migrations, schedulers, and as a quick way to test business logic before adding it to a larger application.",
+          "They run faster than web apps.",
+          "They do not need code.",
         ],
         correctAnswer:
-          "When the CLI has more than a couple of flags or sub-commands; the library handles parsing, help text, validation, and tab-completion uniformly.",
-        explanation: "Beyond a single positional arg, libraries save real work.",
+          "They are great for small tools, migrations, schedulers, and as a quick way to test business logic before adding it to a larger application.",
+        explanation:
+          "Many production tools are console applications because they are simple and easy to schedule.",
       },
     ],
   },
 
   "web-api-basics": {
     whyItMatters:
-      "Web APIs are the most common .NET service shape. Knowing what 'WebApplication' wires up and where the seams are is what lets you debug routing or DI issues.",
+      "A Web API is the main way .NET applications expose functionality to other systems. Mobile apps, frontends, partner services, and internal tools all talk to your application through Web APIs. Knowing how a Web API is built is one of the most useful skills in .NET.",
     simpleExplanation:
-      "A .NET Web API exposes HTTP endpoints. `WebApplication.CreateBuilder` produces a builder; you add services and middleware, then `Run()`.",
+      "A Web API is a .NET application that listens for HTTP requests and returns responses. It usually returns JSON. Other applications call its endpoints to read or change data.",
     deepExplanation:
-      "The minimal hosting model in .NET 6+ collapses startup into `Program.cs`. The builder configures DI, configuration, and logging; the `app` configures middleware and endpoints. `MapControllers` wires up `[ApiController]` classes; `MapGet` registers minimal-API endpoints. Both can coexist. Middleware order matters: auth before authorization before endpoints.",
+      "When a request arrives, ASP.NET Core routes it to a controller action. The action runs, returns a result, and the framework converts that result into an HTTP response. The Program.cs file configures services and the request pipeline. The controllers contain the endpoints. The services and repositories handle the business logic and data. This layered design is the foundation of every modern .NET Web API.",
     realWorldUsage:
-      "A `/orders` resource served by an `OrdersController`, fronted by routing, authentication, and exception-handling middleware.",
+      "An e-commerce backend exposes APIs for products, carts, orders, and payments. A banking application exposes APIs for accounts, transactions, and statements. A reporting service exposes APIs for downloading reports. In each case, the Web API is the contract between the system and its clients.",
     explainLikeBeginner:
-      "A web API is a program that waits for HTTP requests and answers them. Inside, it is the same C# you write anywhere — just hooked up to the network.",
+      "A Web API is like a restaurant kitchen with a window. Customers (other applications) place orders through the window. The kitchen prepares the food and hands it back. The customers never see the inside of the kitchen.",
     interviewAnswer:
-      "A .NET Web API is built around `WebApplication`. The builder configures services (DI, options, logging); the application configures middleware and routes endpoints. Controllers handle conventional MVC-style routing; minimal APIs offer concise endpoint definitions for small services.",
+      "A Web API is a .NET application that exposes HTTP endpoints for other systems to use. It is built with ASP.NET Core, uses controllers or minimal APIs to define endpoints, and usually returns JSON. Web APIs are the standard way to expose business functionality in .NET.",
     commonMistakes: [
-      "Calling `app.UseRouting` after `app.UseEndpoints` (legacy) or forgetting to register controllers entirely.",
-      "Mixing `app.UseAuthentication` after `MapControllers` — auth has no chance to run.",
-      "Treating `Program.cs` like a dumping ground for business logic.",
+      "Putting business logic in controllers instead of services.",
+      "Returning entities directly instead of DTOs.",
+      "Skipping validation and error handling.",
     ],
     bestPractices: [
-      "Group service registration into extension methods (`AddInfrastructure`, `AddDomain`).",
-      "Keep middleware order explicit and minimal.",
-      "Prefer `Microsoft.AspNetCore.OpenApi` for OpenAPI generation.",
+      "Keep controllers thin and move business logic into services.",
+      "Use DTOs for request and response shapes.",
+      "Add validation, error handling, and logging from the start.",
     ],
     summary: [
-      "Builder configures DI; application configures middleware and endpoints.",
-      "Middleware order matters.",
-      "Group registration into extension methods as the project grows.",
+      "A Web API listens for HTTP requests and returns responses.",
+      "ASP.NET Core is the framework used to build it.",
+      "Controllers expose endpoints; services do the work.",
     ],
     codeExample: {
-      title: "Minimal Program.cs",
+      title: "A minimal Web API that returns customer data",
       code: `var builder = WebApplication.CreateBuilder(args);
-
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
-builder.Services.AddScoped<IOrderRepository, EfOrderRepository>();
 
 var app = builder.Build();
-
-app.UseExceptionHandler("/error");
-app.UseAuthentication();
-app.UseAuthorization();
 app.MapControllers();
-app.MapOpenApi();
+app.Run();
 
-app.Run();`,
-      output: "Listening on http://localhost:5000 (and 5001 for HTTPS)",
+[ApiController]
+[Route("api/customers")]
+public class CustomersController : ControllerBase
+{
+    [HttpGet("{id}")]
+    public IActionResult GetById(int id)
+    {
+        return Ok(new { Id = id, Name = "Ali" });
+    }
+}`,
+      output: "GET /api/customers/1 returns { \"id\": 1, \"name\": \"Ali\" }",
       walkthrough: [
-        "Services registered before `Build()`.",
-        "Middleware ordered deliberately: errors → auth → endpoints.",
-        "`MapControllers` wires up every `[ApiController]` in the assembly.",
+        "Program.cs builds the host and starts the application.",
+        "CustomersController defines a GET endpoint.",
+        "ASP.NET Core converts the returned object into JSON automatically.",
       ],
     },
     practice: {
       prompt:
-        "Bootstrap a Web API with one `/health` minimal-API endpoint and one `WeatherController` with a `[HttpGet]` action. Confirm both routes via curl.",
+        "Create a simple Web API with a ProductsController. Add a GET endpoint that returns a list of three hard-coded products (each with Id, Name, and Price) as JSON.",
       expectedResult:
-        "Two endpoints, two routing styles, both reachable.",
+        "Calling GET /api/products returns a JSON array with three products.",
       hints: [
-        "Use `app.MapGet(\"/health\", () => \"OK\");`.",
-        "Add the controller class with `[ApiController, Route(\"weather\")]`.",
-        "Test both with curl.",
+        "Use [ApiController] and [Route(\"api/products\")] on the controller.",
+        "Use [HttpGet] on the action.",
+        "Return Ok(productsList).",
       ],
       solution:
-        "Minimal APIs and controllers coexist. The build-and-run loop is your daily routine.",
+        "Define a ProductsController with [ApiController] and [Route(\"api/products\")]. Add a [HttpGet] action that returns a list of three products via Ok(list). ASP.NET Core converts the list to JSON.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Which order is correct in `Program.cs` for a typical Web API?",
+        question: "What is a Web API in .NET?",
         options: [
-          "MapControllers → UseAuthentication → UseAuthorization.",
-          "UseAuthentication → UseAuthorization → MapControllers.",
-          "Order does not matter.",
-          "UseAuthorization → UseAuthentication → MapControllers.",
+          "A console program.",
+          "A .NET application that exposes HTTP endpoints for other systems to call, usually returning JSON.",
+          "A database.",
+          "A UI framework.",
         ],
         correctAnswer:
-          "UseAuthentication → UseAuthorization → MapControllers.",
-        explanation: "Authentication identifies; authorisation decides; the endpoint runs last.",
+          "A .NET application that exposes HTTP endpoints for other systems to call, usually returning JSON.",
+        explanation:
+          "Web APIs are the standard way to expose functionality over HTTP in .NET.",
       },
       {
         kind: "code-reading",
         question:
-          "What does `builder.Services.AddScoped<IOrderRepository, EfOrderRepository>()` configure?",
+          "What does this controller do?\n```csharp\n[HttpGet(\"{id}\")]\npublic IActionResult GetById(int id) => Ok(new { Id = id });\n```",
         options: [
-          "A singleton instance of the repository.",
-          "A new repository instance per HTTP request, resolved when `IOrderRepository` is requested.",
-          "A transient instance per call.",
-          "Nothing — it is illegal.",
+          "It deletes a record.",
+          "It handles GET requests at /api/.../{id} and returns a JSON object with the Id.",
+          "It runs once at startup.",
+          "It returns HTML.",
         ],
         correctAnswer:
-          "A new repository instance per HTTP request, resolved when `IOrderRepository` is requested.",
-        explanation: "Scoped is the right lifetime for repositories that own per-request state.",
+          "It handles GET requests at /api/.../{id} and returns a JSON object with the Id.",
+        explanation:
+          "The [HttpGet(\"{id}\")] attribute maps the URL to this action.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong?\n```csharp\napp.MapControllers();\napp.UseAuthentication();\n```",
+          "What is the issue here?\n```csharp\n[HttpGet]\npublic User GetUser(int id) => _db.Users.Find(id);\n```",
         options: [
-          "Nothing.",
-          "Authentication middleware is added after the endpoints are mapped, so it never runs for those requests.",
-          "`MapControllers` is illegal.",
-          "Authentication must be in the builder.",
+          "Nothing is wrong.",
+          "It returns the User entity directly, which can leak sensitive fields. It should return a DTO.",
+          "It is missing async.",
+          "The method is too short.",
         ],
         correctAnswer:
-          "Authentication middleware is added after the endpoints are mapped, so it never runs for those requests.",
-        explanation: "Middleware order is the contract; auth must precede endpoints.",
+          "It returns the User entity directly, which can leak sensitive fields. It should return a DTO.",
+        explanation:
+          "Web APIs should expose DTOs, not entities.",
       },
       {
         kind: "interview",
         question:
-          "Why split service registration into `AddInfrastructure`, `AddDomain` extension methods?",
+          "Describe the structure of a typical .NET Web API project.",
         options: [
-          "It is required.",
-          "It keeps `Program.cs` readable, groups related registrations together, and lets a feature module ship its own composition logic.",
-          "It is faster.",
-          "There is no reason.",
+          "Just one file with all the code.",
+          "Program.cs sets up the host. Controllers expose HTTP endpoints. Services contain business logic. Repositories handle data access. DTOs define the shape of requests and responses.",
+          "Only static methods.",
+          "A single class with hundreds of methods.",
         ],
         correctAnswer:
-          "It keeps `Program.cs` readable, groups related registrations together, and lets a feature module ship its own composition logic.",
-        explanation: "Composition-root hygiene becomes important quickly.",
+          "Program.cs sets up the host. Controllers expose HTTP endpoints. Services contain business logic. Repositories handle data access. DTOs define the shape of requests and responses.",
+        explanation:
+          "This is the standard layered design in modern .NET Web APIs.",
       },
     ],
   },
 
   controllers: {
     whyItMatters:
-      "Controllers are the front door to your API. Patterns you set here — routing, model binding, response shape — apply to every endpoint.",
+      "Controllers are the front door of your Web API. They receive HTTP requests, validate input, call the right service, and return a response. Clean controllers make the rest of the application easier to build and maintain.",
     simpleExplanation:
-      "A controller is a C# class with action methods. Each action handles one HTTP route + method combination.",
+      "A controller is a class that handles HTTP requests in ASP.NET Core. Each method (action) in the controller responds to a specific URL and HTTP method.",
     deepExplanation:
-      "Mark the class `[ApiController, Route(\"resource\")]`. Each action is `[HttpGet]`/`[HttpPost]`/etc. Action parameters bind from route, query, header, body, form, or services. `IActionResult` (or `ActionResult<T>`) lets you return any status code with a body. Keep controllers thin: parse the request, call the service, translate the result.",
+      "A controller class is decorated with [ApiController] and [Route]. Each action is decorated with an HTTP verb like [HttpGet], [HttpPost], [HttpPut], or [HttpDelete]. The framework reads the URL and HTTP method, matches them to an action, deserializes the request body into a DTO, and runs the action. The action returns an IActionResult (or ActionResult<T>), and ASP.NET Core converts it to an HTTP response.",
     realWorldUsage:
-      "`OrdersController` exposes `GET /orders/{id}`, `POST /orders`, `DELETE /orders/{id}`. Each action is 2-5 lines.",
+      "A CustomersController exposes CRUD endpoints for customers. An OrdersController handles creating and reading orders. An AuthController handles login and registration. Each controller is focused on one resource and uses services to do the actual work.",
     explainLikeBeginner:
-      "A controller is the menu at a restaurant. Each item on the menu is an action. You point at one, the kitchen (service) does the work.",
+      "A controller is like a receptionist in an office. The receptionist takes the call, checks who is calling and why, then connects you to the right person. The controller does the same — it takes the request and connects it to the right service.",
     interviewAnswer:
-      "Controllers are HTTP adapters. Each action binds the request, calls a service, and translates the result into an HTTP response. We keep them thin so the rules live in services and the HTTP layer is purely a translation step.",
+      "A controller in ASP.NET Core is a class that handles HTTP requests. Each action method responds to a specific URL and HTTP verb. The controller validates the request, calls a service, and returns a response. Controllers should stay thin and delegate the real work to services.",
     commonMistakes: [
-      "Putting business logic in action methods.",
-      "Returning entities instead of DTOs.",
-      "Forgetting `[ApiController]` and losing automatic ModelState validation.",
+      "Putting business logic inside the controller instead of a service.",
+      "Returning entities directly instead of DTOs.",
+      "Forgetting to inject dependencies through the constructor.",
     ],
     bestPractices: [
-      "One controller per resource.",
-      "Use `ActionResult<T>` for typed responses.",
-      "Centralise mapping; controllers only translate.",
+      "Keep controllers thin — receive, validate, delegate, respond.",
+      "Inject services through the constructor.",
+      "Return ActionResult<T> with the right status code.",
     ],
     summary: [
-      "Controllers are thin HTTP adapters.",
-      "`[ApiController]` enables automatic validation.",
-      "Push logic into services.",
+      "Controllers handle HTTP requests.",
+      "Each action maps to a URL and an HTTP verb.",
+      "Controllers should be thin and delegate to services.",
     ],
     codeExample: {
-      title: "Thin controller",
-      code: `[ApiController, Route("orders")]
-public class OrdersController : ControllerBase
+      title: "A CustomersController with two endpoints",
+      code: `[ApiController]
+[Route("api/customers")]
+public class CustomersController : ControllerBase
 {
-    private readonly IOrderService _orders;
-    public OrdersController(IOrderService orders) => _orders = orders;
+    private readonly ICustomerService _service;
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<OrderResponse>> Get(Guid id)
+    public CustomersController(ICustomerService service)
     {
-        var order = await _orders.GetAsync(id);
-        return order is null ? NotFound() : Ok(order);
+        _service = service;
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<CustomerResponse>> GetById(int id)
+    {
+        var customer = await _service.GetByIdAsync(id);
+        if (customer == null) return NotFound();
+        return Ok(customer);
     }
 
     [HttpPost]
-    public async Task<ActionResult<OrderResponse>> Create(CreateOrderRequest req)
+    public async Task<ActionResult<CustomerResponse>> Create(CreateCustomerRequest request)
     {
-        var created = await _orders.CreateAsync(req);
-        return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+        var created = await _service.CreateAsync(request);
+        return Ok(created);
     }
 }`,
-      output: "GET 200/404 • POST 201 with Location header • automatic 400 on bad payload.",
+      output: "GET /api/customers/1 returns 200 with the customer JSON or 404 if not found",
       walkthrough: [
-        "Each action is a small adapter, not a logic dumping ground.",
-        "Route constraint `{id:guid}` rejects malformed ids at routing time.",
-        "`CreatedAtAction` builds the canonical 201 + Location response.",
+        "The controller is registered at /api/customers via [Route].",
+        "[HttpGet(\"{id}\")] maps GET /api/customers/{id} to GetById.",
+        "The service is injected through the constructor.",
       ],
     },
     practice: {
       prompt:
-        "Build a `CustomersController` with all five CRUD actions. Verify each via curl and confirm the status codes match REST conventions.",
-      expectedResult: "Predictable status codes, DTOs at the boundary, services do the work.",
+        "Build an OrdersController with two endpoints: GET /api/orders/{id} that returns an order by id (or 404), and POST /api/orders that creates an order from a CreateOrderRequest.",
+      expectedResult:
+        "GET /api/orders/1 returns 200 with the order JSON. POST /api/orders with a valid body returns 200 with the new order.",
       hints: [
-        "Use `IActionResult` for delete (`NoContent`).",
-        "Use `ActionResult<T>` for typed reads.",
-        "Test the happy and unhappy paths.",
+        "Use [ApiController] and [Route(\"api/orders\")] on the class.",
+        "Inject IOrderService through the constructor.",
+        "Return NotFound() if the order does not exist.",
       ],
       solution:
-        "Five-action controller, three layers, one set of conventions. Replicating this shape across resources is the daily routine.",
+        "Create OrdersController with two actions. Inject IOrderService. The GET action calls GetByIdAsync; if null, return NotFound; else return Ok. The POST action calls CreateAsync and returns Ok with the result.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "What does `[ApiController]` add beyond plain `ControllerBase`?",
+        question: "What is the main job of a controller?",
         options: [
-          "Nothing.",
-          "Automatic ModelState validation (400 + ProblemDetails on invalid input), `[FromBody]` inference, and structured error responses by default.",
-          "Faster routing.",
-          "Database access.",
+          "To run business logic.",
+          "To handle HTTP requests, validate input, call a service, and return a response.",
+          "To access the database directly.",
+          "To configure dependency injection.",
         ],
         correctAnswer:
-          "Automatic ModelState validation (400 + ProblemDetails on invalid input), `[FromBody]` inference, and structured error responses by default.",
-        explanation: "`[ApiController]` is a convenience that bakes in best-practice behaviour for HTTP APIs.",
+          "To handle HTTP requests, validate input, call a service, and return a response.",
+        explanation:
+          "Controllers are the front door of the API and should delegate the real work to services.",
       },
       {
         kind: "code-reading",
         question:
-          "What does `Ok(order)` return when `order` is `null` (in the example)?",
+          "What URL does this action respond to?\n```csharp\n[Route(\"api/customers\")]\npublic class CustomersController : ControllerBase\n{\n    [HttpGet(\"{id}\")]\n    public IActionResult GetById(int id) { ... }\n}\n```",
         options: [
-          "200 OK with `null` body.",
-          "404 Not Found — the example never reaches `Ok(order)` if `order` is null; the ternary returns `NotFound()`.",
-          "500 Internal Server Error.",
-          "Nothing.",
+          "GET /customers",
+          "GET /api/customers/{id}",
+          "POST /api/customers/{id}",
+          "PUT /customers/{id}",
         ],
-        correctAnswer:
-          "404 Not Found — the example never reaches `Ok(order)` if `order` is null; the ternary returns `NotFound()`.",
-        explanation: "Read the control flow, not just the helper name.",
+        correctAnswer: "GET /api/customers/{id}",
+        explanation:
+          "The class route combines with the action route to form /api/customers/{id}, and [HttpGet] makes it a GET request.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong?\n```csharp\n[HttpGet]\npublic async Task<IActionResult> List([FromBody] ListQuery q) => Ok(await _service.ListAsync(q));\n```",
+          "What is wrong here?\n```csharp\n[HttpPost]\npublic IActionResult Create(CreateOrderRequest request)\n{\n    var order = new Order { CustomerId = request.CustomerId };\n    _db.Orders.Add(order);\n    _db.SaveChanges();\n    return Ok(order);\n}\n```",
         options: [
           "Nothing.",
-          "GET requests typically have no body; binding from body for a GET is unusual and many clients/proxies strip the payload.",
-          "`IActionResult` cannot be used here.",
-          "`async` is illegal.",
+          "The controller is doing data access and returning the entity. It should call a service and return a DTO.",
+          "The action needs to be async.",
+          "Order should be sealed.",
         ],
         correctAnswer:
-          "GET requests typically have no body; binding from body for a GET is unusual and many clients/proxies strip the payload.",
-        explanation: "Use `[FromQuery]` for GET filters; bodies belong to POST/PUT/PATCH.",
+          "The controller is doing data access and returning the entity. It should call a service and return a DTO.",
+        explanation:
+          "Controllers should be thin. Put the data access in a repository and the logic in a service.",
       },
       {
         kind: "interview",
         question:
-          "Why is a thin controller a good default?",
+          "What does a clean controller look like in a .NET project?",
         options: [
-          "Performance.",
-          "Because it keeps HTTP concerns separate from business rules — services are testable in isolation, and routing-time changes do not require reasoning about logic.",
-          "It is required.",
-          "There is no reason.",
+          "It does everything — validation, logic, data access, and response.",
+          "It receives the request, validates the DTO, calls a service, and returns a response DTO with the right status code.",
+          "It uses static methods.",
+          "It contains the database connection string.",
         ],
         correctAnswer:
-          "Because it keeps HTTP concerns separate from business rules — services are testable in isolation, and routing-time changes do not require reasoning about logic.",
-        explanation: "Layering pays off the first time you write a unit test for a service.",
+          "It receives the request, validates the DTO, calls a service, and returns a response DTO with the right status code.",
+        explanation:
+          "Thin controllers are easier to read, test, and maintain.",
       },
     ],
   },
 
   services: {
     whyItMatters:
-      "Services hold the business rules. Done well, they make controllers thin and tests fast. Done poorly, every controller becomes a god class.",
+      "Services are where the real business logic lives. Without them, your controllers grow large and tangled, and the same logic ends up copied across endpoints. Services keep your code organized and reusable.",
     simpleExplanation:
-      "A service is a C# class that contains business logic and is injected into controllers via DI.",
+      "A service is a class that contains business logic. It is used by controllers and other services to do real work, like creating an order, processing a payment, or sending an email.",
     deepExplanation:
-      "Service methods describe operations in domain language (`ConfirmOrderAsync`, `IssueRefundAsync`), not CRUD primitives. They orchestrate: load via a repository, mutate an entity, save, possibly publish an event. Keep them stateless beyond their injected dependencies; lifetime is usually scoped per request.",
+      "A service is usually registered in dependency injection as an implementation of an interface. The controller receives the interface through its constructor, calls the service to handle the request, and returns the result. The service may use repositories for data access and other services for related work. This structure makes each part testable in isolation.",
     realWorldUsage:
-      "`OrderService` exposes `ConfirmAsync(id)`. Internally it loads, calls `order.Confirm()`, saves, and emits an `OrderConfirmed` event.",
+      "OrderService creates and confirms orders. PaymentService talks to a payment gateway. EmailService sends notifications. InvoiceService generates and stores invoices. Each service has one job and depends only on what it needs through its constructor.",
     explainLikeBeginner:
-      "A service is the worker who actually does the task. The controller hands them the request; they do the work; they hand back a result.",
+      "A service is like a specialist worker in a company. The receptionist (controller) does not do the technical work — they pass the request to the right specialist. The specialist (service) handles the task and gives back the result.",
     interviewAnswer:
-      "A service holds business rules and orchestrates entities, repositories, and events. It is the seam where the domain meets infrastructure. Services are usually scoped per request, depend on abstractions, and expose methods named after operations.",
+      "A service in .NET is a class that contains business logic. It is registered in dependency injection and used by controllers. Services keep the controller thin and the business logic reusable. We follow the pattern: thin controllers, fat services.",
     commonMistakes: [
-      "Returning `IQueryable` from services — leaks ORM through the abstraction.",
-      "Letting services depend on `HttpContext` — couples them to the web layer.",
-      "Spreading the same orchestration across many services — duplication that drifts.",
+      "Putting business logic in controllers instead of services.",
+      "Making services depend on too many things at once.",
+      "Skipping interfaces and tying services directly to specific implementations.",
     ],
     bestPractices: [
-      "Name methods after operations, not CRUD shapes.",
-      "Depend only on abstractions in constructors.",
-      "Keep services focused; split when they grow beyond one cohesive responsibility.",
+      "Define an interface for each service and inject it.",
+      "Keep services focused on one area of the business.",
+      "Inject everything the service needs through the constructor.",
     ],
     summary: [
-      "Services are the home of business rules.",
-      "They orchestrate entities and infrastructure.",
-      "They never depend on HTTP types.",
+      "Services hold the business logic.",
+      "They are used by controllers and other services.",
+      "They are usually registered in dependency injection through an interface.",
     ],
     codeExample: {
-      title: "OrderService.ConfirmAsync",
+      title: "A simple OrderService that creates an order",
       code: `public interface IOrderService
 {
-    Task<OrderResponse> GetAsync(Guid id);
-    Task ConfirmAsync(Guid id);
+    Task<OrderResponse> CreateAsync(CreateOrderRequest request);
 }
 
-public sealed class OrderService(IOrderRepository repo, IEventPublisher events) : IOrderService
+public class OrderService : IOrderService
 {
-    public async Task<OrderResponse> GetAsync(Guid id) =>
-        (await repo.FindAsync(id) ?? throw new NotFoundException("Order", id.ToString()))
-            .ToResponse();
+    private readonly IOrderRepository _repository;
 
-    public async Task ConfirmAsync(Guid id)
+    public OrderService(IOrderRepository repository)
     {
-        var order = await repo.FindAsync(id) ?? throw new NotFoundException("Order", id.ToString());
-        order.Confirm();
-        await repo.SaveAsync(order);
-        await events.PublishAsync(new OrderConfirmed(order.Id));
+        _repository = repository;
+    }
+
+    public async Task<OrderResponse> CreateAsync(CreateOrderRequest request)
+    {
+        var order = new Order
+        {
+            CustomerId = request.CustomerId,
+            Status = "Pending",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _repository.AddAsync(order);
+
+        return new OrderResponse
+        {
+            Id = order.Id,
+            Status = order.Status,
+            Total = 0
+        };
     }
 }`,
-      output: "Service orchestrates load → mutate → save → publish, all in one method.",
+      output: "Service creates a new order and returns a response DTO.",
       walkthrough: [
-        "Methods named after operations, not CRUD.",
-        "Dependencies are abstractions injected via constructor.",
-        "Events let other parts of the system react without coupling.",
+        "IOrderService defines the contract of the service.",
+        "OrderService implements the contract and uses IOrderRepository to save the order.",
+        "It maps the request DTO into an entity and the entity into a response DTO.",
       ],
     },
     practice: {
       prompt:
-        "Refactor a controller that contains business logic into a thin controller + a service. Move every `if` and rule into the service; controller becomes 3-5 lines per action.",
-      expectedResult: "Controller shrinks; service can be unit-tested without the framework.",
+        "Define an IInvoiceService with a method GenerateAsync(int orderId). Implement InvoiceService that creates an Invoice based on the Order, stores it through an IInvoiceRepository, and returns an InvoiceResponse.",
+      expectedResult:
+        "Calling InvoiceService.GenerateAsync(1) creates and saves a new invoice based on order 1 and returns an InvoiceResponse with the generated invoice's Id and Total.",
       hints: [
-        "Start by writing a unit test for the new service.",
-        "Inject the service via constructor.",
-        "Use exceptions or result types to communicate failure.",
+        "Inject IInvoiceRepository and IOrderRepository through the constructor.",
+        "Load the order, calculate the total, and create the invoice.",
+        "Map the saved invoice into an InvoiceResponse before returning.",
       ],
       solution:
-        "After the refactor, services own the rules and are independently testable; controllers translate HTTP. The pattern scales.",
+        "Define IInvoiceService. In InvoiceService, inject the two repositories. Inside GenerateAsync, load the order, sum the totals, create a new Invoice, save it, and return an InvoiceResponse with the Id and Total.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Which is a domain-shaped service method name?",
+        question: "What is the main job of a service in .NET?",
         options: [
-          "`UpdateOrder(Order o)`",
-          "`ConfirmAsync(Guid orderId)`",
-          "`DoStuff()`",
-          "`Save(object x)`",
+          "To handle HTTP requests.",
+          "To contain business logic and coordinate work between repositories and other services.",
+          "To store database tables.",
+          "To run unit tests.",
         ],
-        correctAnswer: "`ConfirmAsync(Guid orderId)`",
-        explanation: "Names that describe the operation in domain language are stable as the implementation changes.",
+        correctAnswer:
+          "To contain business logic and coordinate work between repositories and other services.",
+        explanation:
+          "Services hold the real work of the application.",
       },
       {
         kind: "code-reading",
         question:
-          "Why does `OrderService` depend on `IOrderRepository` instead of `AppDbContext` directly?",
+          "In this constructor, what is happening?\n```csharp\npublic OrderService(IOrderRepository repository)\n{\n    _repository = repository;\n}\n```",
         options: [
-          "EF Core forbids it.",
-          "Depending on the abstraction lets the service be unit-tested with an in-memory implementation, and shields it from ORM choices.",
-          "Performance.",
-          "It is shorter to type.",
+          "Nothing.",
+          "Constructor injection: the DI container provides the IOrderRepository when OrderService is created.",
+          "It runs a database query.",
+          "It opens an HTTP connection.",
         ],
         correctAnswer:
-          "Depending on the abstraction lets the service be unit-tested with an in-memory implementation, and shields it from ORM choices.",
-        explanation: "Two implementations of one interface unlock fast tests.",
+          "Constructor injection: the DI container provides the IOrderRepository when OrderService is created.",
+        explanation:
+          "Constructor injection is the standard way to receive dependencies in .NET.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong?\n```csharp\npublic class OrderService { public OrderService(HttpContext ctx) { ... } }\n```",
+          "What is wrong with this service?\n```csharp\npublic class OrderService\n{\n    public Task CreateAsync()\n    {\n        using var db = new AppDbContext();\n        // ...\n    }\n}\n```",
         options: [
           "Nothing.",
-          "Depending on `HttpContext` couples a service to the web layer; it cannot be unit-tested without faking ASP.NET Core.",
-          "`HttpContext` is not real.",
-          "Services must not have constructors.",
+          "It creates the DbContext directly instead of receiving it through DI. This makes the service hard to test and breaks the layered design.",
+          "The method should be sync.",
+          "It is missing await.",
         ],
         correctAnswer:
-          "Depending on `HttpContext` couples a service to the web layer; it cannot be unit-tested without faking ASP.NET Core.",
-        explanation: "Pass the data you need explicitly via parameters or DTOs.",
+          "It creates the DbContext directly instead of receiving it through DI. This makes the service hard to test and breaks the layered design.",
+        explanation:
+          "Services should receive their dependencies through the constructor, not create them.",
       },
       {
         kind: "interview",
         question:
-          "How do you keep a service focused as it grows?",
+          "Why do we separate controllers and services?",
         options: [
-          "Add more methods.",
-          "Split it along cohesive responsibilities: when one service has two unrelated reasons to change, those are two services.",
-          "Never split.",
-          "Move logic to controllers.",
+          "Because the framework requires it.",
+          "Because controllers handle HTTP concerns, and services handle business logic. Keeping them separate makes each part easier to test, reuse, and change.",
+          "Because it is shorter to write.",
+          "Because it makes the application faster.",
         ],
         correctAnswer:
-          "Split it along cohesive responsibilities: when one service has two unrelated reasons to change, those are two services.",
-        explanation: "Single Responsibility Principle in everyday clothing.",
+          "Because controllers handle HTTP concerns, and services handle business logic. Keeping them separate makes each part easier to test, reuse, and change.",
+        explanation:
+          "Separation of concerns is one of the most valuable habits in .NET projects.",
       },
     ],
   },
 
   "dependency-injection": {
     whyItMatters:
-      "DI is how every .NET service gets the components it needs. Without understanding it, lifetimes and registration become magic.",
+      "Dependency injection is built into .NET. It is how services find their dependencies, how tests replace real services with fakes, and how the framework connects every part of the application. Knowing it well makes everything else easier.",
     simpleExplanation:
-      "Dependency Injection means the framework constructs your classes and supplies their dependencies via constructor parameters.",
+      "Dependency injection, or DI, is a way to give a class the things it needs from outside, instead of creating them inside. In .NET, the DI container creates the objects and passes the dependencies through the constructor.",
     deepExplanation:
-      "Three lifetimes: `Singleton` (one for the whole app), `Scoped` (one per request), `Transient` (one per resolution). Register in `Program.cs` via `builder.Services.Add{Lifetime}<TInterface, TImpl>()`. Lifetime mismatches (a singleton depending on a scoped service) are the most common bug — the singleton captures one scoped instance forever.",
+      "You register services with the DI container in Program.cs using methods like AddSingleton, AddScoped, or AddTransient. When a controller or another service is created, the container looks at the constructor, finds the matching services, and passes them in. Singleton means one instance for the whole application. Scoped means one instance per HTTP request. Transient means a new instance every time.",
     realWorldUsage:
-      "`OrderService` depends on `IOrderRepository`; `Program.cs` registers `AddScoped<IOrderRepository, EfOrderRepository>()`; the controller injects `IOrderService` and the container hands back a fully-constructed instance.",
+      "ICustomerService is registered as scoped because it uses the DbContext. IEmailSender is registered as singleton because it has no per-request state. ILogger<T> is provided by the framework automatically. Every service in a real .NET application receives its dependencies through DI.",
     explainLikeBeginner:
-      "DI is asking 'give me a tool' instead of building the tool yourself. The toolbox (container) hands it to you assembled.",
+      "Dependency injection is like a kitchen where ingredients are delivered to the chef. The chef does not run out to buy them — the storage room (the DI container) sends what is needed. The chef just cooks. The kitchen stays clean and focused.",
     interviewAnswer:
-      "Dependency Injection is the pattern of supplying a class's collaborators through its constructor instead of constructing them inside. In .NET, the built-in DI container resolves them based on registered lifetimes — singleton, scoped, transient — at the composition root.",
+      "Dependency injection is a way to provide a class with its dependencies from the outside, usually through the constructor. .NET has a built-in DI container, configured in Program.cs. The three main lifetimes are singleton, scoped, and transient. DI makes code easy to test, easy to change, and clearly organized.",
     commonMistakes: [
-      "Capturing a scoped service inside a singleton (lifetime mismatch).",
-      "Forgetting to register a service and seeing `Unable to resolve service for type X`.",
-      "Newing up dependencies inside a class, defeating the point of DI.",
+      "Injecting a scoped service into a singleton, which causes lifetime issues.",
+      "Creating dependencies manually with new instead of receiving them through DI.",
+      "Registering too many things as singletons, which can leak state across requests.",
     ],
     bestPractices: [
-      "Register dependencies in extension methods that live with the feature.",
-      "Use `AddScoped` as the default for repositories and services.",
-      "Use `IOptions<T>` for configuration instead of injecting `IConfiguration` widely.",
+      "Default to scoped for services that touch the database.",
+      "Use singleton only for stateless services or shared configuration.",
+      "Always inject through the constructor, not through properties.",
     ],
     summary: [
-      "DI supplies collaborators via constructor.",
-      "Three lifetimes: singleton, scoped, transient.",
-      "Lifetime mismatch is the classic bug.",
+      "DI gives a class its dependencies from outside.",
+      ".NET has a built-in DI container configured in Program.cs.",
+      "The three main lifetimes are singleton, scoped, and transient.",
     ],
     codeExample: {
-      title: "Three lifetimes",
-      code: `// Program.cs
-builder.Services.AddSingleton<IClock, SystemClock>();          // shared everywhere
-builder.Services.AddScoped<IOrderRepository, EfOrderRepository>(); // per request
-builder.Services.AddTransient<IEmailFormatter, EmailFormatter>(); // per call
+      title: "Registering and injecting services in Program.cs",
+      code: `var builder = WebApplication.CreateBuilder(args);
 
-// usage
-public class OrderService(IOrderRepository repo, IClock clock, IEmailFormatter fmt)
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+builder.Services.AddControllers();
+
+var app = builder.Build();
+app.MapControllers();
+app.Run();
+
+public class OrderService : IOrderService
 {
-    // ...
+    private readonly IOrderRepository _repository;
+    private readonly IEmailSender _email;
+
+    public OrderService(IOrderRepository repository, IEmailSender email)
+    {
+        _repository = repository;
+        _email = email;
+    }
 }`,
-      output: "Lifetimes resolved per the registration; constructor injection wires everything.",
+      output: "OrderService is created automatically with its dependencies",
       walkthrough: [
-        "`Singleton` for stateless services with no per-request data.",
-        "`Scoped` for things that hold a DbContext or per-request state.",
-        "`Transient` when a fresh instance is cheap and convenient.",
+        "Each service is registered with a lifetime: Scoped or Singleton.",
+        "OrderService declares its dependencies as constructor parameters.",
+        "The DI container builds the object graph and passes the right instances.",
       ],
     },
     practice: {
       prompt:
-        "Register `IClock`, `IOrderRepository`, `IOrderService` in `Program.cs` with appropriate lifetimes. Inject them into a controller and prove via a test that the registration works.",
+        "Register an IInvoiceService and an ICustomerRepository in Program.cs. Build an InvoiceService that depends on the repository through constructor injection. Make sure the controller receives the service through DI as well.",
       expectedResult:
-        "All dependencies resolve correctly; lifetime choices are deliberate.",
+        "When the InvoicesController is created, ASP.NET Core automatically creates an InvoiceService with a CustomerRepository injected into it.",
       hints: [
-        "Use `AddSingleton` for stateless utilities.",
-        "Use `AddScoped` for anything that touches a DbContext.",
-        "Test resolution with `services.BuildServiceProvider().GetRequiredService<...>()`.",
+        "Use builder.Services.AddScoped<IInvoiceService, InvoiceService>().",
+        "Use builder.Services.AddScoped<ICustomerRepository, CustomerRepository>().",
+        "Declare dependencies as constructor parameters.",
       ],
       solution:
-        "After registration, the container can hand any consumer a fully-wired graph. That is the value DI delivers.",
+        "Register both services as scoped. InvoiceService receives ICustomerRepository through its constructor. InvoicesController receives IInvoiceService through its constructor. The framework wires everything together.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Which lifetime fits a service that holds a `DbContext`?",
-        options: ["Singleton", "Scoped", "Transient", "It does not matter"],
-        correctAnswer: "Scoped",
-        explanation: "`DbContext` is scoped per request; services that depend on it must match.",
+        question: "What is dependency injection?",
+        options: [
+          "A way to make code run faster.",
+          "A way to give a class its dependencies from outside, usually through the constructor.",
+          "A way to write SQL queries.",
+          "A way to deploy applications.",
+        ],
+        correctAnswer:
+          "A way to give a class its dependencies from outside, usually through the constructor.",
+        explanation:
+          "DI is the standard way to organize dependencies in modern .NET.",
       },
       {
         kind: "code-reading",
         question:
-          "Why does `OrderService(IOrderRepository, IClock, IEmailFormatter)` work in the example?",
+          "What does this do?\n```csharp\nbuilder.Services.AddScoped<IOrderService, OrderService>();\n```",
         options: [
-          "Magic.",
-          "Each dependency is registered with the container; the framework resolves them by type when constructing `OrderService`.",
-          "C# auto-injects all classes.",
-          "The constructor has special syntax.",
+          "Creates one OrderService for the whole application.",
+          "Registers OrderService as the implementation of IOrderService, with one instance per HTTP request.",
+          "Disables OrderService.",
+          "Runs OrderService once at startup.",
         ],
         correctAnswer:
-          "Each dependency is registered with the container; the framework resolves them by type when constructing `OrderService`.",
-        explanation: "Constructor injection is the DI container's default pattern.",
+          "Registers OrderService as the implementation of IOrderService, with one instance per HTTP request.",
+        explanation:
+          "Scoped lifetime means one instance per request — perfect for services that use the DbContext.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What lifetime mismatch is this?\n```csharp\nbuilder.Services.AddSingleton<EmailService>();\n// EmailService depends on IOrderRepository (scoped)\n```",
+          "What is wrong here?\n```csharp\npublic class OrderService\n{\n    private readonly OrderRepository _repository = new();\n}\n```",
         options: [
-          "No mismatch.",
-          "A singleton captures the first scoped `IOrderRepository` resolution and reuses it forever — across all requests — corrupting per-request state.",
-          "`AddSingleton` is illegal.",
-          "Scoped and singleton are the same.",
+          "Nothing.",
+          "The service creates its own dependency instead of receiving it through DI. This makes it hard to test and breaks the layered design.",
+          "It uses too many fields.",
+          "It needs async.",
         ],
         correctAnswer:
-          "A singleton captures the first scoped `IOrderRepository` resolution and reuses it forever — across all requests — corrupting per-request state.",
-        explanation: "Either make `EmailService` scoped, or inject `IServiceScopeFactory` and create a scope on demand.",
+          "The service creates its own dependency instead of receiving it through DI. This makes it hard to test and breaks the layered design.",
+        explanation:
+          "Always receive dependencies through the constructor so the DI container can manage them.",
       },
       {
         kind: "interview",
-        question: "What is the composition root?",
+        question:
+          "What are the three service lifetimes in .NET DI?",
         options: [
-          "The first controller.",
-          "The place where the application's object graph is wired up — usually `Program.cs` and DI registration extension methods.",
-          "The database.",
-          "The static `Main`.",
+          "Static, dynamic, and async.",
+          "Singleton (one for the whole app), Scoped (one per HTTP request), and Transient (a new one every time).",
+          "Public, private, and internal.",
+          "Read, write, and execute.",
         ],
         correctAnswer:
-          "The place where the application's object graph is wired up — usually `Program.cs` and DI registration extension methods.",
-        explanation: "Wiring lives in one place; the rest of the code consumes the result.",
+          "Singleton (one for the whole app), Scoped (one per HTTP request), and Transient (a new one every time).",
+        explanation:
+          "Picking the right lifetime is one of the most important DI decisions.",
       },
     ],
   },
 
   configuration: {
     whyItMatters:
-      "Every environment needs different config. Doing this with `IConfiguration` and `IOptions<T>` is what keeps secrets out of code and lets the same binary run anywhere.",
+      "Configuration controls how your application behaves: which database, which keys, which URLs, which features are enabled. Without good configuration, you cannot run the same code safely in development, staging, and production.",
     simpleExplanation:
-      "Configuration is environment-specific values (connection strings, feature flags) loaded from sources like `appsettings.json`, environment variables, or Azure Key Vault.",
+      "Configuration is the set of values your application reads at startup, such as connection strings, API keys, and feature flags. In .NET, configuration usually comes from appsettings.json, environment variables, and user secrets.",
     deepExplanation:
-      "ASP.NET Core builds a hierarchical configuration from multiple sources, layered: `appsettings.json` → `appsettings.{Environment}.json` → environment variables → command-line args. The last source wins. Bind sections to strongly-typed POCOs via `services.Configure<MyOptions>(Configuration.GetSection(\"My\"))` and inject `IOptions<MyOptions>` rather than reading `IConfiguration` everywhere.",
+      "ASP.NET Core builds a layered configuration system. It reads from appsettings.json first, then appsettings.{Environment}.json (like appsettings.Development.json), then environment variables, then user secrets, and finally command-line arguments. Each layer can override the previous one. The IConfiguration service exposes these values to the rest of the application. The IOptions<T> pattern lets you bind strongly typed classes to configuration sections.",
     realWorldUsage:
-      "`ConnectionStrings:Default` lives in `appsettings.json` with a placeholder; production overrides it via an env var or Key Vault reference. The code reads it via `IConfiguration.GetConnectionString` once at startup.",
+      "Connection strings live in appsettings.{Environment}.json or environment variables. API keys live in user secrets during development and in a secret manager like Azure Key Vault in production. Feature flags and URLs live in appsettings.json. Each environment has its own values without changing the code.",
     explainLikeBeginner:
-      "Configuration is the set of dials on the outside of your program: change them, and the program behaves differently without rebuilding.",
+      "Configuration is like the settings on a phone. The same phone behaves differently in different places — silent at the office, loud at home, airplane mode on a flight. The .NET application is the same — different settings change how it runs without changing the code.",
     interviewAnswer:
-      "Configuration in .NET is a layered system that loads values from files, environment variables, and user secrets. We bind sections into strongly-typed POCOs via `IOptions<T>` and avoid passing `IConfiguration` deep into the code. Secrets live in environment-specific sources, not in committed files.",
+      "Configuration in .NET is a layered system that reads from appsettings.json, environment-specific files, environment variables, user secrets, and command-line arguments. We use IConfiguration or the IOptions pattern to access values. Sensitive values like API keys should never live in source control — they belong in user secrets or a key vault.",
     commonMistakes: [
-      "Hard-coding values in code 'temporarily'.",
-      "Committing real secrets to `appsettings.Production.json`.",
-      "Injecting `IConfiguration` everywhere and stringly-typing access.",
+      "Hardcoding values that should be configurable.",
+      "Committing secrets to source control.",
+      "Mixing development and production values in the same file.",
     ],
     bestPractices: [
-      "Define a POCO per logical config section.",
-      "Validate options at startup with `ValidateOnStart` / `ValidateDataAnnotations`.",
-      "Use user secrets in dev, env vars / Key Vault in prod.",
+      "Use appsettings.json for safe, environment-neutral defaults.",
+      "Use appsettings.{Environment}.json or environment variables for environment-specific values.",
+      "Use user secrets for development secrets and a secret manager for production.",
     ],
     summary: [
-      "Config is layered and overridable.",
-      "Bind to POCOs, inject `IOptions<T>`.",
-      "Secrets never live in the repo.",
+      "Configuration controls how the application behaves.",
+      ".NET reads from appsettings.json, environment variables, and user secrets.",
+      "Never commit secrets to source control.",
     ],
     codeExample: {
-      title: "Bind, validate, inject",
-      code: `public class EmailOptions
+      title: "Reading configuration with IOptions<T>",
+      code: `// appsettings.json
+// {
+//   "EmailSettings": {
+//     "FromAddress": "no-reply@example.com",
+//     "ApiKey": "<API_KEY>"
+//   }
+// }
+
+public class EmailSettings
 {
-    public required string Host { get; init; }
-    public int Port { get; init; } = 587;
-    public required string User { get; init; }
+    public string FromAddress { get; set; } = string.Empty;
+    public string ApiKey { get; set; } = string.Empty;
 }
 
-builder.Services
-    .AddOptions<EmailOptions>()
-    .Bind(builder.Configuration.GetSection("Email"))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
+// Program.cs
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
 
-public class EmailService(IOptions<EmailOptions> opts)
+public class EmailService
 {
-    private readonly EmailOptions _config = opts.Value;
+    private readonly EmailSettings _settings;
+
+    public EmailService(IOptions<EmailSettings> options)
+    {
+        _settings = options.Value;
+    }
 }`,
-      output: "Invalid config -> startup fails fast with a clear message.",
+      output: "EmailService reads its settings from configuration through IOptions.",
       walkthrough: [
-        "Bind the section to a POCO with required properties.",
-        "Validate at startup so misconfigurations never reach a request.",
-        "Inject `IOptions<EmailOptions>` for safe, typed access.",
+        "EmailSettings is a class that mirrors the configuration section.",
+        "Configure<EmailSettings> binds the section to the class.",
+        "The service receives IOptions<EmailSettings> and accesses _settings.Value.",
       ],
     },
     practice: {
       prompt:
-        "Add an `EmailOptions` section, bind it, validate it, and use it inside a service. Misconfigure on purpose and confirm the app refuses to start.",
+        "Create a class JwtSettings with Issuer, Audience, and SecretKey. Read the values from an 'Jwt' section in appsettings.json and inject the settings into a TokenService.",
       expectedResult:
-        "Valid config starts; invalid config fails at startup with a useful error.",
+        "TokenService receives an IOptions<JwtSettings> and can read Issuer, Audience, and SecretKey from configuration.",
       hints: [
-        "Use `[Required]` on `Host` and `User`.",
-        "Call `ValidateOnStart()`.",
-        "Try setting `Host` to an empty string.",
+        "Add a Jwt section to appsettings.json.",
+        "Use builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(\"Jwt\")).",
+        "Inject IOptions<JwtSettings> into TokenService.",
       ],
       solution:
-        "Fail-fast configuration validation means production never silently runs with broken settings.",
+        "Define JwtSettings as a simple class. Register it with Configure in Program.cs. Inject IOptions<JwtSettings> into TokenService and access options.Value.Issuer, options.Value.Audience, and options.Value.SecretKey.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Which configuration source typically wins in the default layering?",
+        question: "Where should sensitive configuration values like API keys live?",
         options: [
-          "`appsettings.json`",
-          "`appsettings.{Environment}.json`",
-          "Environment variables",
-          "Command-line arguments",
+          "In appsettings.json committed to source control.",
+          "In environment variables, user secrets during development, or a secret manager in production. Never in source control.",
+          "In the code as constants.",
+          "In the database.",
         ],
-        correctAnswer: "Command-line arguments",
-        explanation: "Default precedence: files → env-specific files → env vars → command line. The last source wins.",
+        correctAnswer:
+          "In environment variables, user secrets during development, or a secret manager in production. Never in source control.",
+        explanation:
+          "Secrets must stay out of the repository to prevent accidental exposure.",
       },
       {
         kind: "code-reading",
         question:
-          "What does `ValidateOnStart` add to the configuration?",
+          "What does this line do?\n```csharp\nbuilder.Services.Configure<EmailSettings>(builder.Configuration.GetSection(\"EmailSettings\"));\n```",
         options: [
-          "Nothing meaningful.",
-          "Runs validation when the host starts so misconfigurations fail immediately instead of when an `IOptions<T>` is first read.",
-          "Disables validation.",
-          "Logs each value.",
+          "Sends an email.",
+          "Binds the EmailSettings section of configuration to the EmailSettings class so it can be injected with IOptions.",
+          "Reads a database.",
+          "Sets a default password.",
         ],
         correctAnswer:
-          "Runs validation when the host starts so misconfigurations fail immediately instead of when an `IOptions<T>` is first read.",
-        explanation: "Fail fast at startup, not in the middle of serving a request.",
+          "Binds the EmailSettings section of configuration to the EmailSettings class so it can be injected with IOptions.",
+        explanation:
+          "The IOptions pattern makes configuration strongly typed and easy to inject.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong?\n```json\n// appsettings.Production.json\n{ \"ConnectionStrings\": { \"Default\": \"Server=...;Password=hunter2\" } }\n```",
+          "What is wrong here?\n```csharp\nbuilder.Services.AddSingleton(new EmailService(\"<API_KEY>\"));\n```",
         options: [
           "Nothing.",
-          "Production secrets are committed to source control — any contributor with repo access can read them.",
-          "JSON is not allowed.",
-          "`Default` is a reserved word.",
+          "The API key is hardcoded in the source. It should come from configuration, not be passed as a string in code.",
+          "EmailService should be sealed.",
+          "It needs await.",
         ],
         correctAnswer:
-          "Production secrets are committed to source control — any contributor with repo access can read them.",
-        explanation: "Use env vars, Key Vault, or another secret store; the JSON file should hold placeholders or non-secrets.",
+          "The API key is hardcoded in the source. It should come from configuration, not be passed as a string in code.",
+        explanation:
+          "Secrets and environment-specific values belong in configuration, not in source code.",
       },
       {
         kind: "interview",
         question:
-          "Why use `IOptions<T>` instead of reading `IConfiguration` directly inside a service?",
+          "How does configuration layering work in .NET?",
         options: [
-          "Style.",
-          "It binds once into a typed POCO at startup, makes the dependency on configuration explicit, and avoids stringly-typed access scattered through the code.",
-          "It is faster.",
-          "There is no reason.",
+          "Only one file is read.",
+          "Configuration is read from multiple sources in order — appsettings.json, environment-specific files, user secrets, environment variables, command-line arguments — and each layer overrides the previous one.",
+          "The compiler picks one source.",
+          "Configuration is hardcoded.",
         ],
         correctAnswer:
-          "It binds once into a typed POCO at startup, makes the dependency on configuration explicit, and avoids stringly-typed access scattered through the code.",
-        explanation: "Typed options are refactor-safe and discoverable.",
+          "Configuration is read from multiple sources in order — appsettings.json, environment-specific files, user secrets, environment variables, command-line arguments — and each layer overrides the previous one.",
+        explanation:
+          "Layering lets you keep defaults in source and override them per environment.",
       },
     ],
   },
 
   "middleware-basics": {
     whyItMatters:
-      "Middleware is the pipeline every request passes through. Knowing how to add, order, and short-circuit middleware is what lets you implement cross-cutting concerns cleanly.",
+      "Middleware is the pipeline through which every HTTP request flows. It handles authentication, logging, exception handling, CORS, and more. Knowing how middleware works lets you control what happens before and after every action.",
     simpleExplanation:
-      "Middleware is a function that takes an `HttpContext`, optionally calls the next middleware, and may modify the request or response.",
+      "Middleware is a piece of code that runs for every HTTP request. Each middleware can read the request, do something, and pass it to the next one in the pipeline.",
     deepExplanation:
-      "The pipeline is built in `Program.cs` with `app.Use...` calls. Each piece runs in order on the way in and reverse order on the way out. Built-in middleware handles authentication, authorisation, routing, error handling, CORS, response compression. Custom middleware is easy: an `async (context, next) => ...` lambda or a class with an `InvokeAsync` method.",
+      "In ASP.NET Core, middleware is configured in Program.cs after the app is built. The order matters. Each middleware decides whether to call the next one. Common built-in middleware includes UseAuthentication, UseAuthorization, UseRouting, UseExceptionHandler, and UseStaticFiles. You can also write custom middleware to log every request or to handle a specific concern.",
     realWorldUsage:
-      "A correlation-id middleware reads `X-Correlation-Id` or generates one, attaches it to `HttpContext.Items`, sets the response header, and invokes the next component.",
+      "Authentication middleware checks the JWT token on every request. Logging middleware records the URL and time. Exception handling middleware catches unhandled errors and returns a clean 500 response. CORS middleware lets the frontend call the API from a different domain.",
     explainLikeBeginner:
-      "Middleware is an assembly line. Each station can inspect or modify the package on the way through.",
+      "Middleware is like a row of checkpoints at a stadium. Each checkpoint does one job — bag check, ticket scan, security pat-down — and passes you to the next one. The .NET pipeline works the same way for every HTTP request.",
     interviewAnswer:
-      "Middleware is the request-pipeline abstraction in ASP.NET Core. Each component receives the `HttpContext`, can do work, and either calls `next` or short-circuits the response. Built-in middleware covers auth, routing, error handling; custom middleware handles cross-cutting concerns like correlation ids and structured logging.",
+      "Middleware is code that handles HTTP requests in a pipeline. Each middleware can run logic before and after calling the next one. ASP.NET Core includes built-in middleware for authentication, routing, static files, exception handling, and more. The order in Program.cs matters because each middleware affects the next.",
     commonMistakes: [
-      "Forgetting to call `await next()` and silently 200ing every request with an empty body.",
-      "Adding middleware after `MapControllers` and being surprised it never runs.",
-      "Writing the same logic across many controllers when middleware would centralise it.",
+      "Putting middleware in the wrong order, especially authentication before routing.",
+      "Forgetting to call next() so the pipeline stops unexpectedly.",
+      "Adding heavy work to middleware that runs on every request.",
     ],
     bestPractices: [
-      "Keep each piece focused on one concern.",
-      "Place middleware before endpoints in the pipeline.",
-      "For complex middleware, write a class with `InvokeAsync` for testability.",
+      "Put exception handling middleware first so it can catch errors from later middleware.",
+      "Put authentication before authorization.",
+      "Keep custom middleware focused on one concern.",
     ],
     summary: [
-      "Middleware = pipeline of `(context, next)` functions.",
-      "Order matters; place before endpoints.",
-      "Use it for cross-cutting concerns, not business logic.",
+      "Middleware runs for every HTTP request.",
+      "The order in Program.cs matters.",
+      "Common middleware handles authentication, logging, errors, and CORS.",
     ],
     codeExample: {
-      title: "Correlation-id middleware",
-      code: `app.Use(async (ctx, next) =>
+      title: "A simple logging middleware",
+      code: `var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+app.Use(async (context, next) =>
 {
-    var id = ctx.Request.Headers["X-Correlation-Id"].FirstOrDefault()
-        ?? Guid.NewGuid().ToString("N");
-    ctx.Items["CorrelationId"] = id;
-    ctx.Response.Headers["X-Correlation-Id"] = id;
+    Console.WriteLine($"--> {context.Request.Method} {context.Request.Path}");
     await next();
-});`,
-      output: "Every response includes X-Correlation-Id, traceable in logs.",
+    Console.WriteLine($"<-- {context.Response.StatusCode}");
+});
+
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();`,
+      output: "--> GET /api/customers/1\n<-- 200",
       walkthrough: [
-        "Reads or generates an id.",
-        "Stores it in `HttpContext.Items` for downstream code.",
-        "Calls `next()` so the rest of the pipeline runs.",
+        "app.Use registers a custom middleware that runs for every request.",
+        "It logs the request method and path before calling next().",
+        "After next() returns, it logs the response status code.",
       ],
     },
     practice: {
       prompt:
-        "Write a middleware that logs every request's method, path, status code, and elapsed milliseconds. Use `ILogger`. Confirm via a sample run that every request produces a log line.",
+        "Write a custom middleware that measures how long each request takes. Log the time in milliseconds after the response is sent.",
       expectedResult:
-        "Logs show method/path/status/ms for every request, including errors.",
+        "For every request, the middleware logs a line like 'GET /api/customers/1 took 42ms'.",
       hints: [
-        "Use `Stopwatch.StartNew()`.",
-        "Wrap `next()` in `try`/`finally` so timing is always logged.",
-        "Log structured fields for searching.",
+        "Use a System.Diagnostics.Stopwatch.",
+        "Start the stopwatch before calling next().",
+        "Stop the stopwatch and log the elapsed milliseconds after next() returns.",
       ],
       solution:
-        "A focused middleware adds observability with one file. Centralising the pattern beats scattering log lines across controllers.",
+        "Inside app.Use, create a Stopwatch, call Start(), then await next(), then Stop() and log the elapsed milliseconds with Console.WriteLine.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "What does omitting `await next()` in a middleware cause?",
+        question: "What is middleware in ASP.NET Core?",
         options: [
-          "Nothing.",
-          "The pipeline short-circuits at that middleware — subsequent middleware and the endpoint never run.",
-          "An exception.",
-          "A 500 error.",
+          "A type of controller.",
+          "Code that runs for every HTTP request, in a pipeline configured in Program.cs.",
+          "A database driver.",
+          "A test framework.",
         ],
         correctAnswer:
-          "The pipeline short-circuits at that middleware — subsequent middleware and the endpoint never run.",
-        explanation: "Forgetting `next` is the easiest middleware bug to make — silent and total.",
+          "Code that runs for every HTTP request, in a pipeline configured in Program.cs.",
+        explanation:
+          "Middleware sits in the request pipeline and handles cross-cutting concerns.",
       },
       {
         kind: "code-reading",
         question:
-          "What does `ctx.Items[\"CorrelationId\"] = id` enable?",
+          "What does this code do?\n```csharp\napp.Use(async (context, next) =>\n{\n    Console.WriteLine(context.Request.Path);\n    await next();\n});\n```",
         options: [
-          "Nothing.",
-          "Downstream middleware and the action can read the id via `HttpContext.Items` to enrich logs or pass it to outbound calls.",
-          "Database storage.",
-          "Authentication.",
+          "Stops every request.",
+          "Logs the path of every request and then passes the request to the next middleware.",
+          "Sends an email.",
+          "Creates a database row.",
         ],
         correctAnswer:
-          "Downstream middleware and the action can read the id via `HttpContext.Items` to enrich logs or pass it to outbound calls.",
-        explanation: "`Items` is a per-request bag for cross-component metadata.",
+          "Logs the path of every request and then passes the request to the next middleware.",
+        explanation:
+          "Custom middleware uses app.Use with a delegate and calls next() to continue the pipeline.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong?\n```csharp\napp.MapControllers();\napp.Use(async (ctx, next) => { /* logging */ await next(); });\n```",
+          "What is wrong here?\n```csharp\napp.UseAuthorization();\napp.UseAuthentication();\napp.MapControllers();\n```",
         options: [
           "Nothing.",
-          "The logging middleware is added after `MapControllers`, so it never runs for controller endpoints.",
-          "Logging cannot be in middleware.",
-          "`MapControllers` is illegal.",
+          "UseAuthentication must come before UseAuthorization. Otherwise the request is authorized before the user is even identified.",
+          "MapControllers is missing.",
+          "It is missing logging.",
         ],
         correctAnswer:
-          "The logging middleware is added after `MapControllers`, so it never runs for controller endpoints.",
-        explanation: "Place middleware before endpoint mapping for it to participate in the pipeline.",
+          "UseAuthentication must come before UseAuthorization. Otherwise the request is authorized before the user is even identified.",
+        explanation:
+          "Middleware order matters. Authentication identifies the user; authorization decides if they have access.",
       },
       {
         kind: "interview",
         question:
-          "When would you prefer a middleware class with `InvokeAsync` over a lambda?",
+          "How would you describe the middleware pipeline?",
         options: [
-          "Style.",
-          "When the middleware has dependencies (loggers, services) it should obtain via constructor injection, or when the logic is large enough to warrant testing in isolation.",
-          "Lambdas are illegal.",
-          "Classes are faster.",
+          "It runs once at startup.",
+          "It is the chain of middleware components that every HTTP request passes through. Each component can read the request, run logic, call the next component, and run more logic on the way back.",
+          "It only runs for errors.",
+          "It is part of the database.",
         ],
         correctAnswer:
-          "When the middleware has dependencies (loggers, services) it should obtain via constructor injection, or when the logic is large enough to warrant testing in isolation.",
-        explanation: "Classes give DI and unit-testability for non-trivial middleware.",
+          "It is the chain of middleware components that every HTTP request passes through. Each component can read the request, run logic, call the next component, and run more logic on the way back.",
+        explanation:
+          "This is the standard way HTTP requests are processed in ASP.NET Core.",
       },
     ],
   },
 
   "simple-dotnet-web-api-example": {
     whyItMatters:
-      "Putting the pieces together — controller, service, repository, DTO, DI, middleware — in one small example makes the relationships concrete.",
+      "Putting everything together — controllers, services, DI, configuration, and middleware — is the real test of understanding the framework. A small working example shows you how all the parts fit and gives you a template you can reuse in any project.",
     simpleExplanation:
-      "A simple Web API exposes an endpoint that hands a request to a service, which uses a repository, and returns a DTO.",
+      "A simple .NET Web API combines a controller, a service, a request DTO, a response DTO, and dependency injection in Program.cs. Together, they handle one feature from start to finish.",
     deepExplanation:
-      "The smallest version of a production-grade API: `Program.cs` registers DI; `OrdersController` exposes endpoints; `OrderService` enforces rules; `IOrderRepository` abstracts storage; DTOs at the boundary; middleware for cross-cutting concerns. Each piece is small, named after its job, and replaceable.",
+      "Program.cs builds the host, registers services, configures middleware, and starts the application. The controller receives the HTTP request, deserializes it into a request DTO, validates it, and calls a service. The service does the business logic and returns a response DTO. ASP.NET Core converts the DTO to JSON and sends it back to the client. This is the standard pattern used by almost every .NET Web API.",
     realWorldUsage:
-      "A small `/orders` service with `GET /orders/{id}` and `POST /orders` is essentially this skeleton scaled up.",
+      "A small bookkeeping API has a TransactionsController with GET and POST endpoints, a TransactionService for the logic, and DTOs for the API contract. A small employee API has an EmployeesController, an EmployeeService, an IEmployeeRepository, and DTOs. The structure is the same in every project.",
     explainLikeBeginner:
-      "Think of a tiny pizza shop: the customer (client) places an order (POST), the cashier (controller) hands it to the kitchen (service), the kitchen pulls supplies from the pantry (repository), and a receipt (DTO) comes back.",
+      "A simple Web API is like a small bakery. The counter (controller) takes orders. The kitchen (service) bakes the goods. The recipe book (configuration) lists the ingredients. The bag (response DTO) carries the items to the customer.",
     interviewAnswer:
-      "A canonical small Web API has a thin controller, a service with the rules, a repository abstraction, DTOs at the boundary, and DI wiring it all together. Even at 100 lines, the layout scales to thousands without restructuring.",
+      "A simple .NET Web API has a controller, a service, DTOs, and registered services in DI. Program.cs builds the host, the controller handles HTTP, the service handles logic, and DTOs shape the data. This layered design is the standard structure used in real .NET projects.",
     commonMistakes: [
-      "Mixing the layers in a hurry and losing the separation.",
-      "Skipping the repository so the service ends up coupled to the ORM.",
-      "Returning entities and discovering the contract is too coupled to the schema later.",
+      "Skipping the service layer and writing everything in the controller.",
+      "Returning entities directly.",
+      "Forgetting to register services in Program.cs.",
     ],
     bestPractices: [
-      "Start with the layout from day one; it costs nothing.",
-      "Add a unit test for the service before adding more endpoints.",
-      "Keep the composition root in `Program.cs` concise.",
+      "Start with a single feature end to end before scaling up.",
+      "Keep each file focused on one job.",
+      "Use DTOs at the edges and entities only inside the application.",
     ],
     summary: [
-      "Controller → service → repository → entity.",
-      "DTOs at the boundary, DI wiring everything.",
-      "The layout scales without refactoring.",
+      "A small example shows how every part of the framework fits together.",
+      "Program.cs, controller, service, repository, and DTOs each play a role.",
+      "This is the foundation of every .NET Web API.",
     ],
     codeExample: {
-      title: "End-to-end orders API",
+      title: "A small Web API with one feature end to end",
       code: `// Program.cs
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
-builder.Services.AddScoped<IOrderRepository, EfOrderRepository>();
-builder.Services.AddScoped<IOrderService, OrderService>();
-builder.Services.AddDbContext<AppDbContext>(o =>
-    o.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+
 var app = builder.Build();
-app.UseExceptionHandler("/error");
+app.UseAuthorization();
 app.MapControllers();
 app.Run();
 
-// OrdersController.cs
-[ApiController, Route("orders")]
-public class OrdersController(IOrderService orders) : ControllerBase
+// CreateCustomerRequest.cs
+public class CreateCustomerRequest
 {
-    [HttpPost]
-    public async Task<ActionResult<OrderResponse>> Create(CreateOrderRequest req)
+    [Required] public string Name { get; set; } = string.Empty;
+    [Required, EmailAddress] public string Email { get; set; } = string.Empty;
+}
+
+// CustomerResponse.cs
+public class CustomerResponse
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
+// CustomerService.cs
+public interface ICustomerService
+{
+    Task<CustomerResponse> CreateAsync(CreateCustomerRequest request);
+}
+
+public class CustomerService : ICustomerService
+{
+    public Task<CustomerResponse> CreateAsync(CreateCustomerRequest request)
     {
-        var created = await orders.CreateAsync(req);
-        return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+        var response = new CustomerResponse { Id = 1, Name = request.Name };
+        return Task.FromResult(response);
     }
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<OrderResponse>> Get(Guid id) =>
-        Ok(await orders.GetAsync(id));
+}
+
+// CustomersController.cs
+[ApiController]
+[Route("api/customers")]
+public class CustomersController : ControllerBase
+{
+    private readonly ICustomerService _service;
+    public CustomersController(ICustomerService service) => _service = service;
+
+    [HttpPost]
+    public async Task<ActionResult<CustomerResponse>> Create(CreateCustomerRequest request)
+    {
+        var created = await _service.CreateAsync(request);
+        return Ok(created);
+    }
 }`,
-      output: `POST /orders   201 Created   Location: /orders/8f3...
-GET  /orders/8f3...   200 OK   {"id":"8f3...","status":"Pending","total":42.5}`,
+      output: "POST /api/customers returns 200 with the created customer",
       walkthrough: [
-        "DI configured once in `Program.cs`.",
-        "Controller is two short actions.",
-        "Service + repository are testable independently of HTTP.",
+        "Program.cs registers controllers and the service.",
+        "The controller receives the request DTO and calls the service.",
+        "The service returns a response DTO, and the framework serializes it as JSON.",
       ],
     },
     practice: {
       prompt:
-        "Clone this skeleton for `/products`: controller, service, repository, DTOs, DI. Run it locally and confirm the CRUD endpoints work end-to-end via curl.",
-      expectedResult: "Same shape, different resource. The layout is internalised.",
+        "Build a small Products feature end to end: a CreateProductRequest, a ProductResponse, an IProductService and ProductService implementation, and a ProductsController with one POST and one GET action. Register everything in Program.cs.",
+      expectedResult:
+        "POST /api/products creates a product and returns it. GET /api/products/{id} returns the product with the matching id or 404.",
       hints: [
-        "Copy the existing structure and rename.",
-        "Verify with curl for all five HTTP methods.",
-        "Add a unit test for one service method.",
+        "Use [ApiController] and [Route(\"api/products\")] on the controller.",
+        "Register IProductService with AddScoped in Program.cs.",
+        "Return NotFound() when the product is not found.",
       ],
       solution:
-        "Repeating the pattern across resources is how you internalise it. Each new feature lands in a predictable place.",
+        "Create the four files, register the service, and wire the controller. The POST action calls CreateAsync and returns Ok with the response. The GET action calls GetByIdAsync and returns NotFound or Ok.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Which layer enforces business rules in the canonical small Web API?",
+        question: "Which files are usually involved in a simple feature end to end?",
         options: [
-          "The controller.",
-          "The service.",
-          "The repository.",
-          "Middleware.",
+          "Just Program.cs.",
+          "Program.cs, a controller, a service, and request and response DTOs.",
+          "Only the database.",
+          "Only the README.",
         ],
-        correctAnswer: "The service.",
-        explanation: "Controllers translate HTTP; services hold the rules.",
+        correctAnswer:
+          "Program.cs, a controller, a service, and request and response DTOs.",
+        explanation:
+          "This is the standard structure of a single feature in a .NET Web API.",
       },
       {
         kind: "code-reading",
         question:
-          "Where does the example wire `IOrderRepository` to `EfOrderRepository`?",
+          "What does this Program.cs line do?\n```csharp\nbuilder.Services.AddScoped<ICustomerService, CustomerService>();\n```",
         options: [
-          "In the controller.",
-          "In `Program.cs` via `AddScoped<IOrderRepository, EfOrderRepository>()`.",
-          "In `OrderService`.",
-          "Nowhere; DI auto-discovers it.",
+          "Registers CustomerService as the implementation of ICustomerService, with a new instance per HTTP request.",
+          "Runs CustomerService once.",
+          "Sends a customer to the database.",
+          "Configures middleware.",
         ],
         correctAnswer:
-          "In `Program.cs` via `AddScoped<IOrderRepository, EfOrderRepository>()`.",
-        explanation: "The composition root is the only place that knows both sides.",
+          "Registers CustomerService as the implementation of ICustomerService, with a new instance per HTTP request.",
+        explanation:
+          "AddScoped is the most common lifetime for services that do per-request work.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong?\n```csharp\n[HttpPost]\npublic async Task<IActionResult> Create(CreateOrderRequest req)\n{\n    var order = new Order(Guid.NewGuid(), req.CustomerId);\n    _db.Orders.Add(order);\n    await _db.SaveChangesAsync();\n    return Ok(order);\n}\n```",
+          "What would be wrong if the controller did this?\n```csharp\n[HttpPost]\npublic IActionResult Create(CreateCustomerRequest request)\n{\n    var service = new CustomerService();\n    return Ok(service.Create(request));\n}\n```",
         options: [
           "Nothing.",
-          "Controller touches `DbContext` directly, returns the entity instead of a DTO, and uses 200 instead of 201.",
-          "`Add` does not exist.",
-          "`Guid.NewGuid` is illegal.",
+          "The controller creates the service manually instead of using dependency injection. This breaks DI and makes the controller hard to test.",
+          "It is missing await.",
+          "It returns the wrong status code.",
         ],
         correctAnswer:
-          "Controller touches `DbContext` directly, returns the entity instead of a DTO, and uses 200 instead of 201.",
-        explanation: "Refactor through the service and DTO; layering pays off the first time the schema changes.",
+          "The controller creates the service manually instead of using dependency injection. This breaks DI and makes the controller hard to test.",
+        explanation:
+          "Always receive services through constructor injection.",
       },
       {
         kind: "interview",
         question:
-          "Why is the small-API layout still worth adopting even for a single-feature project?",
+          "Describe the flow of one request in a small .NET Web API.",
         options: [
-          "It is required.",
-          "The cost of the layout is tiny and the pay-off is immediate: services unit-testable, repositories swappable, contracts stable. Skipping it tends to become a 'we'll refactor later' that never lands.",
-          "It is faster.",
-          "There is no benefit.",
+          "The request goes straight to the database.",
+          "Program.cs sets up everything. The request hits the controller, which validates the request DTO and calls the service. The service does the work and returns a response DTO, which is serialized to JSON and sent back.",
+          "Everything happens in the controller.",
+          "The service handles HTTP directly.",
         ],
         correctAnswer:
-          "The cost of the layout is tiny and the pay-off is immediate: services unit-testable, repositories swappable, contracts stable. Skipping it tends to become a 'we'll refactor later' that never lands.",
-        explanation: "Get the layering right early; it compounds.",
+          "Program.cs sets up everything. The request hits the controller, which validates the request DTO and calls the service. The service does the work and returns a response DTO, which is serialized to JSON and sent back.",
+        explanation:
+          "This layered flow is the foundation of every modern .NET Web API.",
       },
     ],
   },

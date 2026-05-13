@@ -11,7 +11,7 @@ const lessons = [
     moduleTitle: "Object-Oriented Programming",
     moduleSlug: "object-oriented-programming",
     slug: "encapsulation",
-    difficulty: "Beginner" as const,
+    difficulty: "Foundational" as const,
     duration: "16 min",
   },
   {
@@ -21,7 +21,7 @@ const lessons = [
     moduleTitle: "Git Basics",
     moduleSlug: "git-basics",
     slug: "branch",
-    difficulty: "Beginner" as const,
+    difficulty: "Foundational" as const,
     duration: "12 min",
   },
 ];

@@ -1,4 +1,4 @@
-export type Difficulty = "Beginner" | "Junior" | "Intermediate";
+export type Difficulty = "Foundational" | "Practical" | "Intermediate";
 
 export type CodeLanguage =
   | "csharp"

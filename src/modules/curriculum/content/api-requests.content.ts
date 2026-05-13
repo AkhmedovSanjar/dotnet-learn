@@ -3,1332 +3,1402 @@ import type { ModuleContent } from "./types";
 export const apiRequestsContent: ModuleContent = {
   "client-server-communication": {
     whyItMatters:
-      "Almost every bug a junior backend dev investigates is some form of 'the client and the server disagreed'. Understanding the request/response cycle is how you stop guessing.",
+      "Most modern .NET applications talk to other systems through HTTP. The client sends a request, the server returns a response. Understanding this conversation is the foundation of every API you will build or call.",
     simpleExplanation:
-      "A client sends a request over HTTP. The server reads it, decides what to do, and sends back a response. That round-trip is the entire conversation.",
+      "Client-server communication means one program (the client) sends a request to another program (the server), and the server sends back a response. In .NET, this usually happens over HTTP.",
     deepExplanation:
-      "Every HTTP exchange has the same shape: method + path + headers + body in the request; status + headers + body in the response. The wire format is text (with optional binary bodies), which is why curl can speak it directly. ASP.NET Core models the request as `HttpContext.Request` and the response as `HttpContext.Response`; the controller is a higher-level wrapper, but those primitives are what is actually on the wire.",
+      "Every HTTP exchange has two parts. The request includes a method, a URL, headers, and an optional body. The response includes a status code, headers, and an optional body. The client opens a connection, sends the request, waits for the response, and then closes the connection. ASP.NET Core handles the server side. HttpClient handles the client side.",
     realWorldUsage:
-      "A browser POSTs JSON to `/api/orders`, your service deserialises it, persists an order, and returns 201 with the created resource. Every endpoint you write is one round-trip.",
+      "A mobile app calls your Web API to load a list of products. A scheduled job calls a payment provider to refund a transaction. A microservice calls another microservice to fetch user data. In each case, one side is the client and the other side is the server.",
     explainLikeBeginner:
-      "It is like asking a question and getting an answer. The client asks; the server answers. Each side speaks the same language (HTTP).",
+      "Client-server communication is like ordering at a counter. You ask for a coffee (request). The barista makes it and hands it over (response). When you stop asking, the barista stops serving.",
     interviewAnswer:
-      "Client-server communication over HTTP is a stateless request/response cycle. The client sends a method, path, headers, and optional body; the server responds with a status, headers, and body. Statelessness means each request must carry everything it needs to be understood — there is no implicit session unless we add one.",
+      "Client-server communication is how applications talk over a network. The client sends a request and the server replies with a response, usually over HTTP. In .NET, ASP.NET Core handles the server, and HttpClient handles the client.",
     commonMistakes: [
-      "Assuming the server can remember the previous request without a session or token.",
-      "Confusing status code 200 with 'no error': the body may still describe a domain failure.",
-      "Forgetting that HTTP is stateless — each request must authenticate itself.",
+      "Creating a new HttpClient for every call, which can exhaust connections.",
+      "Ignoring the response status code.",
+      "Not handling network errors and timeouts.",
     ],
     bestPractices: [
-      "Treat the request as the only source of truth for what the server must do.",
-      "Be explicit about state: cookies, tokens, or headers — but never silent assumptions.",
-      "Log enough of the request (method, path, status) to reconstruct a failing call.",
+      "Use IHttpClientFactory to manage HttpClient lifetime.",
+      "Always check the status code before reading the body.",
+      "Handle network errors and add retries for transient failures.",
     ],
     summary: [
-      "HTTP is request → response, nothing more.",
-      "Both sides have method/path/headers/body and status/headers/body.",
-      "Statelessness forces every request to be self-contained.",
+      "Client sends a request. Server sends a response.",
+      "HTTP is the protocol used most often in .NET.",
+      "Both sides must agree on the contract — URL, method, headers, and body.",
     ],
     codeExample: {
-      title: "A round trip from curl to controller",
-      code: `# curl
-curl -X POST http://localhost:5000/api/orders \\
-  -H "Content-Type: application/json" \\
-  -d '{"customerId":"...","lines":[{"sku":"A","quantity":1}]}'
+      title: "A simple HTTP GET from a .NET client",
+      code: `using var client = new HttpClient();
+var response = await client.GetAsync("https://api.example.com/products/1");
 
-// minimal controller
-[HttpPost]
-public async Task<IActionResult> Create(CreateOrderRequest req)
+if (!response.IsSuccessStatusCode)
 {
-    var id = await _orders.CreateAsync(req);
-    return Created($"/api/orders/{id}", new { id });
-}`,
-      output: `HTTP/1.1 201 Created
-Location: /api/orders/8f3...
-Content-Type: application/json
-{"id":"8f3..."}`,
+    Console.WriteLine($"Request failed: {response.StatusCode}");
+    return;
+}
+
+var body = await response.Content.ReadAsStringAsync();
+Console.WriteLine(body);`,
+      output: "{ \"id\": 1, \"name\": \"Laptop\", \"price\": 1200 }",
       walkthrough: [
-        "Client sends method (POST), path, content-type, body.",
-        "Server runs the matching action, persists, returns 201.",
-        "Status, Location header, and body are all part of the response contract.",
+        "HttpClient is the .NET tool for sending HTTP requests.",
+        "GetAsync sends a GET request and waits for the response.",
+        "The code checks the status code before reading the body.",
       ],
     },
     practice: {
       prompt:
-        "Hit `GET /weatherforecast` (the default ASP.NET template endpoint) with curl. Inspect the response: status code, content-type header, body. Then POST to a non-existent endpoint and observe the 404 response.",
-      expectedResult: "You can describe every part of both responses without guessing.",
+        "Write a console program that calls https://api.example.com/users/1 and prints the response body. If the status code is not 200, print the status code instead.",
+      expectedResult:
+        "On success, the program prints the JSON response. On failure, it prints something like 'Request failed: 404'.",
       hints: [
-        "Use `curl -v` to see headers.",
-        "Use a tool like Postman or VS Code REST Client to save the exchange.",
-        "Inspect the response in the Network tab of your browser dev tools.",
+        "Use HttpClient and GetAsync.",
+        "Use IsSuccessStatusCode to check the response.",
+        "Use ReadAsStringAsync to read the body.",
       ],
       solution:
-        "200 with `application/json` body for the GET; 404 (often with a ProblemDetails body in `[ApiController]`-decorated apps) for the bad path. The shape is identical regardless of endpoint.",
+        "Create an HttpClient, call GetAsync on the URL, check IsSuccessStatusCode. If true, read the body with ReadAsStringAsync and print it. If false, print the StatusCode.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What does HTTP being 'stateless' mean for a backend developer?",
+        question: "Which statement best describes client-server communication?",
         options: [
-          "The server cannot return any state in responses.",
-          "Each request must carry the information needed to authorise and process it; the server does not remember previous requests unless we add explicit state.",
-          "The server has no memory at all.",
-          "Statelessness only applies to GET requests.",
+          "Two programs share memory directly.",
+          "One program sends a request over the network, and another program sends a response back.",
+          "The client owns the server.",
+          "Both sides must run on the same machine.",
         ],
         correctAnswer:
-          "Each request must carry the information needed to authorise and process it; the server does not remember previous requests unless we add explicit state.",
+          "One program sends a request over the network, and another program sends a response back.",
         explanation:
-          "State (cookies, tokens, sessions) must be carried by the client or stored on the server explicitly — never assumed.",
+          "This is the basic shape of every HTTP exchange.",
       },
       {
         kind: "code-reading",
         question:
-          "Given the curl command in the example, which HTTP method does the server receive?",
-        options: ["GET", "POST", "PUT", "DELETE"],
-        correctAnswer: "POST",
-        explanation: "`-X POST` sets the method; the body is sent as JSON.",
+          "What does this code do?\n```csharp\nvar response = await client.GetAsync(url);\nvar body = await response.Content.ReadAsStringAsync();\n```",
+        options: [
+          "Sends a POST request.",
+          "Sends a GET request to the URL and reads the response body as a string.",
+          "Reads a local file.",
+          "Writes to a database.",
+        ],
+        correctAnswer:
+          "Sends a GET request to the URL and reads the response body as a string.",
+        explanation:
+          "GetAsync sends the request, ReadAsStringAsync reads the response body.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this server-side reasoning?\n```csharp\npublic IActionResult Get()\n{\n    // 'this is the second request from the user, so they must be authenticated'\n    return Ok(_user.Profile);\n}\n```",
+          "What is wrong here?\n```csharp\nfor (var i = 0; i < 1000; i++)\n{\n    using var client = new HttpClient();\n    await client.GetAsync(url);\n}\n```",
         options: [
           "Nothing.",
-          "It assumes state across requests; HTTP is stateless, so 'second request' is meaningless without a token, cookie, or session.",
-          "`Ok` cannot return profile data.",
-          "`Get` should be `Post`.",
+          "Creating a new HttpClient for every call can exhaust network connections. Use IHttpClientFactory instead.",
+          "It needs more threads.",
+          "It is missing a return type.",
         ],
         correctAnswer:
-          "It assumes state across requests; HTTP is stateless, so 'second request' is meaningless without a token, cookie, or session.",
+          "Creating a new HttpClient for every call can exhaust network connections. Use IHttpClientFactory instead.",
         explanation:
-          "Identity must come from the request — `Authorization` header, cookie, etc. — not from inferred ordering.",
+          "HttpClient is meant to be reused. IHttpClientFactory manages its lifetime safely.",
       },
       {
         kind: "interview",
         question:
-          "How would you describe HTTP to a non-technical stakeholder?",
+          "How would you describe an HTTP request in an interview?",
         options: [
-          "A programming language for web browsers.",
-          "A simple ask-and-answer protocol: the client makes a request, the server replies; both sides speak the same agreed format.",
-          "A type of database.",
-          "A JavaScript library.",
+          "A file on disk.",
+          "A message with a method, a URL, headers, and an optional body, sent from a client to a server. The server replies with a status code, headers, and an optional body.",
+          "A database query.",
+          "A type of variable.",
         ],
         correctAnswer:
-          "A simple ask-and-answer protocol: the client makes a request, the server replies; both sides speak the same agreed format.",
+          "A message with a method, a URL, headers, and an optional body, sent from a client to a server. The server replies with a status code, headers, and an optional body.",
         explanation:
-          "Keep the analogy concrete and stay away from jargon — that is what stakeholders need.",
+          "This is the standard description of an HTTP exchange.",
       },
     ],
   },
 
   "http-methods": {
     whyItMatters:
-      "Pick the wrong method and your endpoint behaves correctly but plays badly with caches, proxies, retries, and CSRF protection. The method is part of the contract.",
+      "HTTP methods describe what the client wants to do. Using the right method makes the API clear and predictable. The wrong method confuses clients, breaks caching, and can even cause real damage like deleting data with a GET request.",
     simpleExplanation:
-      "HTTP methods describe intent: GET reads, POST creates, PUT replaces, PATCH updates, DELETE removes.",
+      "HTTP methods are the verbs used in a request. The most common are GET (read), POST (create), PUT (replace), PATCH (update part), and DELETE (remove).",
     deepExplanation:
-      "Two properties matter beyond intent. Safety: GET, HEAD, OPTIONS must not change state — a proxy can call them freely. Idempotency: PUT and DELETE called twice should have the same effect as once. POST is neither safe nor idempotent. Choosing methods deliberately means your API plays well with retries, caches, and any infrastructure that treats methods as semantic hints.",
+      "GET reads data and should not change anything on the server. POST creates a new resource. PUT replaces an entire resource. PATCH updates part of a resource. DELETE removes a resource. Following these conventions makes your API match REST and lets tools like browsers, proxies, and gateways behave correctly. ASP.NET Core controllers use [HttpGet], [HttpPost], [HttpPut], [HttpPatch], and [HttpDelete] to map actions to the right method.",
     realWorldUsage:
-      "`GET /orders/{id}` reads. `POST /orders` creates and returns 201 + Location. `PUT /orders/{id}` replaces the order with the supplied body. `PATCH /orders/{id}` applies a partial update. `DELETE /orders/{id}` removes.",
+      "GET /api/products lists products. POST /api/products creates one. PUT /api/products/1 replaces product 1 with a new version. PATCH /api/products/1 updates only some fields. DELETE /api/products/1 removes product 1. Every modern .NET API follows this pattern.",
     explainLikeBeginner:
-      "The method is the verb. 'I want to read' = GET. 'I want to add' = POST. 'I want to remove' = DELETE.",
+      "HTTP methods are like asking a librarian different questions. GET is 'can I look at this book?'. POST is 'I have a new book to add'. PUT is 'replace this book with a new edition'. DELETE is 'please remove this book'.",
     interviewAnswer:
-      "HTTP methods communicate intent and carry contract properties: GET is safe, PUT and DELETE are idempotent, POST is neither. Choosing the right method aligns the endpoint with what proxies, retries, and tooling expect.",
+      "HTTP methods describe the action of a request. GET reads. POST creates. PUT replaces. PATCH partially updates. DELETE removes. Using the right method makes the API match REST conventions and helps clients, proxies, and tools work correctly.",
     commonMistakes: [
-      "Using POST for everything, including reads — caches and CDNs ignore the response.",
-      "Making GET mutate state — proxies and prefetchers will fire it without consent.",
-      "Treating PUT and PATCH as interchangeable.",
+      "Using GET to change data.",
+      "Using POST for everything regardless of the action.",
+      "Confusing PUT (replace) with PATCH (partial update).",
     ],
     bestPractices: [
-      "Use the method that matches the operation's semantics.",
-      "Keep GET safe; never mutate state inside one.",
-      "Document whether PUT replaces fully or partially (use PATCH for partial).",
+      "Use the right method for the right action.",
+      "Keep GET safe — it must not change the server state.",
+      "Return the right status code for each method (200 for GET, 201 for POST creation, 204 for DELETE).",
     ],
     summary: [
-      "GET reads, POST creates, PUT replaces, PATCH partial-updates, DELETE removes.",
-      "Safety and idempotency are first-class properties.",
-      "The method is a contract, not a label.",
+      "GET reads. POST creates. PUT replaces. PATCH partially updates. DELETE removes.",
+      "ASP.NET Core uses [HttpGet], [HttpPost], etc. to map methods.",
+      "Using the right method makes the API clear and predictable.",
     ],
     codeExample: {
-      title: "Five methods on a resource",
-      code: `[ApiController, Route("orders")]
-public class OrdersController : ControllerBase
+      title: "A controller with all five HTTP methods",
+      code: `[ApiController]
+[Route("api/products")]
+public class ProductsController : ControllerBase
 {
-    [HttpGet("{id:guid}")]    public Task<ActionResult<OrderResponse>> Get(Guid id) => /* read */;
-    [HttpPost]                public Task<ActionResult<OrderResponse>> Create(CreateOrderRequest r) => /* create */;
-    [HttpPut("{id:guid}")]    public Task<IActionResult> Replace(Guid id, ReplaceOrderRequest r) => /* full replace */;
-    [HttpPatch("{id:guid}")]  public Task<IActionResult> Patch(Guid id, PatchOrderRequest r) => /* partial */;
-    [HttpDelete("{id:guid}")] public Task<IActionResult> Delete(Guid id) => /* remove */;
+    [HttpGet]
+    public IActionResult List() => Ok();
+
+    [HttpGet("{id}")]
+    public IActionResult GetById(int id) => Ok();
+
+    [HttpPost]
+    public IActionResult Create(CreateProductRequest request) => Ok();
+
+    [HttpPut("{id}")]
+    public IActionResult Replace(int id, ReplaceProductRequest request) => Ok();
+
+    [HttpPatch("{id}")]
+    public IActionResult Update(int id, UpdateProductRequest request) => Ok();
+
+    [HttpDelete("{id}")]
+    public IActionResult Delete(int id) => NoContent();
 }`,
-      output: "(five distinct routes, each matching the HTTP method to its purpose)",
+      output: "A controller that supports the full CRUD lifecycle.",
       walkthrough: [
-        "Each attribute pins the method to one action.",
-        "PUT replaces the whole resource; PATCH updates the fields supplied.",
-        "DELETE returns 204 on success; GET returns 200 with body; POST returns 201.",
+        "Each [Http...] attribute maps an HTTP method to a controller action.",
+        "The route pattern includes {id} for actions that target a single resource.",
+        "DELETE typically returns 204 No Content to indicate success.",
       ],
     },
     practice: {
       prompt:
-        "On a `/customers` resource implement all five methods. Verify that GET is safe (calling it twice never changes data) and that DELETE is idempotent (calling it twice yields the same end state).",
-      expectedResult: "Each method behaves as the contract demands.",
+        "Add five actions to an OrdersController, one for each HTTP method (GET list, GET by id, POST create, PUT replace, DELETE). Use the right attributes and return the right status codes.",
+      expectedResult:
+        "GET /api/orders returns 200 with a list. POST /api/orders returns 200 with the created order. DELETE /api/orders/1 returns 204.",
       hints: [
-        "Capture before/after state for GET.",
-        "DELETE twice should yield 204 then 204 (or 404 depending on convention).",
-        "Test PUT replaces and PATCH does not.",
+        "Use [HttpGet], [HttpGet(\"{id}\")], [HttpPost], [HttpPut(\"{id}\")], and [HttpDelete(\"{id}\")].",
+        "Return Ok for GET and POST.",
+        "Return NoContent for DELETE.",
       ],
       solution:
-        "After verification you can articulate the contract for each method, not just the syntax. That difference is what an interview is checking for.",
+        "Define an OrdersController with five actions and the matching attributes. Each action returns the right status code for the operation.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Which methods are idempotent according to the HTTP spec?",
-        options: ["GET, POST, DELETE", "GET, PUT, DELETE", "POST, PATCH", "All of them"],
-        correctAnswer: "GET, PUT, DELETE",
+        question: "Which HTTP method should you use to create a new resource?",
+        options: ["GET", "POST", "PUT", "DELETE"],
+        correctAnswer: "POST",
         explanation:
-          "GET is safe and idempotent; PUT and DELETE are idempotent. POST and PATCH are generally not.",
+          "POST is used to create new resources on the server.",
       },
       {
         kind: "code-reading",
         question:
-          "What status code does the example's POST action typically return for a successful create?",
-        options: ["200 OK", "201 Created", "204 No Content", "202 Accepted"],
-        correctAnswer: "201 Created",
+          "What does this attribute do?\n```csharp\n[HttpDelete(\"{id}\")]\npublic IActionResult Delete(int id) { ... }\n```",
+        options: [
+          "Maps GET requests.",
+          "Maps DELETE requests at /api/.../{id} to this action.",
+          "Reads from the database.",
+          "Configures logging.",
+        ],
+        correctAnswer:
+          "Maps DELETE requests at /api/.../{id} to this action.",
         explanation:
-          "Resource creation returns 201 with a Location header pointing at the new resource.",
+          "[HttpDelete(\"{id}\")] tells the framework this action handles DELETE for a specific id.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this endpoint?\n```csharp\n[HttpGet(\"orders/{id}/cancel\")]\npublic IActionResult Cancel(Guid id) { _orders.Cancel(id); return Ok(); }\n```",
+          "Why is this dangerous?\n```csharp\n[HttpGet(\"delete/{id}\")]\npublic IActionResult Delete(int id) { ... }\n```",
         options: [
           "Nothing.",
-          "It uses GET to mutate state — prefetchers, link previews, and proxies may call this URL without consent.",
-          "`Cancel` should be `async`.",
-          "The route is wrong.",
+          "It uses GET to delete a resource. GET should not change data — a crawler or a browser could trigger deletes by accident.",
+          "It has too many parameters.",
+          "It uses the wrong status code.",
         ],
         correctAnswer:
-          "It uses GET to mutate state — prefetchers, link previews, and proxies may call this URL without consent.",
+          "It uses GET to delete a resource. GET should not change data — a crawler or a browser could trigger deletes by accident.",
         explanation:
-          "Use POST or DELETE for actions that change state; GET must be safe.",
+          "Use DELETE for delete operations, not GET.",
       },
       {
         kind: "interview",
-        question: "Why is the difference between PUT and PATCH worth caring about?",
+        question:
+          "What is the difference between PUT and PATCH?",
         options: [
-          "There is no real difference.",
-          "PUT semantically replaces the entire resource with the supplied body; PATCH applies a partial update. Mixing them leads to silently lost fields on PUT or rejected requests on PATCH.",
-          "PATCH is faster.",
-          "PUT is older.",
+          "They are the same.",
+          "PUT replaces the entire resource with a new version. PATCH updates only the fields included in the request.",
+          "PUT is faster.",
+          "PATCH is only for partial deletes.",
         ],
         correctAnswer:
-          "PUT semantically replaces the entire resource with the supplied body; PATCH applies a partial update. Mixing them leads to silently lost fields on PUT or rejected requests on PATCH.",
+          "PUT replaces the entire resource with a new version. PATCH updates only the fields included in the request.",
         explanation:
-          "Pick one per endpoint and document the contract. JSON Patch or JSON Merge Patch formalise PATCH bodies.",
+          "Pick the right method based on whether the client sends the full new resource or just the changed parts.",
       },
     ],
   },
 
   headers: {
     whyItMatters:
-      "Headers carry the meta-information that turns a blob of bytes into a meaningful request: who is calling, what format the body uses, what the caller will accept back.",
+      "Headers carry the metadata of every HTTP request and response. They control authentication, content type, caching, language, and more. Without the right headers, requests fail or behave in confusing ways.",
     simpleExplanation:
-      "Headers are key-value pairs attached to a request or response. They describe content, authorisation, caching, tracing, and more.",
+      "Headers are key-value pairs sent with every HTTP request and response. They describe the request, the response, or the connection — but not the data itself.",
     deepExplanation:
-      'A handful of headers matter most as a junior. `Content-Type` says how to parse the body. `Accept` says what the client will accept back. `Authorization` carries a token. `Cache-Control` controls caching. `Idempotency-Key` lets clients retry safely. Custom `X-*` headers carry app-specific metadata. ASP.NET Core exposes them as `Request.Headers["..."]`, and `[FromHeader]` binds them onto action parameters.',
+      "Each header has a name and a value. Common request headers include Authorization (carries the token), Content-Type (describes the body format), and Accept (says what the client wants back). Common response headers include Content-Type, Set-Cookie, and Cache-Control. In .NET, HttpClient lets you read and write headers, and ASP.NET Core exposes them through HttpContext.Request.Headers and HttpContext.Response.Headers.",
     realWorldUsage:
-      "An API consumer sends `Authorization: Bearer eyJhbGc...` and `Content-Type: application/json`. The server validates the token, parses the JSON, and returns `Content-Type: application/json` with the response body.",
+      "Authentication uses the Authorization header to carry a JWT token. APIs return Content-Type: application/json on responses. Caching uses ETag and Cache-Control headers. CORS uses Access-Control-Allow-Origin. Every real .NET API depends on headers to work correctly.",
     explainLikeBeginner:
-      "Headers are the labels on a package: who it is from, how to open it, where it is going. The contents are in the body.",
+      "Headers are like the labels on an envelope. The letter inside is the body. The labels say who the letter is for, who sent it, and how it should be handled. Without the labels, the post office cannot do its job.",
     interviewAnswer:
-      "Headers carry meta-information about a request or response — content negotiation, authentication, caching, tracing. Many infrastructure pieces (proxies, gateways, CDNs) decide what to do based on headers alone, so getting them right is as important as the body.",
+      "HTTP headers are key-value pairs that carry metadata about a request or response — authentication, content type, caching, language, and more. In .NET, we use HttpClient to set request headers and ASP.NET Core to read them from HttpContext.Request.Headers.",
     commonMistakes: [
-      "Reading headers case-sensitively — HTTP headers are case-insensitive.",
-      "Forgetting `Content-Type` and being surprised when JSON binding fails.",
-      "Putting credentials in the URL instead of the `Authorization` header (they end up in logs).",
+      "Forgetting to set Content-Type when sending JSON.",
+      "Storing secrets in headers but not encrypting them in transit.",
+      "Using custom headers without documenting them clearly.",
     ],
     bestPractices: [
-      "Use `[FromHeader(Name = \"X-Idempotency-Key\")]` to bind headers explicitly.",
-      "Treat `Authorization` as the only secret-bearing header; never log it raw.",
-      "Set `Cache-Control` deliberately on responses that should not be cached.",
+      "Always set Content-Type when sending a body.",
+      "Use the Authorization header for tokens, never the URL.",
+      "Document custom headers in your API spec.",
     ],
     summary: [
-      "Headers describe; the body carries data.",
-      "Content negotiation, auth, caching all live in headers.",
-      "Bind headers explicitly with `[FromHeader]` for clarity.",
+      "Headers carry metadata about a request or response.",
+      "Common ones are Authorization, Content-Type, and Accept.",
+      "In .NET, both client and server can read and write headers.",
     ],
     codeExample: {
-      title: "Reading a custom header",
-      code: `[HttpPost]
-public async Task<IActionResult> Create(
-    CreateOrderRequest req,
-    [FromHeader(Name = "X-Idempotency-Key")] string? idempotencyKey)
-{
-    if (string.IsNullOrWhiteSpace(idempotencyKey))
-        return BadRequest("X-Idempotency-Key required.");
+      title: "Setting and reading HTTP headers",
+      code: `// Client side
+using var client = new HttpClient();
+client.DefaultRequestHeaders.Add("Authorization", "Bearer <TOKEN>");
+client.DefaultRequestHeaders.Add("Accept", "application/json");
+var response = await client.GetAsync("https://api.example.com/me");
 
-    var id = await _orders.CreateAsync(req, idempotencyKey);
-    return Created($"/orders/{id}", new { id });
+// Server side
+[HttpGet("me")]
+public IActionResult Me()
+{
+    var auth = Request.Headers["Authorization"].ToString();
+    return Ok(new { auth });
 }`,
-      output: `POST /orders   with X-Idempotency-Key: abc-123   ->   201 Created
-POST /orders   without that header               ->   400 Bad Request`,
+      output: "{ \"auth\": \"Bearer <TOKEN>\" }",
       walkthrough: [
-        "`[FromHeader]` binds the header into a parameter.",
-        "Missing header → explicit 400, not a NullReferenceException later.",
-        "Header-driven idempotency is a common pattern for safe retries.",
+        "On the client, DefaultRequestHeaders sets headers for every request.",
+        "Authorization carries the token.",
+        "On the server, Request.Headers gives you the incoming headers.",
       ],
     },
     practice: {
       prompt:
-        "Add `X-Correlation-Id` support: read it from the request via `[FromHeader]`, generate one if missing, store it in `HttpContext.Items`, and echo it back on the response.",
+        "Write a client call that sends a GET to /api/secure-data with an Authorization: Bearer <TOKEN> header and an Accept: application/json header. Print the response.",
       expectedResult:
-        "Every request has a correlation id you can grep in logs across services.",
+        "The server receives the request with both headers and returns the secure data.",
       hints: [
-        "Use middleware to set the response header before the body is written.",
-        "Generate with `Guid.NewGuid().ToString(\"N\")`.",
-        "Test with curl `-H \"X-Correlation-Id: 123\"` and without it.",
+        "Use HttpClient.DefaultRequestHeaders.Add to set headers.",
+        "Or set the headers per request via HttpRequestMessage.",
+        "Replace <TOKEN> with a real token in your environment.",
       ],
       solution:
-        "Middleware reads or generates the id, attaches it to logs and response headers. Distributed tracing becomes possible with a one-file change.",
+        "Set DefaultRequestHeaders.Add for Authorization and Accept on the HttpClient. Then call GetAsync on the URL. Read and print the response body.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Which header tells the server how to parse the request body?",
-        options: ["Accept", "Authorization", "Content-Type", "Cache-Control"],
-        correctAnswer: "Content-Type",
+        question: "What do HTTP headers carry?",
+        options: [
+          "The full body of the request.",
+          "Metadata about the request or response, like Authorization, Content-Type, and Accept.",
+          "Database connection strings.",
+          "File contents.",
+        ],
+        correctAnswer:
+          "Metadata about the request or response, like Authorization, Content-Type, and Accept.",
         explanation:
-          "`Content-Type` says what the body is. `Accept` says what the client will accept back. Both matter, but only `Content-Type` answers this question.",
+          "Headers carry information about the request, not the actual data.",
       },
       {
         kind: "code-reading",
         question:
-          "Given `[FromHeader(Name = \"X-Idempotency-Key\")] string? idempotencyKey`, what is the value when the client omits the header?",
+          "What does this header do?\n`Authorization: Bearer eyJhbGciOiJIUzI1Ni...`",
         options: [
-          "An empty string.",
-          "`null`.",
-          "A 400 Bad Request is returned automatically.",
-          "A random Guid.",
+          "Sends the request as XML.",
+          "Carries a JWT token so the server can identify the user.",
+          "Sets the language.",
+          "Caches the response.",
         ],
-        correctAnswer: "`null`.",
+        correctAnswer:
+          "Carries a JWT token so the server can identify the user.",
         explanation:
-          "Optional headers bind to `null` (or the type's default). Make the policy explicit yourself, as the example does.",
+          "The Authorization header with a Bearer token is the standard way to authenticate API calls.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong here?\n```csharp\nvar token = Request.Headers[\"AUTHORIZATION\"].ToString();\n```",
+          "Why is this risky?\n`GET /api/data?token=secret123`",
         options: [
-          "Headers are case-insensitive, so this works, but using the casing `\"Authorization\"` is the convention; the real bug is logging or returning `token` could leak credentials.",
           "Nothing.",
-          "`Request.Headers` cannot be indexed.",
-          "`.ToString()` is illegal here.",
+          "Tokens in the URL are logged by servers and proxies. They should be sent in the Authorization header instead.",
+          "URLs must be shorter.",
+          "GET cannot have parameters.",
         ],
         correctAnswer:
-          "Headers are case-insensitive, so this works, but using the casing `\"Authorization\"` is the convention; the real bug is logging or returning `token` could leak credentials.",
+          "Tokens in the URL are logged by servers and proxies. They should be sent in the Authorization header instead.",
         explanation:
-          "The code reads correctly, but credentials must never appear in logs or telemetry.",
+          "Sensitive values like tokens belong in headers, not URLs.",
       },
       {
         kind: "interview",
         question:
-          "Why prefer `[FromHeader]` binding over reading `Request.Headers` directly?",
+          "Which headers are most common in real .NET APIs?",
         options: [
-          "It is faster.",
-          "It is explicit at the action signature, gets validation/binding for free, and surfaces missing headers as a model-binding error rather than a `NullReferenceException` deeper inside the code.",
-          "It is required by ASP.NET Core.",
-          "There is no real benefit.",
+          "Only Content-Type.",
+          "Authorization for tokens, Content-Type to describe the body, Accept to say what the client wants, and Cache-Control to manage caching.",
+          "Only X-Powered-By.",
+          "Only Cookie.",
         ],
         correctAnswer:
-          "It is explicit at the action signature, gets validation/binding for free, and surfaces missing headers as a model-binding error rather than a `NullReferenceException` deeper inside the code.",
+          "Authorization for tokens, Content-Type to describe the body, Accept to say what the client wants, and Cache-Control to manage caching.",
         explanation:
-          "Explicit binding makes the API contract visible at the method signature.",
+          "These four headers cover most situations in a real .NET API.",
       },
     ],
   },
 
   body: {
     whyItMatters:
-      "The body is where most real data lives. Misreading it — wrong content type, wrong encoding, wrong shape — is a daily source of bugs at the API boundary.",
+      "The body is where the real data of a request or response lives. For POST and PUT, the body carries the new or updated data. For responses, the body carries the result. Understanding how to read and send a body is essential for working with APIs.",
     simpleExplanation:
-      "The request body is the payload sent with POST/PUT/PATCH. It is typically JSON for modern APIs.",
+      "The body is the part of an HTTP message that carries the data. In .NET APIs, the body is usually JSON. The client sends a body in POST or PUT requests, and the server sends a body in most responses.",
     deepExplanation:
-      "ASP.NET Core binds the body to a parameter marked `[FromBody]` (implicit on `[ApiController]` actions). The framework uses `System.Text.Json` to deserialise, which means property names must match the JSON casing (camelCase by default in newer versions). Large bodies stream; binary bodies bypass JSON. Always set `Content-Type` correctly on the client side or the binder will reject the payload.",
+      "When the client sends a body, ASP.NET Core reads the Content-Type header and deserializes the body into a request DTO. The framework uses System.Text.Json by default. On the response side, the framework serializes the return value back into JSON. The body can be empty (for example, on a DELETE), or it can be a large object with many fields.",
     realWorldUsage:
-      "A POST `/orders` carries `{ \"customerId\": \"...\", \"lines\": [...] }`. ASP.NET Core deserialises it into `CreateOrderRequest` automatically.",
+      "A POST /api/orders body contains CustomerId and a list of items. A PUT /api/products/1 body contains the full product to replace. A GET /api/products/1 response body contains the product as JSON. Almost every endpoint either accepts or returns a body.",
     explainLikeBeginner:
-      "The body is the contents of the letter; the headers are the envelope.",
+      "The body is like the content of a letter. The envelope (headers) describes who sent it and how to handle it. The letter inside (body) is the actual message. Without a body, the request or response is empty.",
     interviewAnswer:
-      "The body carries the request payload, typically JSON in modern APIs. ASP.NET Core uses `System.Text.Json` by default; properties bind by name with camelCase convention. For large or binary content we stream rather than buffer.",
+      "The body is the payload of an HTTP request or response. It usually contains JSON in modern .NET APIs. ASP.NET Core deserializes the body into a request DTO and serializes the return value back into JSON for the response.",
     commonMistakes: [
-      "Posting JSON without `Content-Type: application/json` and getting a 415 Unsupported Media Type.",
-      "Using PascalCase on the wire and being surprised it does not bind.",
-      "Buffering large bodies fully into memory instead of streaming.",
+      "Forgetting to set Content-Type: application/json when sending JSON.",
+      "Sending a body with methods that should not have one, like GET.",
+      "Logging the full body, including sensitive fields.",
     ],
     bestPractices: [
-      "Validate body shape via the DTO; reject early.",
-      "Use streaming for large uploads (`PipeReader`, `IFormFile`).",
-      "Be explicit about the JSON casing policy in `Program.cs`.",
+      "Use DTOs for the body shape.",
+      "Set Content-Type explicitly on the client.",
+      "Validate the body on the server before processing.",
     ],
     summary: [
-      "The body carries payload; the framework deserialises into your DTO.",
-      "Content-Type must match the body format.",
-      "Stream large bodies; do not buffer everything.",
+      "The body carries the real data of a request or response.",
+      "In .NET APIs, the body is usually JSON.",
+      "ASP.NET Core handles serialization automatically through DTOs.",
     ],
     codeExample: {
-      title: "Reading a JSON body via a DTO",
-      code: `public record CreateOrderRequest(Guid CustomerId, List<OrderLineRequest> Lines);
+      title: "Sending and receiving a JSON body in .NET",
+      code: `// Client side
+var newOrder = new { CustomerId = 1, Items = new[] { new { Sku = "A", Quantity = 2 } } };
+using var client = new HttpClient();
+var response = await client.PostAsJsonAsync("https://api.example.com/orders", newOrder);
 
+// Server side
 [HttpPost]
-public async Task<IActionResult> Create([FromBody] CreateOrderRequest req)
+public async Task<IActionResult> Create(CreateOrderRequest request)
 {
-    var id = await _orders.CreateAsync(req);
-    return Created($"/orders/{id}", new { id });
+    var created = await _service.CreateAsync(request);
+    return Ok(created);
 }`,
-      output: `POST /orders
-Content-Type: application/json
-{"customerId":"...","lines":[{"sku":"A","quantity":1}]}
-
--> 201 Created  Location: /orders/8f3...`,
+      output: "POST /orders with a JSON body returns 200 with the created order.",
       walkthrough: [
-        "`[FromBody]` (implicit with `[ApiController]`) binds the JSON to the DTO.",
-        "Property names are case-insensitive by default; conventionally camelCase on the wire.",
-        "Missing or malformed JSON returns 400 with ProblemDetails.",
+        "PostAsJsonAsync serializes the object and sends it as JSON.",
+        "The server's request DTO matches the JSON shape.",
+        "ASP.NET Core handles deserialization automatically.",
       ],
     },
     practice: {
       prompt:
-        "Build a POST endpoint that accepts a JSON body with `title` and `tags` (an array of strings). Reject if `tags` is missing or empty. Verify with two curl calls: one valid, one invalid.",
-      expectedResult: "Validation rejects bad shape with 400; valid payloads succeed.",
+        "Write a client call that sends a POST to /api/customers with a JSON body containing Name and Email. On the server, build the matching endpoint that reads the body into a CreateCustomerRequest DTO.",
+      expectedResult:
+        "The server receives the body, deserializes it, and returns 200 with the created customer DTO.",
       hints: [
-        "Use `[MinLength(1)]` on `tags`.",
-        "Set `Content-Type: application/json` in curl.",
-        "Try both with and without `[ApiController]` to see automatic vs manual ModelState.",
+        "Use PostAsJsonAsync on the client.",
+        "Define a CreateCustomerRequest DTO on the server.",
+        "Use [HttpPost] and pass the DTO as a parameter.",
       ],
       solution:
-        "Declarative validation handles the easy case; the action body trusts the input. Status codes follow the convention.",
+        "On the client, call PostAsJsonAsync with the URL and the object. On the server, write [HttpPost] public async Task<IActionResult> Create(CreateCustomerRequest request) and return Ok(result).",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What does the server need to deserialise a JSON request body?",
+        question: "What is the body of an HTTP request?",
         options: [
-          "Only the body bytes.",
-          "The body plus a `Content-Type: application/json` header so the framework selects the JSON formatter.",
-          "An `Authorization` header.",
-          "Nothing — the framework guesses.",
+          "The list of headers.",
+          "The payload — the actual data the client sends, usually as JSON.",
+          "The URL.",
+          "The status code.",
         ],
         correctAnswer:
-          "The body plus a `Content-Type: application/json` header so the framework selects the JSON formatter.",
+          "The payload — the actual data the client sends, usually as JSON.",
         explanation:
-          "Without the right content type, ASP.NET Core returns 415 Unsupported Media Type.",
+          "The body is where the data lives. Headers describe the body but are separate from it.",
       },
       {
         kind: "code-reading",
         question:
-          "Given the DTO `record CreateOrderRequest(Guid CustomerId, ...)`, which JSON binds correctly by default in modern .NET?",
+          "What does PostAsJsonAsync do?\n```csharp\nawait client.PostAsJsonAsync(url, dto);\n```",
         options: [
-          `{"CustomerId":"..."}`,
-          `{"customer_id":"..."}`,
-          `{"customerId":"..."}`,
-          `{"CUSTOMERID":"..."}`,
+          "Sends a GET request.",
+          "Serializes the dto to JSON, sets Content-Type to application/json, and sends it as a POST.",
+          "Saves the dto to disk.",
+          "Reads a database row.",
         ],
-        correctAnswer: `{"customerId":"..."}`,
+        correctAnswer:
+          "Serializes the dto to JSON, sets Content-Type to application/json, and sends it as a POST.",
         explanation:
-          "`System.Text.Json` defaults to camelCase property name policy; the binding is case-insensitive but the convention is camelCase.",
+          "PostAsJsonAsync handles serialization and headers for you in one call.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this code?\n```csharp\n[HttpPost]\npublic async Task<IActionResult> Upload(IFormFile file)\n{\n    using var ms = new MemoryStream();\n    await file.CopyToAsync(ms); // 200MB file\n    var bytes = ms.ToArray();\n    return Ok();\n}\n```",
+          "What is wrong here?\n```csharp\nvar response = await client.PostAsync(url, new StringContent(\"{\\\"name\\\":\\\"Ali\\\"}\"));\n```",
         options: [
           "Nothing.",
-          "It buffers a 200MB upload fully into memory before processing — a memory-exhaustion risk under load.",
-          "`CopyToAsync` does not exist.",
-          "`IFormFile` cannot be a parameter.",
+          "Content-Type is not set, so the server may not deserialize the body as JSON. Use new StringContent(json, Encoding.UTF8, \"application/json\") or PostAsJsonAsync.",
+          "It cannot send strings.",
+          "It needs await.",
         ],
         correctAnswer:
-          "It buffers a 200MB upload fully into memory before processing — a memory-exhaustion risk under load.",
+          "Content-Type is not set, so the server may not deserialize the body as JSON. Use new StringContent(json, Encoding.UTF8, \"application/json\") or PostAsJsonAsync.",
         explanation:
-          "Stream large uploads to disk or blob storage via `file.OpenReadStream()` instead of buffering.",
+          "Always specify the Content-Type so the server knows how to parse the body.",
       },
       {
         kind: "interview",
         question:
-          "How would you handle a `415 Unsupported Media Type` returned from your API?",
+          "How does ASP.NET Core handle the request body?",
         options: [
-          "Restart the service.",
-          "Check that the client is sending the correct `Content-Type` header for the body format — usually `application/json` for JSON APIs.",
-          "Disable model binding.",
-          "Switch to XML.",
+          "Manually by the controller code.",
+          "It reads the Content-Type header, picks the right formatter (JSON by default), and deserializes the body into the request DTO parameter.",
+          "It ignores the body.",
+          "It returns the body as a string only.",
         ],
         correctAnswer:
-          "Check that the client is sending the correct `Content-Type` header for the body format — usually `application/json` for JSON APIs.",
+          "It reads the Content-Type header, picks the right formatter (JSON by default), and deserializes the body into the request DTO parameter.",
         explanation:
-          "415 is the server saying 'I do not have a formatter for this content type'. The fix is on the client.",
+          "Model binding handles this for you, so the controller can work with strongly typed DTOs.",
       },
     ],
   },
 
   "query-parameters": {
     whyItMatters:
-      "Query parameters power filtering, paging, and sorting — the daily ergonomics of a usable API. Misuse them and your URLs become opaque, your endpoints over-specified, and your cache keys explode.",
+      "Query parameters are how clients filter, sort, and page through data. They are part of every list endpoint in a real API. Knowing how to read them in .NET is one of the most common daily tasks.",
     simpleExplanation:
-      "Query parameters are the `?key=value&key=value` part of a URL. They are part of the GET request and visible in logs.",
+      "Query parameters are extra values added to the URL after a question mark, like ?page=2&size=20. They are used to filter, sort, or page through data without changing the body.",
     deepExplanation:
-      "Use them for filtering, sorting, and pagination — anything that refines a GET. Do not use them for credentials or large payloads (they appear in browser history, server logs, and reverse proxies). ASP.NET Core binds them automatically by parameter name, or explicitly with `[FromQuery]`. Pagination conventions: `?page=2&pageSize=20` or cursor-based (`?cursor=...&limit=20`). Pick one and stick with it.",
+      "ASP.NET Core can bind query parameters to action method parameters automatically. If the parameter type is a simple value (int, string), the framework looks for a matching query string key. If it is a complex type, the framework binds each property by name. You can also use [FromQuery] explicitly. Query parameters are part of the URL, so they are visible in logs — never use them for sensitive data.",
     realWorldUsage:
-      "`GET /orders?status=Confirmed&page=2&pageSize=20` returns confirmed orders, second page, 20 per page.",
+      "GET /api/products?category=books&page=2 lists books on the second page. GET /api/orders?status=Pending&from=2026-01-01 filters by status and date. GET /api/users?search=ali searches for users by name. Almost every list endpoint accepts query parameters.",
     explainLikeBeginner:
-      "The query string is like extra notes on a request: 'and show me only the ones from this week'.",
+      "Query parameters are like filters in an online shop. The URL shows what filters you applied — category, price range, sorting. The server reads them and returns only the matching items.",
     interviewAnswer:
-      "Query parameters are the URL's `?key=value` segment, used for filtering, sorting, and pagination on safe GET requests. They bind automatically in ASP.NET Core via parameter names or `[FromQuery]`, and they should never carry credentials because they end up in logs.",
+      "Query parameters are URL-based key-value pairs used for filtering, sorting, and paging. ASP.NET Core binds them to action parameters automatically. We use them for GET endpoints and never for sensitive data.",
     commonMistakes: [
-      "Putting secrets in the query string — they appear in browser history, server logs, and CDN traces.",
-      "Inconsistent paging conventions across endpoints.",
-      "Building giant query strings of 50+ filters instead of accepting a POST + search DTO for complex queries.",
+      "Sending sensitive data like passwords in query parameters.",
+      "Forgetting to validate or sanitize query inputs.",
+      "Using query parameters for actions that should be in the body.",
     ],
     bestPractices: [
-      "Bind a single `[FromQuery]` DTO for endpoints with many filters.",
-      "Apply a server-side max on `pageSize` to prevent abuse.",
-      "Document each parameter; treat the URL as part of the public contract.",
+      "Use query parameters for filtering, sorting, and paging.",
+      "Validate and sanitize each query parameter.",
+      "Document each parameter clearly in your API spec.",
     ],
     summary: [
-      "Query strings filter, sort, and paginate GETs.",
-      "Never carry credentials in them.",
-      "Bind to a DTO when you have more than a couple of parameters.",
+      "Query parameters are URL-based key-value pairs after a question mark.",
+      "They are used for filtering, sorting, and paging.",
+      "ASP.NET Core binds them to action parameters automatically.",
     ],
     codeExample: {
-      title: "Filter + page via a query DTO",
-      code: `public record OrderListQuery(string? Status, int Page = 1, int PageSize = 20);
-
-[HttpGet]
-public async Task<ActionResult<PagedResponse<OrderResponse>>> List(
-    [FromQuery] OrderListQuery query)
+      title: "Reading query parameters in a controller",
+      code: `[HttpGet]
+public IActionResult List(
+    [FromQuery] string? category,
+    [FromQuery] int page = 1,
+    [FromQuery] int size = 20)
 {
-    var size = Math.Min(query.PageSize, 100); // cap
-    return Ok(await _orders.ListAsync(query.Status, query.Page, size));
-}`,
-      output: `GET /orders?status=Confirmed&page=2&pageSize=20
+    var result = new
+    {
+        category,
+        page,
+        size,
+        items = Array.Empty<object>()
+    };
+    return Ok(result);
+}
 
-{"items":[...],"page":2,"pageSize":20,"total":143}`,
+// Request: GET /api/products?category=books&page=2&size=10
+// Result:  { "category": "books", "page": 2, "size": 10, "items": [] }`,
+      output: "{ \"category\": \"books\", \"page\": 2, \"size\": 10, \"items\": [] }",
       walkthrough: [
-        "All filters bind from the query string into one DTO.",
-        "A server-side cap defends against `pageSize=10000` abuse.",
-        "The response embeds paging metadata.",
+        "[FromQuery] tells the framework to read the value from the query string.",
+        "Default values like page = 1 are used when the query is missing the parameter.",
+        "The result shows the parameters bound from the URL.",
       ],
     },
     practice: {
       prompt:
-        "Build `GET /products` supporting `?category=...&minPrice=...&maxPrice=...&page=...&pageSize=...`. Return a paged response with items and total count.",
-      expectedResult: "Filters compose, paging works, and `pageSize` cannot exceed a server cap.",
+        "Build a GET /api/orders endpoint that supports three query parameters: status (string), from (DateTime), and to (DateTime). Return them in the response.",
+      expectedResult:
+        "GET /api/orders?status=Paid&from=2026-01-01&to=2026-12-31 returns 200 with the three values echoed back.",
       hints: [
-        "Bind a `ProductListQuery` DTO with `[FromQuery]`.",
-        "Cap `pageSize` server-side.",
-        "Test with combinations of filters via curl.",
+        "Add [FromQuery] string status, DateTime? from, DateTime? to to the action.",
+        "Make from and to nullable so clients can skip them.",
+        "Return Ok with an anonymous object containing all three values.",
       ],
       solution:
-        "One DTO, one action, server-side cap, paged response. The endpoint is composable and safe under abuse.",
+        "Define the action with [FromQuery] parameters. Return Ok(new { status, from, to }). ASP.NET Core binds them automatically from the query string.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "Where should pagination parameters live?",
+        question: "What are query parameters used for?",
         options: [
-          "In the request body.",
-          "In headers.",
-          "In the query string of a GET request, conventionally as `?page=...&pageSize=...` or via a cursor.",
-          "In a cookie.",
+          "Sending the body of a POST request.",
+          "Filtering, sorting, and paging data through key-value pairs in the URL.",
+          "Authenticating users.",
+          "Setting Content-Type.",
         ],
         correctAnswer:
-          "In the query string of a GET request, conventionally as `?page=...&pageSize=...` or via a cursor.",
+          "Filtering, sorting, and paging data through key-value pairs in the URL.",
         explanation:
-          "GETs are safe and cacheable; query parameters are the canonical place for filters.",
+          "Query parameters live in the URL and are common in list endpoints.",
       },
       {
         kind: "code-reading",
         question:
-          "Why is `[FromQuery] OrderListQuery query` better than five separate parameters?",
+          "What URL matches this action?\n```csharp\n[HttpGet]\npublic IActionResult List([FromQuery] int page, [FromQuery] int size) { ... }\n```",
         options: [
-          "It binds faster.",
-          "It groups related filters, documents them as one type, and lets you evolve the query (defaults, validation) without changing the action signature.",
-          "It is the only legal form.",
-          "It avoids `[ApiController]`.",
+          "/api/...?body=true",
+          "/api/...?page=2&size=20",
+          "/api/.../2/20",
+          "/api/.../page=2",
         ],
-        correctAnswer:
-          "It groups related filters, documents them as one type, and lets you evolve the query (defaults, validation) without changing the action signature.",
+        correctAnswer: "/api/...?page=2&size=20",
         explanation:
-          "Grouping into a DTO scales as the filter list grows.",
+          "Query parameters are written as ?key=value pairs after the path.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is the risk?\n```csharp\n[HttpGet]\npublic async Task<...> List([FromQuery] int pageSize = 20)\n{\n    return Ok(await _orders.ListAsync(pageSize));\n}\n```",
+          "Why is this URL a bad design?\n`GET /api/login?username=ali&password=secret`",
         options: [
-          "Nothing.",
-          "The endpoint accepts `?pageSize=1000000` and tries to fetch a million rows — a DoS vector.",
-          "`pageSize` cannot have a default.",
-          "`async` is illegal here.",
+          "It is fine.",
+          "Passwords in query parameters are logged by servers and proxies. Credentials should always go in the body or a secure header.",
+          "It is too long.",
+          "It needs JSON.",
         ],
         correctAnswer:
-          "The endpoint accepts `?pageSize=1000000` and tries to fetch a million rows — a DoS vector.",
+          "Passwords in query parameters are logged by servers and proxies. Credentials should always go in the body or a secure header.",
         explanation:
-          "Cap `pageSize` server-side. Never trust the client to choose the bound.",
+          "Never put secrets in URLs.",
       },
       {
         kind: "interview",
-        question: "Why should credentials never appear in a query string?",
+        question:
+          "How does ASP.NET Core bind query parameters?",
         options: [
-          "They have a maximum length.",
-          "Because URLs end up in browser history, server access logs, and proxy/CDN traces — any of which could later leak the credential.",
-          "Because GET is faster.",
-          "There is no good reason.",
+          "It does not.",
+          "It looks at action method parameters; simple types are matched by name in the query string, complex types have their properties matched, and [FromQuery] makes the binding explicit.",
+          "Only through reflection.",
+          "Only with custom code.",
         ],
         correctAnswer:
-          "Because URLs end up in browser history, server access logs, and proxy/CDN traces — any of which could later leak the credential.",
+          "It looks at action method parameters; simple types are matched by name in the query string, complex types have their properties matched, and [FromQuery] makes the binding explicit.",
         explanation:
-          "Use the `Authorization` header for tokens, never the URL.",
+          "Model binding makes query parameters easy to use without manual parsing.",
       },
     ],
   },
 
   "route-parameters": {
     whyItMatters:
-      "Route parameters identify which resource is being acted on. Sloppy routes lead to ambiguous endpoints and 404s that look like 500s.",
+      "Route parameters identify a specific resource in a URL — like the id in /api/orders/1. They are part of every endpoint that targets one item, so getting them right matters every day.",
     simpleExplanation:
-      "Route parameters are the `/{id}` segments in a URL. They identify a specific resource.",
+      "A route parameter is a part of the URL path that captures a value, like the {id} in /api/orders/{id}. ASP.NET Core binds the captured value to a parameter in the action method.",
     deepExplanation:
-      "Use route parameters for identifiers: `/orders/{id}`, `/customers/{customerId}/orders/{orderId}`. Apply type constraints (`{id:guid}`, `{id:int}`) so malformed values produce a 404 at route matching time rather than failing inside the action. Keep route segments stable; route parameters are part of the public contract just as much as query strings.",
+      "Route parameters are defined in the route template using curly braces. The framework matches the value, converts it to the type of the action parameter (int, Guid, string), and passes it in. You can add constraints like {id:int} to make sure the value matches a specific type. Route parameters are part of the URL, so they are also visible in logs — never use them for sensitive data.",
     realWorldUsage:
-      "`GET /orders/8f3a...` reads order `8f3a...`. `GET /customers/{customerId}/orders` lists orders for that customer.",
+      "GET /api/customers/{id} loads one customer. PUT /api/products/{id} replaces one product. DELETE /api/orders/{id} removes one order. GET /api/users/{userId}/orders lists orders for a specific user. Every API uses route parameters for resource-specific actions.",
     explainLikeBeginner:
-      "Route parameters are like room numbers in a hotel. The path tells you which exact room you want.",
+      "A route parameter is like the seat number on a plane ticket. The plane is /flights/AA101. The seat is /flights/AA101/12A. The seat number is the parameter that points to one specific seat.",
     interviewAnswer:
-      "Route parameters identify specific resources by placing the identifier in the URL path. We use type constraints to validate them at route-matching time, and we model nested resources by chaining segments (`/customers/{cid}/orders/{oid}`).",
+      "A route parameter captures a value from the URL path. ASP.NET Core uses curly braces in the route template, like {id}, and binds the captured value to an action parameter. We use route parameters to identify a specific resource.",
     commonMistakes: [
-      "Forgetting type constraints, so non-Guid values match the route and the action throws on parsing.",
-      "Mixing identifiers and search filters in the path.",
-      "Building deeply nested routes for unrelated relationships.",
+      "Mixing query parameters and route parameters in confusing ways.",
+      "Skipping route constraints, which can let invalid values reach the action.",
+      "Putting sensitive data in the URL.",
     ],
     bestPractices: [
-      "Use type constraints (`{id:guid}`, `{id:int:min(1)}`) for identifiers.",
-      "Limit nesting to one level when there is a true hierarchical relationship.",
-      "Name parameters consistently across the API.",
+      "Use route parameters to identify a specific resource.",
+      "Add type constraints like {id:int} when possible.",
+      "Use query parameters for filters and route parameters for resource identifiers.",
     ],
     summary: [
-      "Route parameters identify resources.",
-      "Type constraints reject malformed routes early.",
-      "Routes are part of the public contract.",
+      "Route parameters capture parts of the URL path.",
+      "They identify a specific resource.",
+      "ASP.NET Core binds them automatically to action parameters.",
     ],
     codeExample: {
-      title: "Typed route parameter",
-      code: `[HttpGet("orders/{id:guid}")]
-public async Task<ActionResult<OrderResponse>> Get(Guid id)
+      title: "Using a route parameter to load one customer",
+      code: `[ApiController]
+[Route("api/customers")]
+public class CustomersController : ControllerBase
 {
-    var order = await _orders.GetAsync(id);
-    return order is null ? NotFound() : Ok(order);
-}`,
-      output: `GET /orders/8f3...   200 OK   { ... }
-GET /orders/not-a-guid   404 Not Found  (route did not match)
-GET /orders/00000000-...   404 Not Found  (action returned)`,
+    [HttpGet("{id:int}")]
+    public IActionResult GetById(int id)
+    {
+        return Ok(new { id, name = $"Customer #{id}" });
+    }
+}
+
+// Request: GET /api/customers/42
+// Result:  { "id": 42, "name": "Customer #42" }`,
+      output: "{ \"id\": 42, \"name\": \"Customer #42\" }",
       walkthrough: [
-        "`{id:guid}` rejects non-Guid paths at routing time.",
-        "Inside the action we still handle the 'valid Guid but no such record' case.",
-        "Two different 404s — one from routing, one from the action — for two different reasons.",
+        "[HttpGet(\"{id:int}\")] adds a route parameter that must be an int.",
+        "The framework reads the value from the URL and binds it to the id parameter.",
+        "If the URL contains a non-integer value, the route does not match.",
       ],
     },
     practice: {
       prompt:
-        "Define `GET /customers/{customerId:guid}/orders/{orderId:guid}` returning a single order if it belongs to that customer. Return 404 otherwise.",
+        "Build a GET endpoint at /api/orders/{orderId}/items/{itemId} that returns the orderId and itemId from the URL. Add type constraints to both values.",
       expectedResult:
-        "Routing accepts only Guids; the action enforces the customer/order relationship.",
+        "GET /api/orders/10/items/5 returns 200 with { orderId: 10, itemId: 5 }.",
       hints: [
-        "Use two `[HttpGet]` route parameters.",
-        "Return `NotFound()` when the order does not belong to the customer.",
-        "Test with mismatched ids.",
+        "Use [HttpGet(\"{orderId:int}/items/{itemId:int}\")] on the action.",
+        "Add two int parameters with matching names.",
+        "Return Ok(new { orderId, itemId }).",
       ],
       solution:
-        "Route constraints filter bad input early; the action body asserts the business relationship. Two layers of defence with one explicit contract.",
+        "Define the action with the route template and two int parameters. The framework binds the values from the URL automatically.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What does the `:guid` in `[HttpGet(\"orders/{id:guid}\")]` do?",
+        question: "What is a route parameter?",
         options: [
-          "It is documentation only.",
-          "It is a route constraint: the route matches only when `id` parses as a Guid.",
-          "It encrypts the route.",
-          "It tells EF Core the column type.",
+          "A value sent in the body.",
+          "A part of the URL path that captures a value, like {id} in /api/customers/{id}.",
+          "A header.",
+          "A status code.",
         ],
         correctAnswer:
-          "It is a route constraint: the route matches only when `id` parses as a Guid.",
+          "A part of the URL path that captures a value, like {id} in /api/customers/{id}.",
         explanation:
-          "Constraints filter at route matching, so malformed identifiers never enter the action body.",
+          "Route parameters are part of the URL path, not the query string.",
       },
       {
         kind: "code-reading",
         question:
-          "Given the example, what does a request to `/orders/not-a-guid` return?",
+          "What does {id:int} do in this route?\n```csharp\n[HttpGet(\"{id:int}\")]\n```",
         options: [
-          "200 OK with an empty body.",
-          "400 Bad Request from model binding.",
-          "404 Not Found because the route did not match.",
-          "500 Internal Server Error.",
+          "Sets a default value.",
+          "Adds a route constraint so the parameter must be an integer for the route to match.",
+          "Validates the body.",
+          "Sets the response type.",
         ],
         correctAnswer:
-          "404 Not Found because the route did not match.",
+          "Adds a route constraint so the parameter must be an integer for the route to match.",
         explanation:
-          "Route constraints reject the path before any action runs.",
+          "Route constraints prevent invalid values from reaching the action.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this endpoint?\n```csharp\n[HttpGet(\"orders/{id}\")]\npublic async Task<...> Get(string id)\n{\n    var g = Guid.Parse(id);\n    return Ok(await _orders.GetAsync(g));\n}\n```",
+          "Why is this confusing?\n`GET /api/users?id=5`",
         options: [
           "Nothing.",
-          "No route constraint — non-Guid values reach the action, `Guid.Parse` throws, and the user sees a 500 instead of a 404.",
-          "`Guid.Parse` does not exist.",
-          "`string id` should be `int`.",
+          "For loading a single resource by identifier, the URL should use a route parameter (/api/users/5), not a query parameter.",
+          "Query parameters are not allowed.",
+          "The URL is too long.",
         ],
         correctAnswer:
-          "No route constraint — non-Guid values reach the action, `Guid.Parse` throws, and the user sees a 500 instead of a 404.",
+          "For loading a single resource by identifier, the URL should use a route parameter (/api/users/5), not a query parameter.",
         explanation:
-          "Use `{id:guid}` and accept `Guid id` to handle this declaratively.",
+          "Use route parameters for resource identifiers and query parameters for filters.",
       },
       {
         kind: "interview",
         question:
-          "How deep should you nest routes for related resources?",
+          "When should you use route parameters vs query parameters?",
         options: [
-          "As deep as the relationship goes.",
-          "Usually one level: parent + child (`/customers/{id}/orders`). Deeper nesting often signals a missing query parameter or a top-level resource that should exist on its own.",
-          "Never nest.",
-          "Nesting is illegal.",
+          "Always use query parameters.",
+          "Route parameters for the identifier of a specific resource, query parameters for filtering, sorting, and paging.",
+          "Always use route parameters.",
+          "It does not matter.",
         ],
         correctAnswer:
-          "Usually one level: parent + child (`/customers/{id}/orders`). Deeper nesting often signals a missing query parameter or a top-level resource that should exist on its own.",
+          "Route parameters for the identifier of a specific resource, query parameters for filtering, sorting, and paging.",
         explanation:
-          "Shallow nesting keeps URLs predictable; deeper hierarchies become awkward to evolve.",
+          "Following this rule keeps URLs predictable and easy to read.",
       },
     ],
   },
 
   "status-codes": {
     whyItMatters:
-      "The status code is the first thing a client checks. Wrong status codes turn every retry, alert, and dashboard into a guessing game.",
+      "Status codes are how the server tells the client what happened. Using the right one makes the API clear and predictable. The wrong one confuses clients and hides real problems behind misleading responses.",
     simpleExplanation:
-      "Status codes are three-digit numbers in the response that tell the client what happened: 2xx success, 3xx redirect, 4xx client error, 5xx server error.",
+      "HTTP status codes are three-digit numbers the server returns with each response. They are grouped into ranges: 2xx success, 3xx redirect, 4xx client error, 5xx server error.",
     deepExplanation:
-      "Memorise a small set: 200 OK, 201 Created, 204 No Content, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 422 Unprocessable Entity, 500 Internal Server Error, 503 Service Unavailable. The split between 401 and 403 is the one juniors most often get wrong: 401 means 'we do not know who you are', 403 means 'we know you but you are not allowed'. Use 409 for state conflicts (already exists, version conflict), 422 for semantic validation failures.",
+      "200 OK is the standard success. 201 Created is used after a POST that creates a resource. 204 No Content is used when the operation succeeds but there is nothing to return. 400 Bad Request means the input was invalid. 401 Unauthorized means the user is not authenticated. 403 Forbidden means they are authenticated but not allowed. 404 Not Found means the resource does not exist. 409 Conflict means the request conflicts with the current state. 500 Server Error means something failed inside the server.",
     realWorldUsage:
-      "`POST /orders` returns 201 on success, 400 on invalid shape, 409 if an `Idempotency-Key` is reused, 500 on unhandled exceptions.",
+      "A GET that finds the resource returns 200. A successful POST returns 201 with a Location header. A validation failure returns 400. A missing token returns 401. A request for a deleted record returns 404. An unhandled exception returns 500. Every action in a real .NET API uses one of these codes.",
     explainLikeBeginner:
-      "Status codes are like traffic lights: green (2xx) = go, yellow (3xx) = redirect, red (4xx/5xx) = something stopped.",
+      "Status codes are like answers from a clerk. 200 is 'here you go'. 400 is 'I cannot understand what you asked'. 401 is 'show me your ID first'. 404 is 'we do not have that here'. 500 is 'something is broken in the office'.",
     interviewAnswer:
-      "Status codes communicate the outcome of a request. 2xx is success, 4xx is the client's mistake, 5xx is the server's. The split between 401 and 403 is whether the client is authenticated; 409 expresses state conflicts and 422 expresses semantic validation failures.",
+      "HTTP status codes describe the outcome of a request. 2xx means success, 4xx means a client error, and 5xx means a server error. In .NET, we use IActionResult helpers like Ok, BadRequest, NotFound, and Unauthorized to return the right code.",
     commonMistakes: [
-      "Returning 200 OK with an `error` field instead of a 4xx status code.",
-      "Confusing 401 (not authenticated) with 403 (authenticated but unauthorised).",
-      "Mapping every unhandled error to 500 instead of differentiating between client and server mistakes.",
+      "Returning 200 for failures instead of the right error code.",
+      "Returning 500 for validation errors instead of 400.",
+      "Returning 404 for unauthenticated requests instead of 401.",
     ],
     bestPractices: [
-      "Use the most specific status code that describes the situation.",
-      "Pair 4xx/5xx responses with a `ProblemDetails` body so the client can read structured error info.",
-      "Never lie: do not return 200 for a failure.",
+      "Match the status code to the actual outcome.",
+      "Return 201 with a Location header after creating a resource.",
+      "Return a clear error body alongside 4xx codes.",
     ],
     summary: [
-      "Status codes are the first signal a client reads.",
-      "Pick the most specific code.",
-      "401 ≠ 403, 409 ≠ 422, 400 ≠ 500.",
+      "2xx success. 4xx client error. 5xx server error.",
+      "Use the right code for each outcome.",
+      "ASP.NET Core provides helpers like Ok, BadRequest, and NotFound.",
     ],
     codeExample: {
-      title: "Status codes from a single action",
-      code: `[HttpPost]
-public async Task<IActionResult> Create(CreateOrderRequest req)
+      title: "Returning the right status code from a controller",
+      code: `[HttpGet("{id}")]
+public ActionResult<CustomerResponse> GetById(int id)
 {
-    try
-    {
-        var id = await _orders.CreateAsync(req);
-        return Created($"/orders/{id}", new { id });        // 201
-    }
-    catch (DuplicateIdempotencyKeyException)
-    {
-        return Conflict(new ProblemDetails { Title = "Duplicate request" });  // 409
-    }
-    catch (DomainValidationException ex)
-    {
-        return UnprocessableEntity(new ProblemDetails { Title = ex.Message }); // 422
-    }
+    if (id <= 0) return BadRequest("Id must be positive");
+    var customer = _service.GetById(id);
+    if (customer == null) return NotFound();
+    return Ok(customer);
+}
+
+[HttpPost]
+public ActionResult<CustomerResponse> Create(CreateCustomerRequest request)
+{
+    var created = _service.Create(request);
+    return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
 }`,
-      output: `Success    -> 201 Created
-Replay     -> 409 Conflict
-Rule fail  -> 422 Unprocessable Entity`,
+      output: "GET 404, POST 201 with a Location header pointing to the new customer.",
       walkthrough: [
-        "Each branch picks the status code that matches the situation.",
-        "ProblemDetails gives the client structured info to display or log.",
-        "Unhandled exceptions still produce 500 via middleware — that is the catch-all, not the default.",
+        "BadRequest returns 400 with a clear message.",
+        "NotFound returns 404 when the customer does not exist.",
+        "CreatedAtAction returns 201 with a Location header to the new resource.",
       ],
     },
     practice: {
       prompt:
-        "On `DELETE /products/{id}`, return 204 when found and deleted, 404 when not found. Then add an idempotent variant that returns 204 in both cases (delete is idempotent).",
-      expectedResult: "You can articulate the trade-off between 404 vs 204 for delete.",
+        "Build a DELETE /api/products/{id} endpoint. Return 404 if the product does not exist, 204 No Content on success, and 403 if the current user is not allowed to delete it.",
+      expectedResult:
+        "Deleting an existing product returns 204. Deleting a missing product returns 404. Deleting without permission returns 403.",
       hints: [
-        "Convention varies; document your choice.",
-        "Test both flows with curl.",
-        "Return ProblemDetails for unexpected errors.",
+        "Use NotFound() for 404.",
+        "Use NoContent() for 204.",
+        "Use Forbid() for 403.",
       ],
       solution:
-        "Idempotent delete returns 204 either way; strict delete returns 404 when the resource never existed. Either is valid — pick one and document it.",
+        "In the action, check existence first (return NotFound if missing), then permission (return Forbid if not allowed), then delete and return NoContent.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Which status code is most appropriate when an unauthenticated client tries to access a protected endpoint?",
-        options: ["400 Bad Request", "401 Unauthorized", "403 Forbidden", "404 Not Found"],
-        correctAnswer: "401 Unauthorized",
+        question: "Which status code should you return after successfully creating a resource?",
+        options: ["200 OK", "201 Created", "204 No Content", "404 Not Found"],
+        correctAnswer: "201 Created",
         explanation:
-          "401 = not authenticated; 403 = authenticated but not allowed. The standard signal is `WWW-Authenticate` on a 401.",
+          "201 Created is the conventional response for a successful POST that creates a new resource.",
       },
       {
         kind: "code-reading",
         question:
-          "Given the example, what does the controller return when `DuplicateIdempotencyKeyException` is thrown?",
-        options: [
-          "201 Created",
-          "400 Bad Request",
-          "409 Conflict",
-          "500 Internal Server Error",
-        ],
-        correctAnswer: "409 Conflict",
-        explanation: "`Conflict()` returns 409 with the supplied body.",
+          "What status code does this return?\n```csharp\nif (customer == null) return NotFound();\n```",
+        options: ["200", "204", "404", "500"],
+        correctAnswer: "404",
+        explanation:
+          "NotFound() returns 404 to indicate the resource does not exist.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is wrong with this response?\n```csharp\nreturn Ok(new { error = \"customer not found\" });\n```",
+          "What is wrong here?\n```csharp\nif (request.Email == null) return StatusCode(500, \"Email required\");\n```",
         options: [
           "Nothing.",
-          "It returns 200 OK with an error payload; clients that branch on the status code will treat the failure as success.",
-          "`Ok` should be `NotFound`.",
-          "`new { error = ... }` is illegal.",
+          "Invalid input is a client error, not a server error. Use BadRequest (400), not 500.",
+          "StatusCode is not valid.",
+          "Email cannot be null.",
         ],
         correctAnswer:
-          "It returns 200 OK with an error payload; clients that branch on the status code will treat the failure as success.",
+          "Invalid input is a client error, not a server error. Use BadRequest (400), not 500.",
         explanation:
-          "Use the right status code (404 here). The body adds detail; the code carries the headline.",
+          "500 should only be used when something failed inside the server, not for bad input.",
       },
       {
         kind: "interview",
         question:
-          "When would you choose 422 over 400?",
+          "What is the difference between 401 and 403?",
         options: [
-          "They are interchangeable.",
-          "400 = malformed request (wrong shape, wrong syntax); 422 = well-formed but semantically invalid (failed a business rule).",
-          "422 is faster.",
-          "422 is for redirects.",
+          "They are the same.",
+          "401 means the user is not authenticated (no valid token). 403 means the user is authenticated but does not have permission for this action.",
+          "401 is for server errors.",
+          "403 is for missing resources.",
         ],
         correctAnswer:
-          "400 = malformed request (wrong shape, wrong syntax); 422 = well-formed but semantically invalid (failed a business rule).",
+          "401 means the user is not authenticated (no valid token). 403 means the user is authenticated but does not have permission for this action.",
         explanation:
-          "Splitting them helps clients tell 'I sent bad JSON' from 'I sent valid JSON but the rule rejected it'.",
+          "Knowing this difference is a common interview check for API knowledge.",
       },
     ],
   },
 
   "json-request-and-response": {
     whyItMatters:
-      "JSON is the lingua franca of HTTP APIs. Getting comfortable with how .NET serialises and deserialises it removes a daily source of friction.",
+      "JSON is the standard format for API data in .NET. Every request and response you build will be JSON. Knowing how serialization works helps you avoid subtle bugs around dates, nulls, casing, and missing fields.",
     simpleExplanation:
-      "JSON is the text format used to represent request and response bodies in most APIs. .NET uses `System.Text.Json` to convert it to and from your C# types.",
+      "JSON is a simple text format for structured data. .NET uses System.Text.Json to convert between objects and JSON automatically when you use HttpClient or ASP.NET Core controllers.",
     deepExplanation:
-      "Defaults to know: camelCase property names on the wire, case-insensitive binding, `null` values are serialised by default, enums are numbers unless you configure otherwise. Customise via `JsonSerializerOptions` in `Program.cs` if you need PascalCase, string enums, or to ignore nulls. Records map cleanly because the constructor parameters match positional JSON.",
+      "When the server returns an object, ASP.NET Core serializes it into JSON using System.Text.Json. By default it uses camelCase for property names and ISO 8601 for dates. When a request arrives, the framework deserializes the JSON body into the request DTO. You can customize naming, ignore nulls, and handle special cases through JsonSerializerOptions or attributes like [JsonPropertyName] and [JsonIgnore].",
     realWorldUsage:
-      "`POST /orders` accepts `{ \"customerId\": \"...\", \"lines\": [...] }`. The framework deserialises into `CreateOrderRequest`. The response is serialised back to JSON automatically.",
+      "A REST API returns a list of products as a JSON array. A POST endpoint accepts a JSON body with the new customer's data. A webhook receives a JSON payload from a third-party service. Almost every API call in a modern .NET application involves JSON.",
     explainLikeBeginner:
-      "JSON is just text that describes data. `System.Text.Json` is the translator between that text and your C# objects.",
+      "JSON is like a structured note written in a way both humans and machines can read. The note has keys (like 'name') and values (like 'Ali'). Both sides of the conversation read the same note.",
     interviewAnswer:
-      "JSON is the default request/response format in modern .NET APIs. The framework uses `System.Text.Json` with camelCase by default; we configure it in `Program.cs` for project-wide policies like string enums or null handling.",
+      "JSON is the standard data format used by .NET APIs. ASP.NET Core uses System.Text.Json to convert between objects and JSON. We can customize the behavior with JsonSerializerOptions and attributes like [JsonPropertyName] when needed.",
     commonMistakes: [
-      "Setting property names PascalCase on the wire and being surprised when clients expecting camelCase break.",
-      "Serialising large nested object graphs that include navigation properties — leading to cycles.",
-      "Using `DateTime` everywhere and discovering ambiguous time-zone behaviour.",
+      "Forgetting that property names are case-sensitive by default in some setups.",
+      "Returning circular references that cause serialization to fail.",
+      "Logging full JSON bodies, including sensitive fields.",
     ],
     bestPractices: [
-      "Use `DateTimeOffset` (or pure UTC) over `DateTime` in DTOs.",
-      "Configure string-enum serialisation if your API uses enums.",
-      "Be explicit about null handling (`DefaultIgnoreCondition`).",
+      "Use DTOs to define the JSON shape.",
+      "Decide on a casing convention (camelCase is the default) and stick to it.",
+      "Be careful with date and decimal formatting in cross-language APIs.",
     ],
     summary: [
-      "JSON is the default wire format.",
-      "`System.Text.Json` camelCase, case-insensitive, on by default.",
-      "Pick `DateTimeOffset` and string enums for sanity.",
+      "JSON is the default API format in .NET.",
+      "System.Text.Json handles serialization and deserialization.",
+      "Customize the behavior with options and attributes when needed.",
     ],
     codeExample: {
-      title: "Configure JSON serialisation",
-      code: `// Program.cs
-builder.Services.AddControllers()
-    .AddJsonOptions(opts =>
-    {
-        opts.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        opts.JsonSerializerOptions.DefaultIgnoreCondition =
-            JsonIgnoreCondition.WhenWritingNull;
-    });
+      title: "Working with JSON on both sides",
+      code: `// Server side
+public class ProductResponse
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+}
 
-public record OrderResponse(Guid Id, OrderStatus Status, DateTimeOffset CreatedAt);
-public enum OrderStatus { Pending, Confirmed, Cancelled }`,
-      output: `{"id":"8f3...","status":"Confirmed","createdAt":"2025-05-12T14:00:00+00:00"}`,
+[HttpGet("{id}")]
+public ActionResult<ProductResponse> GetById(int id)
+{
+    return Ok(new ProductResponse { Id = id, Name = "Laptop", Price = 1200 });
+}
+
+// Client side
+var product = await client.GetFromJsonAsync<ProductResponse>(
+    "https://api.example.com/products/1");
+Console.WriteLine($"{product?.Name}: {product?.Price}");`,
+      output: "{ \"id\": 1, \"name\": \"Laptop\", \"price\": 1200 }",
       walkthrough: [
-        "Project-wide policies set once, applied everywhere.",
-        "Enums serialise as strings — easier for clients to read.",
-        "Nulls are dropped from the wire when configured.",
+        "The server returns a DTO that ASP.NET Core serializes to JSON.",
+        "GetFromJsonAsync on the client reads the JSON and deserializes it into the DTO type.",
+        "Property names use camelCase by default.",
       ],
     },
     practice: {
       prompt:
-        "Configure a service-wide JSON policy: string enums, ignore nulls, camelCase. Verify with a tiny endpoint that returns a record with an enum and a nullable field.",
+        "Create a GET /api/customers/{id} endpoint that returns a CustomerResponse DTO as JSON. Then build a client call that fetches the JSON and prints the customer's name.",
       expectedResult:
-        "Enum appears as a string; null fields are absent from the response body.",
+        "Calling the client method against the server returns a JSON body and prints the customer's name from the deserialized object.",
       hints: [
-        "Set `JsonStringEnumConverter` in `Program.cs`.",
-        "Use `JsonIgnoreCondition.WhenWritingNull`.",
-        "Inspect with curl `-i` to see the serialised body.",
+        "Use ActionResult<CustomerResponse> on the server.",
+        "Use GetFromJsonAsync<CustomerResponse> on the client.",
+        "Print Name from the deserialized object.",
       ],
       solution:
-        "Centralised JSON configuration makes the wire format consistent. New endpoints inherit the policy without per-action ceremony.",
+        "Define CustomerResponse, return it from the controller, and use GetFromJsonAsync on the client to read the JSON. Print response.Name.",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "By default, how does `System.Text.Json` name properties on the wire?",
-        options: ["PascalCase", "camelCase", "snake_case", "kebab-case"],
-        correctAnswer: "camelCase",
+        question: "Which library handles JSON serialization by default in modern .NET?",
+        options: [
+          "Newtonsoft.Json (Json.NET)",
+          "System.Text.Json",
+          "XmlSerializer",
+          "Protocol Buffers",
+        ],
+        correctAnswer: "System.Text.Json",
         explanation:
-          "ASP.NET Core wires `JsonNamingPolicy.CamelCase` by default for property names.",
+          "System.Text.Json is built into modern .NET and is the default in ASP.NET Core.",
       },
       {
         kind: "code-reading",
         question:
-          "Given the configuration in the example, how is `OrderStatus.Confirmed` serialised?",
+          "What does this code do?\n```csharp\nvar product = await client.GetFromJsonAsync<ProductResponse>(url);\n```",
         options: [
-          "As the integer `1`.",
-          "As the string `\"Confirmed\"`.",
-          "As `null`.",
-          "It throws.",
+          "Saves a product.",
+          "Sends a GET request, reads the JSON response, and deserializes it into a ProductResponse object.",
+          "Returns XML.",
+          "Reads a file.",
         ],
-        correctAnswer: "As the string `\"Confirmed\"`.",
+        correctAnswer:
+          "Sends a GET request, reads the JSON response, and deserializes it into a ProductResponse object.",
         explanation:
-          "`JsonStringEnumConverter` makes enums serialise as their string names.",
+          "GetFromJsonAsync wraps the call and the deserialization in one step.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is the risk in this DTO?\n```csharp\npublic record AuditResponse(DateTime Occurred, string Action);\n```",
+          "Why does this DTO serialize unexpectedly?\n```csharp\npublic class CustomerDto\n{\n    public string Name { get; set; }\n    public CustomerDto Parent { get; set; }\n}\n```",
         options: [
           "Nothing.",
-          "`DateTime` does not carry an offset, so the wire value can be interpreted differently by clients in different time zones; prefer `DateTimeOffset` or always-UTC `DateTime`.",
-          "`Action` should be an enum.",
-          "Records cannot have `DateTime` fields.",
+          "Circular references like Parent can cause infinite loops during JSON serialization. Avoid cycles in DTOs.",
+          "It needs a constructor.",
+          "Name should be private.",
         ],
         correctAnswer:
-          "`DateTime` does not carry an offset, so the wire value can be interpreted differently by clients in different time zones; prefer `DateTimeOffset` or always-UTC `DateTime`.",
+          "Circular references like Parent can cause infinite loops during JSON serialization. Avoid cycles in DTOs.",
         explanation:
-          "Time-zone bugs are silent until they bite. `DateTimeOffset` is the safe default for cross-system timestamps.",
+          "Keep DTOs flat or use [JsonIgnore] to break cycles.",
       },
       {
         kind: "interview",
         question:
-          "Why prefer string-serialised enums in an API?",
+          "How does ASP.NET Core decide the JSON shape of a response?",
         options: [
-          "They are faster.",
-          "They are self-documenting in the wire format, survive reordering of enum members, and are easier for non-.NET clients to consume.",
-          "Integer enums are not supported.",
-          "It is the only legal way.",
+          "Randomly.",
+          "It uses the public properties of the return type and serializes them with System.Text.Json in camelCase by default. You can change the behavior with options or attributes.",
+          "Through XML mapping.",
+          "Only with manual code.",
         ],
         correctAnswer:
-          "They are self-documenting in the wire format, survive reordering of enum members, and are easier for non-.NET clients to consume.",
+          "It uses the public properties of the return type and serializes them with System.Text.Json in camelCase by default. You can change the behavior with options or attributes.",
         explanation:
-          "Integer enums make wire payloads fragile to refactor: reordering values silently changes meaning.",
+          "Defaults work for most cases. You only customize when you need to.",
       },
     ],
   },
 
   "postman-examples": {
     whyItMatters:
-      "Postman is the daily driver for testing APIs by hand. Knowing how to set up collections, environments, and tests saves hours of debugging.",
+      "Postman is one of the most common tools for testing APIs. Knowing how to send requests, manage environments, and save collections makes you faster at testing, debugging, and demonstrating your .NET APIs.",
     simpleExplanation:
-      "Postman is a GUI for crafting HTTP requests, organising them into collections, and running quick tests.",
+      "Postman is a desktop tool for sending HTTP requests. You enter the URL, choose a method, add headers and a body, and send the request. The response appears in the bottom panel.",
     deepExplanation:
-      "Build a collection per service. Use environments to switch between local, staging, and prod (`{{baseUrl}}/orders`). Use pre-request scripts to fetch a token; save it in a collection variable. Use the `Tests` tab to assert on status codes and body shape — `pm.test(\"is 200\", () => pm.response.to.have.status(200));`. A well-maintained collection is documentation that runs.",
+      "Postman organizes requests in collections so you can save and rerun them. Environments let you switch between development, staging, and production without changing each URL by hand. Variables like {{baseUrl}} make requests portable. Pre-request scripts and tests let you automate token generation and assertions. Teams use Postman to share API tests and document endpoints.",
     realWorldUsage:
-      "Your team's `MyService` collection has `auth/login`, `orders/create`, `orders/get`. New hires import it, point at the dev environment, and exercise the API on day one.",
+      "A team builds a Postman collection for every API. A new team member imports the collection and can test every endpoint immediately. CI pipelines use Newman (Postman's CLI) to run the collection on every build. QA testers use Postman to reproduce bugs.",
     explainLikeBeginner:
-      "Postman is the spreadsheet for API calls. Each row is a request you can save, share, and rerun.",
+      "Postman is like a remote control for your API. You press a button (send) and it triggers an action on the server. You can save the buttons in a collection so you can use them again later.",
     interviewAnswer:
-      "Postman is the tool we use for ad-hoc API testing. We organise requests into collections, use environments for `baseUrl` and tokens, and write small JavaScript tests on the response to catch regressions when running the collection in CI.",
+      "Postman is a tool for testing HTTP APIs. .NET developers use it to send requests, save collections, set environment variables for different stages, and share tests with the team. It is a daily tool in real .NET work.",
     commonMistakes: [
-      "Hard-coding the host in every request — environments exist for that.",
-      "Storing real tokens in shared collections — they end up in version control or screenshots.",
-      "Skipping the Tests tab and never asserting against the response.",
+      "Sending requests without setting Content-Type for the body.",
+      "Hard-coding base URLs instead of using environment variables.",
+      "Forgetting to set Authorization headers for protected endpoints.",
     ],
     bestPractices: [
-      "Use `{{baseUrl}}` and environment-scoped variables.",
-      "Add a `Tests` block with at least a status-code assertion.",
-      "Run the collection from CLI with Newman to catch contract drift.",
+      "Save every endpoint in a collection.",
+      "Use environments and variables like {{baseUrl}} and {{token}}.",
+      "Add tests to assert the status code and key response fields.",
     ],
     summary: [
-      "Postman organises requests into shareable collections.",
-      "Environments and variables prevent host hard-coding.",
-      "Tests make each request a tiny contract check.",
+      "Postman sends HTTP requests and shows responses.",
+      "Collections, environments, and variables make it scale to real teams.",
+      "It is the standard tool for testing .NET APIs by hand.",
     ],
     codeExample: {
-      title: "Postman: POST /orders with assertion",
-      code: `// Request
-POST {{baseUrl}}/orders
-Authorization: Bearer {{token}}
-Content-Type: application/json
+      title: "A typical Postman request configuration",
+      code: `Method:  POST
+URL:     {{baseUrl}}/api/customers
 
+Headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+
+Body (raw, JSON):
 {
-  "customerId": "{{customerId}}",
-  "lines": [{ "sku": "SKU-001", "quantity": 1 }]
+  "name": "Ali",
+  "email": "ali@example.com"
 }
 
-// Tests (JavaScript)
-pm.test("status is 201", () => pm.response.to.have.status(201));
-pm.test("returns an id", () => {
-    const body = pm.response.json();
-    pm.expect(body.id).to.be.a("string");
+Tests tab:
+pm.test("Status is 200", function () {
+    pm.response.to.have.status(200);
+});
+pm.test("Has id", function () {
+    const data = pm.response.json();
+    pm.expect(data.id).to.be.a('number');
 });`,
-      output: `Status: 201 Created
-Tests
-  ✓ status is 201
-  ✓ returns an id`,
+      output: "200 OK with { \"id\": 42, \"name\": \"Ali\", \"email\": \"ali@example.com\" }",
       walkthrough: [
-        "Variables (`{{baseUrl}}`, `{{token}}`) come from the active environment.",
-        "The Tests tab runs after the response and reports pass/fail.",
-        "These assertions are runnable as Newman jobs in CI.",
+        "The URL uses {{baseUrl}}, which Postman replaces with the value from the active environment.",
+        "The Authorization header carries a token stored in {{token}}.",
+        "The Tests tab uses pm.test to assert the response shape automatically.",
       ],
     },
     practice: {
       prompt:
-        "Create a Postman collection for `/customers` with create, get, list, delete. Add a `local` environment and tests on each request asserting the expected status code.",
+        "Create a Postman collection with three requests: GET /api/customers, POST /api/customers, and DELETE /api/customers/{id}. Use {{baseUrl}} as a variable. Add a test to the POST request that asserts the response has a numeric Id.",
       expectedResult:
-        "Running the collection end-to-end against a local service exits clean.",
+        "The collection contains three requests using the variable. The POST test passes when the server returns a body with a numeric Id.",
       hints: [
-        "Chain requests by using `pm.collectionVariables.set(\"id\", body.id)` in Tests.",
-        "Use the runner to execute in order.",
-        "Export the collection JSON into the repo.",
+        "Create an environment with baseUrl set to https://localhost:5001.",
+        "Use {{baseUrl}}/api/customers in the URL of every request.",
+        "In the Tests tab of the POST request, write pm.test that checks data.id.",
       ],
       solution:
-        "The collection now doubles as smoke tests. Add Newman to CI and you have a contract check on every merge.",
+        "Create a new collection with three requests. Configure an environment with baseUrl. Add the Tests tab assertion to the POST request to validate the response shape.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What is the main purpose of Postman environments?",
+        question: "What is Postman used for?",
         options: [
-          "To replace the .NET runtime.",
-          "To swap variables (base URLs, tokens) between local, staging, and production without editing each request.",
-          "To deploy the API.",
-          "There is no purpose.",
+          "Compiling .NET projects.",
+          "Sending HTTP requests, saving collections, and testing APIs manually or with automation.",
+          "Building databases.",
+          "Deploying to production.",
         ],
         correctAnswer:
-          "To swap variables (base URLs, tokens) between local, staging, and production without editing each request.",
+          "Sending HTTP requests, saving collections, and testing APIs manually or with automation.",
         explanation:
-          "Environments separate configuration from request definitions, the same way `.env` files separate config from code.",
+          "Postman is the standard tool for hand-testing APIs.",
       },
       {
         kind: "code-reading",
         question:
-          "What does `pm.response.to.have.status(201)` do inside a Postman test?",
+          "What does {{baseUrl}} do in a Postman URL?",
         options: [
-          "Sets the response status.",
-          "Asserts that the response has HTTP status 201; the test passes when true and fails the run when false.",
-          "Sends a new request.",
-          "It is invalid syntax.",
+          "It is a placeholder that Postman replaces with the value from the active environment.",
+          "It causes an error.",
+          "It points to localhost only.",
+          "It is just text.",
         ],
         correctAnswer:
-          "Asserts that the response has HTTP status 201; the test passes when true and fails the run when false.",
+          "It is a placeholder that Postman replaces with the value from the active environment.",
         explanation:
-          "Postman's `chai`-style assertions read naturally and integrate into the run report.",
+          "Environment variables make collections portable across development, staging, and production.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is risky about this request in a shared collection?\n```text\nPOST https://api.production.example.com/orders\nAuthorization: Bearer eyJhbGciOi...\n```",
+          "Why does this POST request fail?\nMethod: POST\nURL: /api/customers\nBody (raw): { \"name\": \"Ali\" }\nNo Content-Type header set.",
         options: [
           "Nothing.",
-          "It hard-codes the production host and includes a real token — pushing the collection to a repo leaks both.",
-          "POST cannot be used here.",
-          "The body is missing.",
+          "Without Content-Type: application/json, the server may not deserialize the body as JSON.",
+          "POST is not allowed.",
+          "The body is too small.",
         ],
         correctAnswer:
-          "It hard-codes the production host and includes a real token — pushing the collection to a repo leaks both.",
+          "Without Content-Type: application/json, the server may not deserialize the body as JSON.",
         explanation:
-          "Use environment variables (`{{baseUrl}}`, `{{token}}`) and never commit secrets.",
+          "Always set Content-Type when sending a body.",
       },
       {
         kind: "interview",
-        question: "How would you turn a Postman collection into CI smoke tests?",
+        question:
+          "How would you describe how a team uses Postman in real .NET projects?",
         options: [
-          "You cannot.",
-          "Export the collection and environment, then run them with Newman (`newman run ...`) in your CI pipeline; assertions in the Tests tab become pass/fail signals.",
-          "Import them into ASP.NET Core.",
-          "Rewrite them in C#.",
+          "Each developer keeps requests on their own machine.",
+          "The team maintains a shared collection in version control or Postman workspaces, uses environments for each stage, and runs the collection in CI with Newman.",
+          "Postman is only for QA.",
+          "Postman is not used in real teams.",
         ],
         correctAnswer:
-          "Export the collection and environment, then run them with Newman (`newman run ...`) in your CI pipeline; assertions in the Tests tab become pass/fail signals.",
+          "The team maintains a shared collection in version control or Postman workspaces, uses environments for each stage, and runs the collection in CI with Newman.",
         explanation:
-          "Newman is Postman's CLI; it makes collections part of your automated suite.",
+          "A shared collection is one of the easiest ways to document and test an API together.",
       },
     ],
   },
 
   "curl-examples": {
     whyItMatters:
-      "curl is the universal way to test an HTTP endpoint from any terminal, any machine. SSH into a server, run a curl, see what the service really returns.",
+      "curl is a tiny command-line tool that lets you call any HTTP API from the terminal. It is available everywhere — on every CI server, every container, every Linux machine. Knowing curl is a fast way to test, debug, and document APIs.",
     simpleExplanation:
-      "curl is a command-line HTTP client. Type the method, headers, and body; it sends the request and prints the response.",
+      "curl is a command-line tool that sends HTTP requests. You give it a URL and options, and it prints the response.",
     deepExplanation:
-      "Flags to know: `-X METHOD` for the verb, `-H \"name: value\"` for a header, `-d '...'` for a JSON body (combine with `-H 'Content-Type: application/json'`), `-i` to include headers in output, `-v` for the full exchange, `--data-binary` for binary, `-u user:pass` for basic auth. Pipe through `jq` to read JSON responses.",
+      "curl supports every HTTP method. -X sets the method. -H adds headers. -d sends a body. -i shows the response headers. -v shows verbose output for debugging. Because curl is plain text, you can paste a curl command into a chat, an issue, or a wiki and anyone can run it. Many API docs include curl examples for this reason.",
     realWorldUsage:
-      "From a CI script: `curl -fsSL -H \"Authorization: Bearer $TOKEN\" $BASE/health` exits non-zero on 4xx/5xx, perfect for deployment smoke tests.",
+      "A developer uses curl to test an endpoint without opening a UI. A bug report includes the curl command that reproduces the issue. A CI script uses curl to call a deployment webhook. A README documents the API with curl examples that copy-paste cleanly.",
     explainLikeBeginner:
-      "curl is typing an HTTP request by hand. You see the wire, no GUI in the way.",
+      "curl is like a typewriter for the internet. You type one line, press enter, and you talk directly to a server. No buttons, no menus — just a sentence and an answer.",
     interviewAnswer:
-      "curl is the simplest HTTP client available everywhere. We use it for smoke tests, scripted health checks, and reproducing bugs because it forces an exact, copy-pasteable request.",
+      "curl is a command-line HTTP client. .NET developers use it to test endpoints quickly, reproduce bugs, document APIs, and call services from scripts and pipelines. It is the simplest way to make an HTTP request from the terminal.",
     commonMistakes: [
-      "Forgetting `-H 'Content-Type: application/json'` and being surprised when the server returns 415.",
-      "Single-quoting on Windows PowerShell and getting parsing errors — use `\"...\"` and escape inner quotes.",
-      "Returning 200 silently in scripts — use `-f` so curl exits non-zero on errors.",
+      "Forgetting -H 'Content-Type: application/json' when sending a JSON body.",
+      "Mixing single and double quotes incorrectly on the body.",
+      "Using -X GET with -d, which can confuse some servers.",
     ],
     bestPractices: [
-      "Pair `-i` (response headers) with `-v` (full exchange) when debugging.",
-      "Use `--fail` (`-f`) so curl exits non-zero on 4xx/5xx — vital in scripts.",
-      "Pipe to `jq` for readable JSON output.",
+      "Always set Content-Type when sending a body.",
+      "Use -i or -v when debugging unexpected responses.",
+      "Save complex commands in shell scripts so the team can reuse them.",
     ],
     summary: [
-      "curl is universal and reproducible.",
-      "Flags: `-X`, `-H`, `-d`, `-i`, `-v`, `-f`.",
-      "Pair with `jq` for JSON, with `-f` for scripts.",
+      "curl is a small CLI tool for HTTP requests.",
+      "Use -X for the method, -H for headers, -d for the body.",
+      "It is the easiest way to share API examples in text.",
     ],
     codeExample: {
-      title: "Common curl shapes",
-      code: `# GET with headers
-curl -i http://localhost:5000/orders/8f3 -H "Authorization: Bearer $TOKEN"
+      title: "Common curl commands for a .NET API",
+      code: `# GET a customer
+curl -i https://api.example.com/customers/1
 
-# POST JSON
-curl -i -X POST http://localhost:5000/orders \\
-  -H "Authorization: Bearer $TOKEN" \\
+# GET with authorization
+curl -H "Authorization: Bearer <TOKEN>" https://api.example.com/me
+
+# POST a JSON body
+curl -X POST https://api.example.com/customers \\
   -H "Content-Type: application/json" \\
-  -d '{"customerId":"...","lines":[{"sku":"A","quantity":1}]}'
+  -d '{"name":"Ali","email":"ali@example.com"}'
 
-# Script-safe (non-zero on 4xx/5xx)
-curl -fsSL http://localhost:5000/health || echo "health check failed"`,
-      output: `HTTP/1.1 201 Created
-Location: /orders/8f3...
-{"id":"8f3..."}`,
+# DELETE
+curl -X DELETE https://api.example.com/customers/1`,
+      output: "HTTP/1.1 200 OK\n... response body ...",
       walkthrough: [
-        "Headers and body are explicit on the command line.",
-        "`-f` makes the command honest about failures — important in CI.",
-        "Mix with `jq` to extract fields: `curl ... | jq '.id'`.",
+        "-i shows the response status line and headers.",
+        "-H adds headers like Authorization or Content-Type.",
+        "-d sends a body. The default method becomes POST.",
       ],
     },
     practice: {
       prompt:
-        "From the terminal, exercise the GET, POST, PUT, and DELETE endpoints of your service with curl. Capture status codes by adding `-w \"%{http_code}\\n\"`.",
+        "Write a curl command that sends a PUT request to https://api.example.com/products/1 with a JSON body containing Name = 'Updated Laptop' and Price = 1100. Include the Authorization header.",
       expectedResult:
-        "You can describe the response of each method without opening a GUI.",
+        "The server receives a PUT request with the correct headers and body and responds with the updated product.",
       hints: [
-        "Save tokens to an environment variable.",
-        "Use `-X POST -d @body.json` to send a file as the body.",
-        "Test the failure paths too.",
+        "Use -X PUT to set the method.",
+        "Use -H to add Content-Type and Authorization headers.",
+        "Use -d to send the JSON body, escaping quotes if needed.",
       ],
       solution:
-        "After this drill curl becomes a reflex. You can copy a failing call from a teammate's terminal and reproduce it locally in seconds.",
+        "curl -X PUT https://api.example.com/products/1 -H 'Content-Type: application/json' -H 'Authorization: Bearer <TOKEN>' -d '{\"name\":\"Updated Laptop\",\"price\":1100}'",
     },
     quiz: [
       {
         kind: "concept",
-        question:
-          "Which flag makes curl exit with a non-zero status on 4xx/5xx responses?",
-        options: ["-v", "-i", "-f (or --fail)", "-X"],
-        correctAnswer: "-f (or --fail)",
+        question: "What is curl?",
+        options: [
+          "A .NET package.",
+          "A command-line tool for sending HTTP requests.",
+          "A database client.",
+          "A test framework.",
+        ],
+        correctAnswer:
+          "A command-line tool for sending HTTP requests.",
         explanation:
-          "Without `-f`, curl returns 0 even on a 500 — which silently passes broken health checks in scripts.",
+          "curl is the easiest way to make an HTTP request from a terminal or a script.",
       },
       {
         kind: "code-reading",
         question:
-          "What does `curl -X POST -H \"Content-Type: application/json\" -d '{\"x\":1}'` add to the request?",
+          "What does this command do?\n`curl -X POST https://api.example.com/orders -H 'Content-Type: application/json' -d '{\"id\":1}'`",
         options: [
-          "Method POST, JSON content-type header, and a JSON body.",
-          "Only the method.",
-          "Only the body.",
-          "Nothing — the syntax is wrong.",
+          "Sends a GET request.",
+          "Sends a POST request to /orders with a JSON body { \"id\": 1 }.",
+          "Reads a file.",
+          "Deletes a record.",
         ],
         correctAnswer:
-          "Method POST, JSON content-type header, and a JSON body.",
+          "Sends a POST request to /orders with a JSON body { \"id\": 1 }.",
         explanation:
-          "`-X`, `-H`, `-d` are the three flags that compose most curl invocations.",
+          "-X sets the method, -H adds the Content-Type header, and -d sends the body.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "Why does this often fail on PowerShell?\n```powershell\ncurl -X POST -d '{\"x\":1}' http://...\n```",
+          "What is missing here?\n`curl -X POST https://api.example.com/orders -d '{\"id\":1}'`",
         options: [
-          "It always works.",
-          "PowerShell's `curl` may alias `Invoke-WebRequest`, and single quotes do not preserve the inner double quotes — use `curl.exe` and escape carefully.",
-          "POST is not allowed.",
-          "`http://` should be `https://`.",
+          "Nothing.",
+          "The Content-Type: application/json header is missing, so the server may not deserialize the body as JSON.",
+          "The method is wrong.",
+          "It needs a query string.",
         ],
         correctAnswer:
-          "PowerShell's `curl` may alias `Invoke-WebRequest`, and single quotes do not preserve the inner double quotes — use `curl.exe` and escape carefully.",
+          "The Content-Type: application/json header is missing, so the server may not deserialize the body as JSON.",
         explanation:
-          "On Windows, call `curl.exe` explicitly to get real curl, and prefer here-strings or files for JSON bodies.",
+          "Always include the Content-Type header when sending a body.",
       },
       {
         kind: "interview",
-        question: "Why is curl useful in a CI pipeline?",
+        question:
+          "Why is curl useful in real .NET work?",
         options: [
-          "It is faster than other tools.",
-          "It is universally available, scriptable, and with `-f` it converts HTTP failures into shell-level failures that the pipeline can fail on.",
-          "It is the only way to call APIs.",
-          "It has a GUI.",
+          "It is faster than Postman.",
+          "It is available everywhere, easy to share as text, and works well in scripts, README files, bug reports, and CI pipelines.",
+          "It is required for compilation.",
+          "It replaces HttpClient.",
         ],
         correctAnswer:
-          "It is universally available, scriptable, and with `-f` it converts HTTP failures into shell-level failures that the pipeline can fail on.",
+          "It is available everywhere, easy to share as text, and works well in scripts, README files, bug reports, and CI pipelines.",
         explanation:
-          "curl + `set -e` + `-f` is a robust smoke-test recipe for any deployment.",
+          "curl is the simplest, most portable way to demonstrate an API call.",
       },
     ],
   },
 
   "swagger-examples": {
     whyItMatters:
-      "Swagger UI is the easiest way for clients (and your future self) to discover and exercise your API. Most .NET services include it by default — knowing how to read and customise it pays off immediately.",
+      "Swagger (OpenAPI) gives your API a clear, interactive document and a 'try it out' UI for free. It saves time during development, helps the team agree on the contract, and gives clients a way to explore the API safely.",
     simpleExplanation:
-      "Swagger UI is a web page generated from your API's OpenAPI document. It lists every endpoint and lets you try them from the browser.",
+      "Swagger is a tool that generates documentation and an interactive UI from your API. In .NET, you add a small NuGet package and the framework creates the docs automatically based on your controllers and DTOs.",
     deepExplanation:
-      "ASP.NET Core can expose an OpenAPI document via `Microsoft.AspNetCore.OpenApi` (or Swashbuckle in older projects). The document is generated from your controllers, attributes, and XML comments. Swagger UI consumes it and renders the interactive page at `/swagger`. Lock down the page behind auth in non-dev environments, or remove it entirely from production.",
+      "ASP.NET Core has built-in support for OpenAPI documents. Adding Swashbuckle.AspNetCore or Microsoft.AspNetCore.OpenApi turns on the JSON document at /swagger/v1/swagger.json and the interactive UI at /swagger. The document includes every endpoint, parameter, request DTO, response DTO, and status code. The UI lets developers and partners send test requests directly from the browser. You can add summaries, examples, and authentication schemes to make the docs even clearer.",
     realWorldUsage:
-      "Hit `https://localhost:5001/swagger` and you see every endpoint, every DTO, and a 'Try it out' button that posts straight to the service.",
+      "A new developer joins the team and explores the API through Swagger before reading any code. A frontend team uses the Swagger document to generate a typed client. A partner integration team uses the 'try it out' button to test endpoints. Almost every .NET Web API ships with Swagger enabled in development.",
     explainLikeBeginner:
-      "Swagger is auto-generated documentation that you can click. Each endpoint has a button that fires a real request.",
+      "Swagger is like an interactive menu in a restaurant. It shows you every dish available, the ingredients, and lets you order right from the menu. The kitchen prepares your order so you can taste before you commit to anything.",
     interviewAnswer:
-      "Swagger UI renders an OpenAPI document into an interactive page where consumers can read endpoints and try them. In .NET we generate the document from controllers and DTOs with `Microsoft.AspNetCore.OpenApi` (or Swashbuckle) and expose `/swagger` in development.",
+      "Swagger, also known as OpenAPI, is a way to document and explore an API. In .NET, we add a NuGet package, and ASP.NET Core generates an interactive UI and a JSON document from the controllers. This makes the API easy to share, test, and integrate with.",
     commonMistakes: [
-      "Leaving Swagger exposed in production without any access control.",
-      "Forgetting to enable XML comments, leaving endpoints undocumented.",
-      "Treating Swagger as a contract that drives the code instead of generating it from the code.",
+      "Exposing Swagger in production without authentication.",
+      "Skipping XML comments, which makes the docs less useful.",
+      "Not updating examples when DTOs change.",
     ],
     bestPractices: [
-      "Annotate DTOs with summaries via XML comments.",
-      "Gate `/swagger` to authorised users in non-dev environments.",
-      "Use `[ProducesResponseType(typeof(...), StatusCodes.Status200OK)]` so responses are typed in the doc.",
+      "Enable Swagger in development by default and protect it in production.",
+      "Add XML comments to controllers and DTOs for clearer docs.",
+      "Use [ProducesResponseType] to document the status codes for each action.",
     ],
     summary: [
-      "Swagger UI = clickable OpenAPI doc.",
-      "Generate from code, don't hand-edit.",
-      "Lock down outside dev.",
+      "Swagger generates docs and an interactive UI from your API.",
+      "It is built into .NET through a small NuGet package.",
+      "It is one of the easiest ways to share and explore a real .NET API.",
     ],
     codeExample: {
-      title: "Wire up Swagger in Program.cs",
-      code: `var builder = WebApplication.CreateBuilder(args);
+      title: "Adding Swagger to a .NET Web API",
+      code: `// Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 app.MapControllers();
-app.Run();`,
-      output: "Visit /swagger -> interactive UI with every endpoint and DTO listed",
+app.Run();
+
+// Adding response types to an action
+[HttpGet("{id}")]
+[ProducesResponseType(typeof(CustomerResponse), 200)]
+[ProducesResponseType(404)]
+public IActionResult GetById(int id) => Ok();`,
+      output: "The Swagger UI is available at /swagger in development.",
       walkthrough: [
-        "`AddSwaggerGen` builds the OpenAPI document.",
-        "`UseSwagger` exposes the JSON; `UseSwaggerUI` exposes the page.",
-        "Both are gated to development to keep them off prod.",
+        "AddEndpointsApiExplorer and AddSwaggerGen register the Swagger services.",
+        "UseSwagger and UseSwaggerUI expose the JSON document and the interactive UI.",
+        "ProducesResponseType tells Swagger which status codes and types the action returns.",
       ],
     },
     practice: {
       prompt:
-        "Enable Swagger on a sample API. Add XML comments to one DTO and one action, regenerate, and confirm the descriptions show up in the UI.",
+        "Enable Swagger in a small .NET Web API. Add [ProducesResponseType] attributes to a CustomersController so the documentation lists the success and error status codes for the GetById action.",
       expectedResult:
-        "The Swagger page reflects your XML comments and `[ProducesResponseType]` annotations.",
+        "Running the API in development and opening /swagger shows the customers endpoints, including the response types and status codes for GetById.",
       hints: [
-        "Set `<GenerateDocumentationFile>true</GenerateDocumentationFile>` in the csproj.",
-        "Configure `SwaggerGenOptions.IncludeXmlComments` to pick up the file.",
-        "Restart the service after rebuilding.",
+        "Install Swashbuckle.AspNetCore through dotnet add package.",
+        "Call AddEndpointsApiExplorer, AddSwaggerGen, UseSwagger, and UseSwaggerUI in Program.cs.",
+        "Add [ProducesResponseType(typeof(CustomerResponse), 200)] and [ProducesResponseType(404)] to the action.",
       ],
       solution:
-        "The endpoint summary, response types, and DTO field descriptions now show up in `/swagger`. Your API doubles as its own documentation.",
+        "Install the package, register Swagger in Program.cs, and decorate the actions with [ProducesResponseType]. The UI shows every endpoint and its status codes.",
     },
     quiz: [
       {
         kind: "concept",
-        question: "What is Swagger UI rendering?",
+        question: "What does Swagger do for a .NET Web API?",
         options: [
-          "Your source code directly.",
-          "An OpenAPI document generated from your controllers and attributes.",
-          "The database schema.",
-          "Static HTML written by hand.",
+          "Generates an interactive UI and an OpenAPI document so developers and partners can explore and test the API.",
+          "Compiles the project.",
+          "Manages the database.",
+          "Replaces unit tests.",
         ],
         correctAnswer:
-          "An OpenAPI document generated from your controllers and attributes.",
+          "Generates an interactive UI and an OpenAPI document so developers and partners can explore and test the API.",
         explanation:
-          "The OpenAPI doc is the contract; Swagger UI is one way to render it.",
+          "Swagger turns your controllers into a clear, interactive document.",
       },
       {
         kind: "code-reading",
         question:
-          "Given the `Program.cs` example, where is Swagger UI available?",
+          "What do AddSwaggerGen and UseSwaggerUI do?",
         options: [
-          "Always at `/swagger`.",
-          "Only when the app is running in the Development environment.",
-          "Only when authenticated.",
-          "Only when the database is reachable.",
+          "They are unrelated.",
+          "AddSwaggerGen registers the services that build the OpenAPI document. UseSwaggerUI exposes the interactive UI at /swagger.",
+          "They send emails.",
+          "They open a database connection.",
         ],
         correctAnswer:
-          "Only when the app is running in the Development environment.",
+          "AddSwaggerGen registers the services that build the OpenAPI document. UseSwaggerUI exposes the interactive UI at /swagger.",
         explanation:
-          "`app.Environment.IsDevelopment()` gates the middleware to dev.",
+          "Together they wire up the document and the UI.",
       },
       {
         kind: "spot-the-bug",
         question:
-          "What is the issue?\n```csharp\napp.UseSwagger();\napp.UseSwaggerUI();\n// in Production\n```",
+          "Why is this risky in production?\n```csharp\napp.UseSwagger();\napp.UseSwaggerUI();\n```",
         options: [
           "Nothing.",
-          "Swagger is exposed in production without auth — anyone can browse your endpoints and try them.",
-          "`UseSwagger` does not exist.",
-          "It conflicts with `MapControllers`.",
+          "Exposing the full API surface in production without authentication can leak information about the system. Protect or disable it outside development.",
+          "It uses too much memory.",
+          "It blocks deployments.",
         ],
         correctAnswer:
-          "Swagger is exposed in production without auth — anyone can browse your endpoints and try them.",
+          "Exposing the full API surface in production without authentication can leak information about the system. Protect or disable it outside development.",
         explanation:
-          "Either guard it behind auth or remove it in production. The current default leaks your API surface.",
+          "Either keep Swagger out of production or put it behind authentication.",
       },
       {
         kind: "interview",
         question:
-          "Why is generating OpenAPI from code generally better than hand-writing it?",
+          "How does Swagger help in real .NET projects?",
         options: [
-          "It is the only legal way.",
-          "Hand-written OpenAPI drifts from the code immediately; generated documents stay in sync with the actual implementation and surface mismatches as build failures.",
-          "Hand-writing is faster.",
-          "There is no difference.",
+          "It does not.",
+          "It provides automatic API docs, an interactive UI for testing, and an OpenAPI document that frontend, mobile, and partner teams can use to generate typed clients.",
+          "Only QA uses it.",
+          "It is required by EF Core.",
         ],
         correctAnswer:
-          "Hand-written OpenAPI drifts from the code immediately; generated documents stay in sync with the actual implementation and surface mismatches as build failures.",
+          "It provides automatic API docs, an interactive UI for testing, and an OpenAPI document that frontend, mobile, and partner teams can use to generate typed clients.",
         explanation:
-          "If you do hand-write specs (spec-first APIs), generate code from the spec so they cannot drift.",
+          "Swagger makes it easy to share, test, and integrate with a .NET API.",
       },
     ],
   },
